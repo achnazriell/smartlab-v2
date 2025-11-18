@@ -2,411 +2,649 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}" />
     <title>Smart-LAB</title>
 
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
 
-    <link rel="stylesheet" href="style/beranda.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ asset('style/beranda.css') }}" />
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+    <style>
+        /* ============== Animations ============== */
+        @keyframes floating {
+            0% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-20px)
+            }
+
+            100% {
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.05)
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            53%,
+            80%,
+            100% {
+                transform: translateY(0)
+            }
+
+            40%,
+            43% {
+                transform: translateY(-10px)
+            }
+
+            70% {
+                transform: translateY(-5px)
+            }
+
+            90% {
+                transform: translateY(-2px)
+            }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite
+        }
+
+        .floating-delay {
+            animation: floating 3s ease-in-out infinite;
+            animation-delay: 1s
+        }
+
+        .fade-in-up {
+            animation: fadeInUp .8s ease-out forwards;
+            opacity: 0
+        }
+
+        .slide-in-left {
+            animation: slideInLeft .8s ease-out forwards;
+            opacity: 0
+        }
+
+        .slide-in-right {
+            animation: slideInRight .8s ease-out forwards;
+            opacity: 0
+        }
+
+        .pulse {
+            animation: pulse 4s ease-in-out infinite
+        }
+
+        .pulse-hover:hover {
+            animation: pulse .6s ease-in-out
+        }
+
+        .bounce-hover:hover {
+            animation: bounce .6s ease-in-out
+        }
+
+        /* ============== Positioned decorative images ============== */
+        .image-container {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none
+        }
+
+        .image-wedok {
+            right: 5%;
+            top: 30%;
+            width: 120px
+        }
+
+        .image-laki {
+            left: 5%;
+            top: 30%;
+            width: 120px
+        }
+
+        @media (min-width: 640px) {
+            .image-wedok {
+                right: 8%;
+                top: 25%;
+                width: 160px
+            }
+
+            .image-laki {
+                left: 8%;
+                top: 25%;
+                width: 160px
+            }
+        }
+
+        @media (min-width: 768px) {
+            .image-wedok {
+                right: 10%;
+                top: 22%;
+                width: 220px
+            }
+
+            .image-laki {
+                left: 10%;
+                top: 22%;
+                width: 220px
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .image-wedok {
+                right: 15%;
+                top: 20%;
+                width: 280px
+            }
+
+            .image-laki {
+                left: 15%;
+                top: 20%;
+                width: 280px
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .image-wedok {
+                right: 200px;
+                top: 180px;
+                width: 400px
+            }
+
+            .image-laki {
+                left: 200px;
+                top: 180px;
+                width: 400px
+            }
+        }
+
+        /* ============== Buttons ============== */
+        .btn-hover {
+            position: relative;
+            overflow: hidden;
+            transition: all .3s ease;
+            touch-action: manipulation
+        }
+
+        .btn-hover::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .2), transparent);
+            transition: left .5s
+        }
+
+        .btn-hover:hover::before {
+            left: 100%
+        }
+
+        /* ============== Utils ============== */
+        html {
+            scroll-behavior: smooth
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all .8s ease-out
+        }
+
+        .animate-on-scroll.animated {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        /* Carousel fixed height per breakpoint */
+        .carousel-container {
+            height: 250px
+        }
+
+        @media (min-width: 640px) {
+            .carousel-container {
+                height: 300px
+            }
+        }
+
+        @media (min-width: 768px) {
+            .carousel-container {
+                height: 400px
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .carousel-container {
+                height: 450px
+            }
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem
+        }
+
+        /* Stats card float above next section gracefully */
+        .stats-section {
+            position: absolute;
+            z-index: 30;
+            bottom: -80px;
+            /* ganti dari margin-top */
+            left: 50%;
+            transform: translateX(-50%);
+            padding-bottom: 2rem;
+            width: 100%;
+            /* biar bisa fleksibel */
+            display: flex;
+            justify-content: center;
+            /* konten di tengah */
+        }
+
+
+        @media (min-width: 768px) {
+            .stats-section {
+                margin-top: -100px;
+                padding-bottom: 3rem
+            }
+        }
+    </style>
 </head>
-<style>
-    @keyframes floating {
-        0% {
-            transform: translateY(0);
-        }
 
-        50% {
-            transform: translateY(-20px);
-        }
-
-        100% {
-            transform: translateY(0);
-        }
-    }
-
-    .floating {
-        animation: floating 3s ease-in-out infinite;
-    }
-
-    .floating-delay {
-        animation: floating 3s ease-in-out infinite;
-        animation-delay: 1s;
-        /* Delay 1.5 detik supaya tidak barengan */
-    }
-
-    .image-container {
-        position: relative;
-        z-index: 2;
-        width: 500px;
-    }
-
-    .image-wedok {
-        right: 250px;
-        top: 150px;
-        position: relative;
-    }
-
-    .image-laki {
-        left: 300px;
-        top: 150px;
-        position: relative;
-    }
-</style>
-
-<body>
+<body class="bg-white">
     <div class="navbar-container">
         <x-navbar></x-navbar>
     </div>
 
-    <!-- SECTION 1 -->
-    <section class="h-screen"
-        style="background: url('image/bc atas.svg') no-repeat center center; background-size: cover;">
-        <div class="absolute text-white font-poppins text-5xl font-bold text-center w-full">
-            <h1 class="mb-3">Platform LMS gratis yang</h1>
-            <h1 class="mb-3">membuat belajar lebih menarik</h1>
+    <!-- =================== HERO =================== -->
+    <section class="min-h-screen relative flex items-center justify-center overflow-hidden"
+        style="background: url('{{ asset('image/bc atas.svg') }}') no-repeat center center; background-size: cover;">
+        <div class="hero-content text-white font-poppins text-center w-full z-10 fade-in-up">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 animate-on-scroll">Platform LMS
+                gratis yang</h1>
+            <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 animate-on-scroll">membuat belajar
+                lebih menarik</h1>
             <p
-                style="
-        display: inline-block;
-        padding-inline: 20px;
-        padding-top: 1px;
-        padding-bottom: 1px;
-        background-color: #2765e0;
-        border-radius: 10px;
-        color: #ffffff;
-        font-size: 23px;
-        font-weight: 600;
-        line-height: 45px;">
+                class="inline-block px-4 md:px-6 py-2 bg-blue-600 rounded-lg text-white text-sm md:text-lg lg:text-xl font-semibold leading-relaxed max-w-2xl animate-on-scroll">
                 Akses materi belajar interaktif kapan saja, di mana saja.
             </p>
-
-            <div class="mt-12 flex justify-center gap-5">
-                <a href="/register"
-                    class="relative overflow-hidden text-gray-500 text-xl bg-gray-50 font-medium rounded-xl px-16 py-3 transition-colors duration-300 ease-in-out
-                    before:absolute before:inset-0 before:w-0 before:bg-blue-800 before:rounded-xl before:transition-all before:duration-300 before:ease-in-out
-                    hover:text-white hover:before:w-full">
+            <div class="mt-8 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 md:gap-5 animate-on-scroll">
+                <a href="{{ route('register') }}"
+                    class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
                     <span class="relative z-10">Daftar</span>
                 </a>
-                <a href="/login"
-                    class="relative overflow-hidden text-gray-500 text-xl bg-gray-50 font-medium rounded-xl px-16 py-3 transition-colors duration-300 ease-in-out
-                    before:absolute before:inset-0 before:w-0 before:bg-blue-800 before:rounded-xl before:transition-all before:duration-300 before:ease-in-out
-                    hover:text-white hover:before:w-full">
+                <a href="{{ route('login') }}"
+                    class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
                     <span class="relative z-10">Masuk</span>
                 </a>
             </div>
         </div>
 
-        <div class="image-container image-wedok floating">
-            <img src="image/orang wedok.svg" alt="orangwedok">
+        <!-- Floating images -->
+        <div class="image-container image-wedok floating slide-in-right">
+            <img src="{{ asset('image/orang wedok.svg') }}" alt="orangwedok" class="w-full h-auto" />
         </div>
-
-        <div class="image-container image-laki floating-delay">
-            <img src="image/element laki.svg" alt="wonglanang">
+        <div class="image-container image-laki floating-delay slide-in-left">
+            <img src="{{ asset('image/element laki.svg') }}" alt="wonglanang" class="w-full h-auto" />
         </div>
     </section>
 
-    <!-- BAGIAN JUMLAH GURU & SISWA (DIPOSISIKAN DI ANTARA SECTION 1 & 2) -->
-    <div class="jumlah"
-        style="position: absolute; top: 90vh; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; align-items: center; flex-wrap: wrap; width: 40%; max-width: 600px; padding: 20px; background: rgba(255, 255, 255); border-radius: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); text-align: center; z-index: 10;">
-
-        <div class="jumlah-teks" style="display: flex; justify-content: center; width: 100%; gap: 20px;">
-            <div class="jumlahsiswa" style="margin: 10px; display: flex; align-items: center; justify-content: center;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 256 256"
-                    style="margin-right: 10px; color: #2765e0;">
-                    <path fill="currentColor"
-                        d="m227.79 52.62l-96-32a11.85 11.85 0 0 0-7.58 0l-96 32A12 12 0 0 0 20 63.37a6 6 0 0 0 0 .63v80a12 12 0 0 0 24 0V80.65l23.71 7.9a67.92 67.92 0 0 0 18.42 85A100.36 100.36 0 0 0 46 209.44a12 12 0 1 0 20.1 13.11C80.37 200.59 103 188 128 188s47.63 12.59 61.95 34.55a12 12 0 1 0 20.1-13.11a100.36 100.36 0 0 0-40.18-35.92a67.92 67.92 0 0 0 18.42-85l39.5-13.17a12 12 0 0 0 0-22.76Zm-99.79-8L186.05 64L128 83.35L70 64ZM172 120a44 44 0 1 1-81.06-23.71l33.27 11.09a11.9 11.9 0 0 0 7.58 0l33.27-11.09A43.85 43.85 0 0 1 172 120" />
-                </svg>
-                <div>
-                    <h1 style="font-size: 2rem; font-weight: bold; color: #2765e0;">+5jt</h1>
-                    <p style="font-size: 1.2rem; color: #333;">Siswa Bergabung</p>
+    <!-- =================== STATS =================== -->
+    <div class="stats-section flex justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6 w-full max-w-2xl animate-on-scroll bounce-hover">
+            <div class="flex flex-row justify-center items-center gap-6 md:gap-8">
+                <div class="flex items-center justify-center text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 256 256"
+                        class="mr-3 text-blue-600 bounce-hover sm:w-[60px] sm:h-[60px]">
+                        <path fill="currentColor"
+                            d="m227.79 52.62l-96-32a11.85 11.85 0 0 0-7.58 0l-96 32A12 12 0 0 0 20 63.37a6 6 0 0 0 0 .63v80a12 12 0 0 0 24 0V80.65l23.71 7.9a67.92 67.92 0 0 0 18.42 85A100.36 100.36 0 0 0 46 209.44a12 12 0 1 0 20.1 13.11C80.37 200.59 103 188 128 188s47.63 12.59 61.95 34.55a12 12 0 1 0 20.1-13.11a100.36 100.36 0 0 0-40.18-35.92a67.92 67.92 0 0 0 18.42-85l39.5-13.17a12 12 0 0 0 0-22.76Zm-99.79-8L186.05 64L128 83.35L70 64ZM172 120a44 44 0 1 1-81.06-23.71l33.27 11.09a11.9 11.9 0 0 0 7.58 0l33.27-11.09A43.85 43.85 0 0 1 172 120" />
+                    </svg>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-blue-600 jumlahsiswa-counter">+5jt</h1>
+                        <p class="text-sm md:text-base text-gray-700">Siswa Bergabung</p>
+                    </div>
                 </div>
-            </div>
-            <div class="jumlahguru" style="margin: 10px; display: flex; align-items: center; justify-content: center;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24"
-                    style="margin-right: 10px; color: #2765e0;">
-                    <path fill="currentColor"
-                        d="M20 17a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H9.46c.35.61.54 1.3.54 2h10v11h-9v2m4-10v2H9v13H7v-6H5v6H3v-8H1.5V9a2 2 0 0 1 2-2zM8 4a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2" />
-                </svg>
-                <div>
-                    <h1 style="font-size: 2rem; font-weight: bold; color: #2765e0;">+40</h1>
-                    <p style="font-size: 1.2rem; color: #333;">Guru Aktif</p>
+                <div class="flex items-center justify-center text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+                        class="mr-3 text-blue-600 bounce-hover sm:w-[60px] sm:h-[60px]">
+                        <path fill="currentColor"
+                            d="M20 17a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H9.46c.35.61.54 1.3.54 2h10v11h-9v2m4-10v2H9v13H7v-6H5v6H3v-8H1.5V9a2 2 0 0 1 2-2zM8 4a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2" />
+                    </svg>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-blue-600 jumlahguru-counter">+40</h1>
+                        <p class="text-sm md:text-base text-gray-700">Guru Aktif</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SECTION 2 -->
-    <section class="h-screen bg-cover bg-center relative" style="background-image: url('image/landing 2.svg');">
+    <!-- =================== FEATURES / CAROUSEL =================== -->
+    <section class="min-h-screen bg-cover bg-center relative py-16 md:py-20"
+        style="background-image: url('{{ asset('image/landing 2.svg') }}');">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-8 md:mb-12 animate-on-scroll">
+                <h1 class="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl font-poppins">KEUNGGULAN
+                    MENGGUNAKAN SMART-LAB</h1>
+            </div>
 
-        <!-- Title above the slider -->
-        <div class="absolute justify-center top-28 z-50">
-            <h1 class="text-white font-bold text-4xl text-center font-poppins whitespace-nowrap">
-                KEUNGGULAN MENGGUNAKAN SMART-LAB
+            <!-- Flowbite Carousel (structure aligned to docs) -->
+            <div id="default-carousel" class="relative w-full max-w-6xl mx-auto animate-on-scroll"
+                data-carousel="slide">
+                <div class="relative overflow-hidden rounded-3xl shadow-2xl carousel-container">
+                    <div class="hidden duration-700 ease-in-out" data-carousel-item="active">
+                        <img src="{{ asset('image/1.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                            alt="Slide 1" />
+                    </div>
+                    <div class="hidden duration-700 ease-in-out" data-carousel-item>
+                        <img src="{{ asset('image/2.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                            alt="Slide 2" />
+                    </div>
+                    <div class="hidden duration-700 ease-in-out" data-carousel-item>
+                        <img src="{{ asset('image/3.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                            alt="Slide 3" />
+                    </div>
+                </div>
+
+                <!-- Indicators -->
+                <div class="flex justify-center space-x-3 mt-6">
+                    <button type="button"
+                        class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100 transition-opacity pulse-hover"
+                        aria-label="Slide 1" data-carousel-slide-to="0"></button>
+                    <button type="button"
+                        class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100 transition-opacity pulse-hover"
+                        aria-label="Slide 2" data-carousel-slide-to="1"></button>
+                    <button type="button"
+                        class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100 transition-opacity pulse-hover"
+                        aria-label="Slide 3" data-carousel-slide-to="2"></button>
+                </div>
+
+                <!-- Controls -->
+                <button type="button" class="absolute top-1/2 left-4 -translate-y-1/2 z-30 pulse-hover"
+                    aria-label="Previous" data-carousel-prev>
+                    <span
+                        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 6 10" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 1 1 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                </button>
+                <button type="button" class="absolute top-1/2 right-4 -translate-y-1/2 z-30 pulse-hover"
+                    aria-label="Next" data-carousel-next>
+                    <span
+                        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 6 10" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="m1 9 4-4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================== ABOUT =================== -->
+    <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden py-16 px-4">
+        <!-- Background circle -->
+        <div
+            class="absolute w-80 h-80 md:w-96 md:h-96 lg:w-[650px] lg:h-[650px] bg-cyan-200 rounded-full opacity-80 shadow-lg animate-on-scroll pulse">
+        </div>
+
+        <div class="relative z-10 text-center max-w-4xl animate-on-scroll">
+            <img src="{{ asset('image/Smart-Lab blue.png') }}" class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover"
+                alt="logo" />
+            <p
+                class="text-blue-800 font-semibold text-sm md:text-base lg:text-lg text-center font-poppins leading-relaxed px-4">
+                Smart-LAB adalah platform E-learning inovatif yang dirancang untuk memberikan pengalaman belajar yang
+                interaktif
+                dan menyeluruh bagi pelajar dan profesional. Fokusnya adalah pada pengembangan keterampilan praktis dan
+                pemahaman
+                mendalam di berbagai bidang.
+            </p>
+        </div>
+
+        <!-- Decorative elements -->
+        <img src="{{ asset('image/motif mtk.png') }}"
+            class="absolute top-16 md:top-32 left-4 md:left-12 w-32 md:w-48 lg:w-56 opacity-80 floating"
+            alt="Motif MTK" />
+        <img src="{{ asset('image/motif bangun ruang.png') }}"
+            class="absolute bottom-16 md:bottom-24 right-4 md:right-12 w-48 md:w-64 lg:w-80 opacity-80 floating-delay"
+            alt="Motif Bangun Ruang" />
+
+        <!-- Decorative circles -->
+        <div
+            class="absolute top-8 md:top-16 left-8 md:left-20 w-12 md:w-16 lg:w-20 h-12 md:h-16 lg:h-20 bg-sky-300 rounded-full opacity-60 shadow-lg floating">
+        </div>
+        <div
+            class="absolute top-20 md:top-32 right-8 md:right-16 w-10 md:w-12 lg:w-16 h-10 md:h-12 lg:h-16 bg-sky-400 rounded-full opacity-50 shadow-lg floating-delay">
+        </div>
+        <div
+            class="absolute bottom-16 md:bottom-20 left-16 md:left-32 w-16 md:w-20 lg:w-24 h-16 md:h-20 lg:h-24 bg-sky-500 rounded-full opacity-40 shadow-lg floating">
+        </div>
+        <div
+            class="absolute bottom-8 md:bottom-16 right-16 md:right-28 w-8 md:w-10 lg:w-12 h-8 md:h-10 lg:h-12 bg-sky-300 rounded-full opacity-70 shadow-lg floating-delay">
+        </div>
+    </section>
+
+    <!-- =================== CTA =================== -->
+    <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-24">
+        <img src="{{ asset('image/motif bawah landing.png') }}" class="absolute inset-0 w-full h-full object-cover"
+            alt="motif bawah" />
+        <div class="relative z-10 text-center text-blue-900 px-4 animate-on-scroll mb-16">
+            <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-poppins mb-8 md:mb-12">
+                Ayo berkembang <br />bersama Smart-LAB!
             </h1>
-        </div>
-
-        <div id="default-carousel" class="relative w-full mx-12" data-carousel="slide">
-            <!-- Carousel wrapper with border-radius -->
-            <div class="relative overflow-hidden border-md shadow-lg rounded-3xl"
-                style="height: 450px; margin-top: 100px;">
-                <!-- Item 1 -->
-                <div class="duration-700 ease-in-out opacity-0 absolute inset-0 w-full h-full object-cover rounded-3xl"
-                    data-carousel-item style="transition: opacity 1s ease;">
-                    <img src="image/1.png" class="w-full h-full object-cover rounded-3xl" alt="Slide1">
-                </div>
-                <!-- Item 2 -->
-                <div class="duration-700 ease-in-out opacity-0 absolute inset-0 w-full h-full object-cover rounded-3xl"
-                    data-carousel-item style="transition: opacity 1s ease;">
-                    <img src="image/2.png" class="w-full h-full object-cover rounded-3xl" alt="Slide2">
-                </div>
-                <!-- Item 3 -->
-                <div class="duration-700 ease-in-out opacity-0 absolute inset-0 w-full h-full object-cover rounded-3xl"
-                    data-carousel-item style="transition: opacity 1s ease;">
-                    <img src="image/3.png" class="w-full h-full object-cover rounded-3xl" alt="Slide3">
-                </div>
-            </div>
-
-            <!-- Slider indicators -->
-            <div class="absolute z-30 flex space-x-3 transform -translate-x-1/2 left-1/2 mt-8">
-                <button type="button" class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100"
-                    data-carousel-slide-to="0"></button>
-                <button type="button" class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100"
-                    data-carousel-slide-to="1"></button>
-                <button type="button" class="w-3 h-3 rounded-full bg-white opacity-50 hover:opacity-100"
-                    data-carousel-slide-to="2"></button>
-            </div>
-
-            <!-- Slider controls -->
-            <button type="button"
-                class="absolute top-0 left-0 pt-52 z-30 flex items-center justify-center h-full px-4 cursor-pointer group"
-                data-carousel-prev>
-                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 hover:bg-blue-700">
-                    <svg class="w-4 h-4 text-white" viewBox="0 0 6 10">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M5 1 1 5l4 4" />
-                    </svg>
-                </span>
-            </button>
-            <button type="button"
-                class="absolute top-0 right-0 pt-52 z-30 flex items-center justify-center h-full px-4 cursor-pointer group"
-                data-carousel-next>
-                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-400 hover:bg-blue-700">
-                    <svg class="w-4 h-4 text-white" viewBox="0 0 6 10">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m1 9 4-4-4-4" />
-                    </svg>
-                </span>
-            </button>
-        </div>
-    </section>
-
-    <section
-        style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden;">
-        <!-- Lingkaran besar di belakang gambar -->
-        <div
-            style="position: absolute; width: 650px; height: 650px; background-color: #b2ebf2; border-radius: 50%; opacity: 0.8; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); z-index: -10;">
-        </div <!-- Gambar utama -->
-        <img src="image/Smart-Lab blue.png" style="width: 400px; z-index: 1;" alt="logo">
-
-        <!-- Teks -->
-        <p
-            style="color: #1e40af; font-weight: 600; font-size: 15px; text-align: center; margin-top: 16px; font-family: 'Poppins', sans-serif; width: 500px; z-index: 1;">
-            Smart-LAB adalah platform E-learning inovatif yang dirancang untuk memberikan pengalaman belajar yang
-            interaktif
-            dan menyeluruh bagi pelajar dan profesional. Fokusnya adalah pada pengembangan keterampilan praktis dan
-            pemahaman
-            mendalam di berbagai bidang.
-        </p>
-
-        <!-- Gambar dekoratif -->
-        <img src="image/motif mtk.png" style="position: absolute; top: 200px; left: 50px; width: 200px; opacity: 0.8;"
-            alt="Motif MTK">
-        <img src="image/motif bangun ruang.png"
-            style="position: absolute; bottom: 100px; right: 50px; width: 300px; opacity: 0.8;"
-            alt="Motif Bangun Ruang">
-
-        <!-- Lingkaran dekoratif besar -->
-        <div
-            style="position: absolute; top: 40px; left: 80px; width: 80px; height: 80px; background-color: #81d4fa; border-radius: 50%; opacity: 0.6; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; top: 128px; right: 40px; width: 64px; height: 64px; background-color: #4fc3f7; border-radius: 50%; opacity: 0.5; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; bottom: 80px; left: 160px; width: 96px; height: 96px; background-color: #29b6f6; border-radius: 50%; opacity: 0.4; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; bottom: 40px; right: 112px; width: 48px; height: 48px; background-color: #81d4fa; border-radius: 50%; opacity: 0.7; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-
-        <!-- Lingkaran dekoratif kecil -->
-        <div
-            style="position: absolute; top: 100px; left: 150px; width: 24px; height: 24px; background-color: #4fc3f7; border-radius: 50%; opacity: 0.8; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; top: 200px; right: 80px; width: 32px; height: 32px; background-color: #81d4fa; border-radius: 50%; opacity: 0.6; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; bottom: 120px; left: 220px; width: 20px; height: 20px; background-color: #29b6f6; border-radius: 50%; opacity: 0.7; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; bottom: 60px; right: 60px; width: 28px; height: 28px; background-color: #4fc3f7; border-radius: 50%; opacity: 0.5; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-        <div
-            style="position: absolute; top: 60px; right: 160px; width: 16px; height: 16px; background-color: #29b6f6; border-radius: 50%; opacity: 0.9; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);">
-        </div>
-    </section>
-    <section
-        style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden;">
-        <!-- Gambar Latar -->
-        <img src="image/motif bawah landing.png" style="width: 100%; height: 100%; margin-top: 200px;"
-            alt="">
-
-        <!-- Konten Teks dan Tombol -->
-        <div style="position: absolute; text-align: center; color: rgb(0, 0, 177); top: 70px;">
-            <h1
-                style="font-size: 3.5rem; font-weight: bold; font-family: poppins; padding: 10px; padding-bottom: 50px">
-                Ayo berkembang <br>bersama Smart-LAB!</h1>
-            {{-- <p style="font-size: 1.5rem; margin-bottom: 50px;">Bergabunglah bersama Smart-LAB dan raih prestasimu
-                setinggi langit</p> --}}
             <a href="{{ route('register') }}"
-                style="display: inline-block; padding: 15px 70px; background-color: #007bff; color: white; text-decoration: none; border-radius: 10px; font-size: 1rem; font-weight: bold;">
-                Daftar Sekarang
-            </a>
+                class="btn-hover inline-block px-8 md:px-16 lg:px-20 py-3 md:py-4 bg-blue-600 text-white text-base md:text-lg font-bold rounded-xl hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 pulse-hover">Daftar
+                Sekarang</a>
         </div>
 
-        <!-- Footer -->
-        <footer style="position: absolute; bottom: 0px; width: 100%; padding: 20px; color: white;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 50px;">
-                <!-- Gambar -->
-                <div style="flex: 0 0 auto;">
-                    <img src="image/Smart-LAB White Logo.png" style="width: 300px;" alt="Logo Smart-LAB">
-                </div>
-
-                <!-- Kontainer kolom -->
-                <div style="display: flex; flex-wrap: nowrap; gap: 20px;">
-                    <!-- Menu Links Column -->
-                    <div style="margin-right: 20px;">
-                        <h4
-                            style="font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid white; padding-bottom: 5px;">
-                            Link Menu</h4>
-                        <a href="#beranda"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Beranda</a>
-                        <a href="#tentang"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Tentang Kami</a>
-                        <a href="#kursus"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Kursus</a>
-                        <a href="#blog"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Blog</a>
+        <!-- =================== FOOTER =================== -->
+        <footer class="w-full py-8 md:py-12 text-white relative z-10 mt-28">
+            <div class="container mx-auto px-4 flex flex-col justify-between min-h-[300px]">
+                <!-- Isi Footer -->
+                <div class="flex flex-row lg:flex-col justify-center items-center gap-8 lg:gap-36">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0">
+                        <img src="{{ asset('image/Smart-LAB White Logo.png') }}"
+                            class="w-0 md:w-64 lg:w-80 bounce-hover" alt="Logo Smart-LAB" />
                     </div>
 
-                    <!-- Contact & Support Column -->
-                    <div style="margin-right: 20px;">
-                        <h4
-                            style="font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid white; padding-bottom: 5px;">
-                            Bantuan</h4>
-                        <a href="#hubungi"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Hubungi</a>
-                        <a href="#panduan"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Panduan
-                            Pengguna</a>
-                        <a href="#bantuan"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Pusat Bantuan</a>
-                        <a href="#privasi"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Kebijakan
-                            Privasi</a>
-                        <a href="#syarat"
-                            style="color: white; display: block; text-decoration: none; margin: 0;">Syarat dan
-                            Ketentuan</a>
-                    </div>
-
-                    <!-- Social Media Column -->
-                    <div>
-                        <h4
-                            style="font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid white; padding-bottom: 5px;">
-                            Sosial Media</h4>
-
-                        <!-- Facebook -->
-                        <a href="https://facebook.com" target="_blank"
-                            style="color: white; display: flex; align-items: center; text-decoration: none; margin: 0;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                fill="currentColor" viewBox="0 0 24 24" style="margin-right: 5px;">
-                                <path
-                                    d="M13.135 6H15V3h-1.865a4.147 4.147 0 0 0-4.142 4.142V9H7v3h2v9.938h3V12h2.021l.592-3H12V6.591A.6.6 0 0 1 12.592 6h.543Z" />
-                            </svg>
-                            Facebook
-                        </a>
-
-                        <!-- Twitter -->
-                        <a href="https://twitter.com" target="_blank"
-                            style="color: white; display: flex; align-items: center; text-decoration: none; margin: 0;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                fill="currentColor" viewBox="0 0 24 24" style="margin-right: 5px;">
-                                <path
-                                    d="M22 5.892a8.178 8.178 0 0 1-2.355.635 4.074 4.074 0 0 0 1.8-2.235 8.343 8.343 0 0 1-2.605.981A4.13 4.13 0 0 0 15.85 4a4.068 4.068 0 0 0-4.1 4.038c0 .31.035.618.105.919A11.705 11.705 0 0 1 3.4 4.734a4.006 4.006 0 0 0 1.268 5.392 4.165 4.165 0 0 1-1.859-.5v.05A4.057 4.057 0 0 0 6.1 13.635a4.192 4.192 0 0 1-1.856.07 4.108 4.108 0 0 0 3.831 2.807A8.36 8.36 0 0 1 2 18.184 11.732 11.732 0 0 0 8.291 20 11.502 11.502 0 0 0 19.964 8.5c0-.177 0-.349-.012-.523A8.143 8.143 0 0 0 22 5.892Z" />
-                            </svg>
-                            Twitter
-                        </a>
-
-                        <!-- Instagram -->
-                        <a href="https://instagram.com" target="_blank"
-                            style="color: white; display: flex; align-items: center; text-decoration: none; margin: 0;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                fill="currentColor" viewBox="0 0 24 24" style="margin-right: 5px;">
-                                <path
-                                    d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm10 2H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3ZM12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm4-2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" />
-                            </svg>
-                            Instagram
-                        </a>
-
-                        <!-- Email -->
-                        <a href="mailto:example@example.com"
-                            style="color: white; display: flex; align-items: center; text-decoration: none; margin: 0;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
-                                fill="currentColor" viewBox="0 0 24 24" style="margin-right: 5px;">
-                                <path
-                                    d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm2.02.01L12 11.007 18.98 5.01H5.02ZM20 7.676l-8 5.999-8-6V19h16V7.676Z" />
-                            </svg>
-                            Email
-                        </a>
+                    <!-- Menu Links, Support, Social -->
+                    <div class="flex flex-row md:flex-col lg:flex-col gap-8 md:gap-12 text-left lg:text-base text-xs">
+                        <!-- Menu Links -->
+                        <div class="">
+                            <h4 class="font-bold mb-4 border-b-2 border-white pb-2 inline-block">Link Menu</h4>
+                            <div class="space-y-2">
+                                <a href="#beranda" class="block hover:text-cyan-200">Beranda</a>
+                                <a href="#tentang" class="block hover:text-cyan-200">Tentang Kami</a>
+                                <a href="#kursus" class="block hover:text-cyan-200">Kursus</a>
+                                <a href="#blog" class="block hover:text-cyan-200">Blog</a>
+                            </div>
+                        </div>
+                        <!-- Support -->
+                        <div>
+                            <h4 class="font-bold mb-4 border-b-2 border-white pb-2 inline-block">Bantuan</h4>
+                            <div class="space-y-2">
+                                <a href="#hubungi" class="block hover:text-cyan-200">Hubungi</a>
+                                <a href="#panduan" class="block hover:text-cyan-200">Panduan Pengguna</a>
+                                <a href="#bantuan" class="block hover:text-cyan-200">Pusat Bantuan</a>
+                                <a href="#privasi" class="block hover:text-cyan-200">Kebijakan Privasi</a>
+                                <a href="#syarat" class="block hover:text-cyan-200">Syarat & Ketentuan</a>
+                            </div>
+                        </div>
+                        <!-- Social -->
+                        <div>
+                            <h4 class="font-bold mb-4 border-b-2 border-white pb-2 inline-block">Sosial Media</h4>
+                            <div class="space-y-2">
+                                <a href="#" class="block hover:text-cyan-200">Facebook</a>
+                                <a href="#" class="block hover:text-cyan-200">Instagram</a>
+                                <a href="#" class="block hover:text-cyan-200">Email</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Copyright di paling bawah -->
+                <p class="text-center text-xs md:text-sm opacity-80 mt-4">
+                    &copy; {{ date('Y') }} Smart-LAB. Hak Cipta Dilindungi.
+                </p>
             </div>
-            <p style="margin: 10px 0 0; font-size: 12px; text-align: center; margin-top: 30px">&copy; 2025 Smart-LAB.
-                Hak Cipta Dilindungi.</p>
         </footer>
     </section>
-</body>
 
-<script>
-    function animateNumber(element, start, end, duration) {
-        let range = end - start;
-        let current = start;
-        let increment = range / (duration / 16); // 16ms per frame (60fps)
-        let timer = setInterval(function() {
-            current += increment;
-            if (current >= end) {
-                current = end;
-                clearInterval(timer);
+    <!-- =================== SCRIPTS =================== -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
+    <script>
+        // --------- Counter animation ---------
+        function animateNumber(element, start, end, duration) {
+            const range = end - start;
+            let current = start;
+            const increment = range / (duration / 16);
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                if (end >= 1000000) {
+                    element.innerText = '+' + Math.floor(current / 1000000) + 'jt';
+                } else {
+                    element.innerText = '+' + Math.floor(current);
+                }
+            }, 16);
+        }
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animated');
+                    // Trigger number animation when statistics card becomes visible
+                    if (entry.target.querySelector('.jumlahsiswa-counter')) {
+                        const siswaElement = entry.target.querySelector('.jumlahsiswa-counter');
+                        const guruElement = entry.target.querySelector('.jumlahguru-counter');
+                        animateNumber(siswaElement, 1, 5000000, 2000);
+                        animateNumber(guruElement, 1, 40, 2000);
+                    }
+                }
+            });
+        }, observerOptions);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Observe all elements to animate on scroll
+            document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+            // Stagger for fade-in elements
+            document.querySelectorAll('.fade-in-up').forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.2}s`;
+            });
+
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (!href || href === '#') return; // allow non-anchor links
+                    const target = document.querySelector(href);
+                    if (target) {
+                        e.preventDefault();
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Page load fade-in
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in-out';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // --------- Parallax effect for floating elements (fixed) ---------
+        let ticking = false;
+
+        function updateParallax() {
+            const scrolled = window.pageYOffset || document.documentElement.scrollTop;
+            const parallaxElements = document.querySelectorAll('.floating, .floating-delay');
+            parallaxElements.forEach(el => {
+                const speed = el.classList.contains('floating-delay') ? 0.15 : 0.25;
+                el.style.transform = `translateY(${Math.round(scrolled * speed)}px)`;
+            });
+            ticking = false;
+        }
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(updateParallax);
+                ticking = true;
             }
-            element.innerText = '+' + Math.floor(current);
-        }, 16);
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        let siswaElement = document.querySelector(".jumlahsiswa h1");
-        let guruElement = document.querySelector(".jumlahguru h1");
-
-        animateNumber(siswaElement, 1, 50000, 2000); // dari 1 ke 5 juta dalam 2 detik
-        animateNumber(guruElement, 1, 40, 2000); // dari 1 ke 40 dalam 2 detik
-    });
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
-
-<script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+        });
+    </script>
+</body>
 
 </html>

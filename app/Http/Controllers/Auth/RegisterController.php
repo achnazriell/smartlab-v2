@@ -15,6 +15,14 @@ class RegisterController extends Controller
 {
     use RegistersUsers;
 
+    public function register(Request $request)
+    {
+        if ($request->user_type === 'guru') {
+            return $this->registerGuru($request);
+        }
+        return $this->registerMurid($request);
+    }
+
     public function __construct()
     {
         $this->middleware('guest');
@@ -76,7 +84,7 @@ class RegisterController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
             'name.required' => 'Nama belum diisi.',
@@ -99,7 +107,7 @@ class RegisterController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users'],
             'NIP' => ['required', 'string', 'max:50', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [

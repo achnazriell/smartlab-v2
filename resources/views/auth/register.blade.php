@@ -1,313 +1,476 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Smartlab</title>
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
-    <link rel="stylesheet" href="style/login.css">
-    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-
+    <title>Daftar SmartLab - Platform Edukasi Modern</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        .error-message {
-            background-color: #ffcccc;
-            color: #d9534f;
-            border: 1px solid #d9534f;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .error-message i {
-            margin-right: 10px;
-            font-size: 18px;
+        :root {
+            --primary: #0066cc;
+            --primary-light: #e6f0ff;
+            --primary-dark: #004fa3;
+            --success: #10b981;
+            --border: #d1d5db;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+        }
+
+        body {
+            background-image: url('{{ asset('image/background-guest2.png') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 40px 32px 32px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            display: flex;
+            gap: 12px;
+            padding: 24px 32px;
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .progress-step {
+            flex: 1;
+            position: relative;
+        }
+
+        .progress-step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--border);
+            color: var(--text-light);
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .progress-step-number {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+        }
+
+        .progress-step.completed .progress-step-number {
+            background: var(--success);
+            color: white;
+        }
+
+        .progress-step-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .progress-step-label {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .progress-step.completed .progress-step-label {
+            color: var(--success);
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .step-subtitle {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: white;
+            color: #111827;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 204, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: #6b7280;
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .form-row button {
+            flex: 1;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+
+            .progress-container {
+                padding: 20px 24px;
+            }
+
+            .progress-step-label {
+                font-size: 11px;
+            }
+
+            .progress-step-number {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        [x-cloak] {
+            display: none !important;
         }
     </style>
 </head>
 
-<body>
-    <div class="login-image">
-        <div class="logo-icon">
-            <img src="{{ asset('image/SMART-LAB (DARK MODE).png') }}" alt="LOGO SMART-LAB">
-        </div>
-        <img src="image/background-login.png" alt="register Image">
-        <div class="lottie">
-            <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
-
-            <dotlottie-player src="https://lottie.host/1d191dd9-3a9f-4cf1-b2ac-a27e3a49a9df/0Nwkk1y9me.json"
-                background="transparent" speed="1" style="width: 450px;" loop autoplay></dotlottie-player>
-        </div>
-    </div>
-
-    <div
-        style="display: flex; flex-direction:column; width: 50%; justify-content:center; align-items:center; padding-top: 40px; padding-bottom: 30px;">
-        <h2>Daftar</h2>
-        <h5>Selamat Datang!</h5>
-        <p>Buat akun baru dengan mengisi informasi di bawah ini</p>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-button active" data-tab="siswa-tab">Siswa</button>
-            <button class="tab-button" data-tab="guru-tab">Guru</button>
+<body x-cloak x-data="registerForm()" class="min-h-screen">
+    <div class="w-full max-w-[480px] bg-white bg-opacity-70 backdrop-blur-md rounded-2xl shadow-md overflow-hidden">
+        <!-- Header -->
+        <div class="header">
+            <h1>Daftar SmartLab</h1>
+            <p>Bergabunglah dengan platform edukasi modern</p>
         </div>
 
-        <!-- Form Register Siswa -->
-        <div id="siswa-tab" class="tab-content active">
-            <div class="register-form"
-                style="height: 400px; width: 500px; overflow: auto; padding: 20px; box-sizing: border-box;">
-                <form action="{{ route('register_murid') }}" method="POST">
-                    @csrf
-                    <table class="form-table">
-                        <!-- Input Nama -->
-                        <tr>
-                            <td colspan="2">
-                                <span
-                                    style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; margin: auto;">
-
-                                    <i class="bx bx-user" style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                    <input type="text" id="name" name="name" placeholder="Nama Lengkap Siswa"
-                                        style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                </span>
-                                @error('name')
-                                    <div class="error-message" style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                        <i class='bx bx-error-circle'></i>{{ $message }}
-                                    </div>
-                                @enderror
-                            </td>
-                        </tr>
-                        <!-- Input Email -->
-                        <tr>
-                            <td colspan="2">
-                                <span
-                                    style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; margin: auto;">
-                                    <i class="bx bx-envelope"
-                                        style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                    <input type="email" id="email" name="email" placeholder="Email"
-                                        style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                </span>
-                                @error('email')
-                                    <div class="error-message" style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                        <i class='bx bx-error-circle'></i>{{ $message }}
-                                    </div>
-                                @enderror
-                            </td>
-                        </tr>
-                        <!-- Password dan Konfirmasi Password -->
-                        <tr>
-                            <td colspan="2">
-                                <div style="display: flex; gap: 10px; margin: auto;">
-                                    <span
-                                        style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; flex: 1;">
-                                        <i class="bx bx-lock"
-                                            style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                        <input type="password" id="siswa_password" name="password"
-                                            placeholder="Password"
-                                            style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                        <i class="bx bx-show" id="toggleSiswaPassword"
-                                            style="cursor: pointer; font-size: 16px; padding-left: 10px; margin-right: 10px; color: #666;"></i>
-                                    </span>
-                                    <span
-                                        style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; flex: 1;">
-                                        <i class="bx bx-lock-alt"
-                                            style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                        <input type="password" id="siswa_password_confirmation"
-                                            name="password_confirmation" placeholder="Konfirmasi Password"
-                                            style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                        <i class="bx bx-show" id="toggleSiswaPasswordConfirmation"
-                                            style="cursor: pointer; font-size: 16px; padding-left: 10px; margin-right: 10px; color: #666;"></i>
-                                    </span>
-                                </div>
-                                @error('password')
-                                    <div class="error-message" style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                        <i class='bx bx-error-circle'></i>{{ $message }}
-                                    </div>
-                                @enderror
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2"><button type="submit">Daftar Siswa</button></td>
-                        </tr>
-                    </table>
-                </form>
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-step" :class="{ 'active': step === 1, 'completed': step > 1 }">
+                <div class="progress-step-number">1</div>
+                <div class="progress-step-label">Akun</div>
             </div>
-            <div class="link">
-                <p>Sudah punya akun? <a href="login">Masuk Sekarang!</a></p>
+            <div class="progress-step" :class="{ 'active': step === 2, 'completed': step > 2 }">
+                <div class="progress-step-number">2</div>
+                <div class="progress-step-label">Pribadi</div>
+            </div>
+            <div class="progress-step" :class="{ 'active': step === 3 }">
+                <div class="progress-step-number">3</div>
+                <div class="progress-step-label">Sekolah</div>
             </div>
         </div>
 
-        <!-- Form Register Guru -->
-        <div id="guru-tab" class="tab-content">
-            <div class="register-form"
-                style="height: 400px; width: 500px; overflow: hidden; padding: 20px; box-sizing: border-box;">
-                <div style="height: 100%; overflow-y: auto;">
-                    <form action="{{ route('register_guru') }}" method="POST">
-                        @csrf
-                        <table class="form-table" style="width: 100%;">
-                            <!-- Input Nama -->
-                            <tr>
-                                <td colspan="2">
-                                    <span
-                                        style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; margin: auto;">
+        <!-- Form Content -->
+        <div class="content">
+            <!-- STEP 1: Data Akun -->
+            <div x-show="step === 1" class="fade-in">
+                <h2 class="step-title">Data Akun</h2>
+                <p class="step-subtitle">Buat akun untuk mengakses platform SmartLab</p>
 
-                                        <i class="bx bx-user"
-                                            style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                        <input type="text" id="name" name="name"
-                                            placeholder="Nama Lengkap Guru"
-                                            style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                    </span>
-                                    @error('name')
-                                        <div class="error-message"
-                                            style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                            <i class='bx bx-error-circle'></i>{{ $message }}
-                                        </div>
-                                    @enderror
-                                </td>
-                            </tr>
-                            <!-- Input Email -->
-                            <tr>
-                                <td colspan="2">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="nama@example.com" x-model="form.email" required>
+                </div>
 
-                                    <span
-                                        style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; margin: auto;">
-                                        <i class="bx bx-envelope"
-                                            style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                        <input type="email" id="email" name="email" placeholder="Email"
-                                            style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                    </span>
-                                    @error('email')
-                                        <div class="error-message"
-                                            style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                            <i class='bx bx-error-circle'></i>{{ $message }}
-                                        </div>
-                                    @enderror
-                                </td>
-                            </tr>
-                            <!-- Input NIP -->
-                            <tr>
-                                <td colspan="2">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="Minimal 8 karakter" x-model="form.password" required>
+                </div>
 
-                                    <span
-                                        style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding-left: 10px; margin: auto;">
-                                        <i class="bx bx-id-card"
-                                            style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                        <input type="text" id="NIP" name="NIP" placeholder="NIP"
-                                            style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                    </span>
-                                    @error('NIP')
-                                        <div class="error-message"
-                                            style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                            <i class='bx bx-error-circle'></i>{{ $message }}
-                                        </div>
-                                    @enderror
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    <div style="display: flex; gap: 10px; margin: auto;">
-                                        <span
-                                            style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 0 10px; flex: 1;">
-                                            <i class="bx bx-lock"
-                                                style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                            <input type="password" id="guru_password" name="password"
-                                                placeholder="Password"
-                                                style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                            <i class="bx bx-show" id="toggleGuruPassword"
-                                                style="cursor: pointer; font-size: 16px; padding-left: 10px; margin-right: 10px; color: #666;"></i>
-                                        </span>
-                                        <span+
-                                            style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; padding: 0 10px; flex: 1;">
-                                            <i class="bx bx-lock-alt"
-                                                style="margin-right: 10px; font-size: 16px; color: #666;"></i>
-                                            <input type="password" id="guru_password_confirmation"
-                                                name="password_confirmation" placeholder="Konfirmasi Password"
-                                                style="border: none; outline: none; flex: 1; font-size: 14px; padding: 10px;">
-                                            <i class="bx bx-show" id="toggleGuruPasswordConfirmation"
-                                                style="cursor: pointer; font-size: 16px; padding-left: 10px; margin-right: 10px; color: #666;"></i>
-                                            </span>
-                                    </div>
-                                    @error('password')
-                                        <div class="error-message"
-                                            style="color: #e74c3c; font-size: 12px; margin-top: 5px;">
-                                            <i class='bx bx-error-circle'></i>{{ $message }}
-                                        </div>
-                                    @enderror
-                                </td>
-                            </tr>
+                <div class="form-group">
+                    <label>Konfirmasi Password</label>
+                    <input type="password" placeholder="Ulangi password" x-model="form.confirmPassword" required>
+                </div>
 
-                            <tr>
-                                <td colspan="2"><button type="submit">Daftar Guru</button></td>
-                            </tr>
-                        </table>
-                    </form>
+                <div class="button-group">
+                    <button class="btn-primary" @click="nextStep()">
+                        Lanjutkan →
+                    </button>
                 </div>
             </div>
-            <div class="link">
-                <p>Sudah punya akun? <a href="login">Masuk Sekarang!</a></p>
+
+            <!-- STEP 2: Data Pribadi -->
+            <div x-show="step === 2" class="fade-in">
+                <h2 class="step-title">Data Pribadi</h2>
+                <p class="step-subtitle">Informasi dasar untuk profil Anda</p>
+
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" placeholder="Masukkan nama lengkap" x-model="form.fullName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jenis Kelamin</label>
+                        <select x-model="form.gender" required>
+                            <option value="">Pilih Jenis Kelamin</option>
+                            <option value="laki-laki">Laki-laki</option>
+                            <option value="perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Lahir</label>
+                        <input type="date" x-model="form.birthDate" required>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" @click="prevStep()">← Kembali</button>
+                    <button class="btn-primary" @click="nextStep()">
+                        Lanjutkan →
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Data Sekolah -->
+            <div x-show="step === 3" class="fade-in">
+                <h2 class="step-title">Data Sekolah</h2>
+                <p class="step-subtitle">Lengkapi informasi institusi dan peran Anda</p>
+
+                <div class="form-group">
+                    <label>Daftar Sebagai</label>
+                    <select x-model="form.role" required>
+                        <option value="">Pilih Role</option>
+                        <option value="siswa">Siswa</option>
+                        <option value="guru">Guru</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Nama Sekolah / Institusi</label>
+                    <input type="text" placeholder="Nama sekolah atau universitas" x-model="form.schoolName"
+                        required>
+                </div>
+
+                <div class="form-group">
+                    <label x-text="form.role === 'siswa' ? 'Kelas' : 'Bidang Mengajar'"></label>
+                    <input type="text"
+                        :placeholder="form.role === 'siswa' ? 'Contoh: XI IPA 1' : 'Contoh: Matematika'"
+                        x-model="form.classOrSubject" required>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" @click="prevStep()">← Kembali</button>
+                    <button class="btn-success" @click="submitForm()">
+                        ✓ Selesaikan
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Siswa: Show/Hide Password
-        document.getElementById('toggleSiswaPassword').addEventListener('click', function() {
-            const passwordField = document.getElementById('siswa_password');
-            const type = passwordField.type === 'password' ? 'text' : 'password';
-            passwordField.type = type;
-            this.classList.toggle('bx-show');
-            this.classList.toggle('bx-hide');
-        });
-
-        document.getElementById('toggleSiswaPasswordConfirmation').addEventListener('click', function() {
-            const passwordField = document.getElementById('siswa_password_confirmation');
-            const type = passwordField.type === 'password' ? 'text' : 'password';
-            passwordField.type = type;
-            this.classList.toggle('bx-show');
-            this.classList.toggle('bx-hide');
-        });
-
-        // Guru: Show/Hide Password
-        document.getElementById('toggleGuruPassword').addEventListener('click', function() {
-            const passwordField = document.getElementById('guru_password');
-            const type = passwordField.type === 'password' ? 'text' : 'password';
-            passwordField.type = type;
-            this.classList.toggle('bx-show');
-            this.classList.toggle('bx-hide');
-        });
-
-        document.getElementById('toggleGuruPasswordConfirmation').addEventListener('click', function() {
-            const passwordField = document.getElementById('guru_password_confirmation');
-            const type = passwordField.type === 'password' ? 'text' : 'password';
-            passwordField.type = type;
-            this.classList.toggle('bx-show');
-            this.classList.toggle('bx-hide');
-        });
+        function registerForm() {
+            return {
+                step: 1,
+                form: {
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                    fullName: '',
+                    gender: '',
+                    birthDate: '',
+                    role: '',
+                    schoolName: '',
+                    classOrSubject: ''
+                },
+                nextStep() {
+                    if (this.validateStep()) {
+                        this.step++;
+                    }
+                },
+                prevStep() {
+                    this.step--;
+                },
+                validateStep() {
+                    if (this.step === 1) {
+                        if (!this.form.email || !this.form.password || !this.form.confirmPassword) {
+                            alert('Semua field harus diisi');
+                            return false;
+                        }
+                        if (this.form.password !== this.form.confirmPassword) {
+                            alert('Password tidak cocok');
+                            return false;
+                        }
+                        if (this.form.password.length < 8) {
+                            alert('Password minimal 8 karakter');
+                            return false;
+                        }
+                    }
+                    if (this.step === 2) {
+                        if (!this.form.fullName || !this.form.gender || !this.form.birthDate) {
+                            alert('Semua field harus diisi');
+                            return false;
+                        }
+                    }
+                    if (this.step === 3) {
+                        if (!this.form.role || !this.form.schoolName || !this.form.classOrSubject) {
+                            alert('Semua field harus diisi');
+                            return false;
+                        }
+                    }
+                    return true;
+                },
+                submitForm() {
+                    if (this.validateStep()) {
+                        console.log('Form Data:', this.form);
+                        alert('Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.');
+                        // Di sini Anda bisa menambahkan logika untuk mengirim data ke server
+                    }
+                }
+            }
+        }
     </script>
-
-    <script>
-        const tabs = document.querySelectorAll('.tab-button');
-        const contents = document.querySelectorAll('.tab-content');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(btn => btn.classList.remove('active'));
-                contents.forEach(content => content.classList.remove('active'));
-
-                tab.classList.add('active');
-                document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const activeTab = "{{ session('activeTab', 'murid') }}"; // Default to "murid"
-            const tabToActivate = activeTab === 'guru' ? 'guru-tab' : 'siswa-tab';
-            document.querySelector(`button[data-tab="${tabToActivate}"]`).click();
-        });
-    </script>
-
 </body>
 
 </html>

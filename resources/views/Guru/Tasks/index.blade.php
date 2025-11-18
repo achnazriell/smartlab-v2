@@ -31,7 +31,7 @@
     <div class="container mx-auto p-4">
         <div class="container mx-auto pt-2">
             <div class="flex items-center space-x-2 my-4">
-                <h1 class="text-2xl font-bold mr-auto">Tugas</h1>
+                <h1 class="text-2xl text-blue-600 font-bold mr-auto">Tugas</h1>
                 <!-- Tombol Search dengan Form Animasi -->
                 <div class="relative flex items-center">
                     <!-- Tombol Search -->
@@ -648,3 +648,32 @@
         }
     }
 </script>
+<script>
+    function toggleDropdown(id) {
+        // Tutup semua dropdown lain dulu
+        document.querySelectorAll("[id^='dropdown-opsi-']").forEach(el => {
+            if (el.id !== id) {
+                el.classList.add("hidden");
+            }
+        });
+
+        // Toggle dropdown yang diklik
+        const dropdown = document.getElementById(id);
+        if (dropdown) {
+            dropdown.classList.toggle("hidden");
+        }
+    }
+
+    // Tutup dropdown kalau klik di luar
+    document.addEventListener("click", function(event) {
+        const isDropdownButton = event.target.closest("button[id^='profile-button-']");
+        const isDropdownMenu = event.target.closest("[id^='dropdown-opsi-']");
+
+        if (!isDropdownButton && !isDropdownMenu) {
+            document.querySelectorAll("[id^='dropdown-opsi-']").forEach(el => {
+                el.classList.add("hidden");
+            });
+        }
+    });
+</script>
+

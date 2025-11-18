@@ -17,7 +17,7 @@
     }
 </style>
 
-<nav class="bg-white px-5 py-2">
+<nav class="bg-white px-5 py-2 shadow-md">
     <div class="container mx-auto flex items-center justify-between">
         <!-- Kiri: Logo -->
         <div class="flex justify-start text-center">
