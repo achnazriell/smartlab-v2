@@ -16,7 +16,7 @@ class Classes extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'class_approvals', 'class_id', 'user_id');
+        return $this->belongsToMany(User::class, 'teacher_classes', 'classes_id', 'teacher_id');
     }
 
     public function Task()
@@ -27,4 +27,14 @@ class Classes extends Model
     {
         return $this->belongsToMany(Materi::class, 'materi_classes', 'class_id', 'materi_id');
     }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(Teacher::class, 'teacher_classes', 'classes_id', 'teacher_id');
+    }
+    public function students()
+    {
+        return $this->belongsToMany(User::class, 'teacher_classes', 'classes_id', 'user_id');
+    }
+
 }

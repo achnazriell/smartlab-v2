@@ -24,49 +24,39 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Buat hitung jumlah total Murid
+        // Hitung jumlah total Murid
         $totalMurid = User::whereHas('roles', function ($query) {
             $query->where('name', 'Murid');
-        })
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', '<>', 'Murid');
-            })
-            ->count();
-
-        // Buat Hitung JUmlah total Guru
-        $totalguru = User::whereHas('roles', function ($query) {
-            $query->where('name', 'Guru');
-        })->whereDoesntHave('roles', function ($query) {
-            $query->where('name', 'Admin');
         })->count();
 
-        // Buat hitung Guru yang sudah di Assign
-        $assignCount = User::role('Guru')
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'Admin');
-            })
-            ->whereNotNull('subject_id')
-            ->whereHas('class')
-            ->count();
+        // Hitung jumlah total Guru
+        $totalguru = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Guru');
+        })->count();
 
-        // Buat Hitung Guru yang belum di Assign
-        $notAssignCount = User::role('Guru')
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'Admin');
-            })
-            ->where(function ($query) {
-                $query->whereNull('subject_id')->orWhereDoesntHave('class');
-            })
-            ->count();
+        // Karena subject_id dan relasi class sudah tidak ada,
+        // maka assignCount dan notAssignCount dibuat default 0
+        $assignCount = 0;
+        $notAssignCount = $totalguru;
 
-        // Jumlah Murid pertahun
-        $muridPerTahun = User::selectRaw('YEAR(created_at) as year, COUNT(*) as total')->whereHas('roles',function($query){
-            $query->where('name','Murid');
-        })->groupBy('year')->orderBy('year')->get();
+        // Jumlah murid per tahun
+        $muridPerTahun = User::selectRaw('YEAR(created_at) as year, COUNT(*) as total')
+            ->whereHas('roles', function ($query) {
+                $query->where('name', 'Murid');
+            })
+            ->groupBy('year')
+            ->orderBy('year')
+            ->get();
 
         $totals = $muridPerTahun->pluck('total')->toArray();
 
         return view('Admins.dashboardAdmin', compact(
-            'totalMurid', 'totalguru','assignCount','notAssignCount','totals'));
+            'totalMurid',
+            'totalguru',
+            'assignCount',
+            'notAssignCount',
+            'totals'
+        ));
     }
+
 }

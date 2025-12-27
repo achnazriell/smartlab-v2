@@ -1,0 +1,334 @@
+/*===== GOGGLE FONTS =====*/
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap");
+/*===== VARIABLES SCSS =====*/
+/*===== VARIABLES CSS =====*/
+/*=== Colores ===*/
+:root {
+  --first-color: #3b9ae8;
+  --dark-color: #000;
+  --white-color: #FFFF;
+}
+
+/*=== Fuente y tipografia ===*/
+:root {
+  --body-font: 'Open Sans', sans-serif;
+  --biggest-font-size: 3.5rem;
+  --h2-font-size: 1.25rem;
+  --normal-font-size: 0.938rem;
+}
+
+@media screen and (min-width: 768px) {
+  :root {
+    --biggest-font-size: 7rem;
+    --h2-font-size: 2rem;
+    --normal-font-size: 1rem;
+  }
+}
+
+/*=== z index ===*/
+:root {
+  --z-back: -10;
+  --z-normal: 1;
+  --z-normal2: 2;
+  --z-tooltip: 10;
+  --z-tooltip2: 20;
+  --z-fixed: 100;
+  --z-modal: 1000;
+}
+
+/*===== BASE =====*/
+*, ::before, ::after {
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--body-font);
+    background-color: #FFFF;
+}
+
+
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* img {
+  max-width: 100%;
+  height: auto;
+} */
+
+/*===== LAYOUT =====*/
+.bd-grid {
+  max-width: 1200px;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.l-header {
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+  z-index: var(--z-modal);
+}
+
+/*=== Show menu ===*/
+.show {
+  top: 3rem;
+}
+
+/*===== HOME =====*/
+.home {
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background-image: url(../assets/img/background.png);
+  background-size: cover;
+}
+
+.home__parallax {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.home__parallax-img1 {
+    background-image: url("/assets/img/imgm1.png");
+    z-index: var(--z-tooltip);
+  }
+.home__parallax-img2 {
+    background-image: url("/assets/img/imgm2.png");
+    z-index: var(--z-tooltip);
+  }
+.home__parallax-img3 {
+    background-image: url("/assets/img/imgm3.png");
+    z-index: var(--z-tooltip);
+  }
+.home__parallax-img4 {
+  background-image: url("/assets/img/imgm4.png");
+  z-index: var(--z-tooltip);
+}
+
+.home__title, .home__subtitle {
+  position: absolute;
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  color: var(--white-color);
+}
+
+.home__title {
+  z-index: var(--z-normal);
+  color: var(--first-color);
+}
+
+.home__subtitle {
+  top: 44%;
+  font-size: var(--h2-font-size);
+  font-weight: bold;
+  z-index: var(--z-normal2);
+  color: var(--first-color);
+}
+
+.home__scroll {
+  position: absolute;
+  bottom: 2.5rem;
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  font-size: 1.5rem;
+  z-index: var(--z-tooltip2);
+}
+
+.home__scroll .bx-mouse {
+  color: var(--first-color);
+}
+
+/*===== SECTION =====*/
+.section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px 20px;
+    background-color: #ffffff;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Bayangan ringan */
+    border-radius: 10px;
+    margin: 20px auto;
+    margin-bottom: 200px;
+    max-width: 1200px; /* Batas lebar maksimal */
+    height: 500px;
+}
+
+/* Content Container */
+.section__content {
+    display: flex;
+    align-items: center;
+    gap: 40px; /* Jarak antara gambar dan teks */
+}
+
+/* Lottie Animation */
+.section__image {
+    flex: 0 0 300px; /* Ukuran tetap untuk animasi */
+}
+
+.section__heading {
+    flex: 1; /* Allow the heading and text to take remaining space */
+}
+
+.section__title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.section__text {
+    font-size: 1rem;
+    color: #555;
+}
+
+.section__image {
+    flex: 0 0 300px; /* Set a fixed width for the image */
+}
+
+dotlottie-player {
+    width: 100%;
+    height: auto;
+    border-radius: 10px; /* Sudut membulat */
+}
+
+
+.section__heading .section__subtitle {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 40px 0;
+}
+
+.section__cards {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding-inline: 200px;
+    padding-bottom: 120px;
+}
+
+.card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    max-width: 250px;
+    text-align: center;
+    transition: all 0.3s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.card__icon {
+    background-color: #f7f7f7;
+    padding: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.card__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.card__divider {
+    width: 40px;
+    height: 4px;
+    background-color: #3498db;
+    margin: 10px auto;
+}
+
+.card__text {
+    font-size: 1rem;
+    color: #777;
+}
+
+
+/*===== MEDIA QUERIES =====*/
+@media screen and (min-width: 760px) {
+  .nav {
+    height: 4rem;
+  }
+  .nav__list {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+  }
+  .nav__item {
+    margin-right: 3rem;
+    margin-bottom: 0;
+  }
+  .nav__toggle {
+    display: none;
+  }
+  .home__title {
+    top: 27%;
+  }
+  .home__subtitle {
+    top: 50%;
+  }
+  .section {
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: row;
+            flex-direction: row;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+  .section__text {
+    padding-right: 4rem;
+    color: var(--first-color);
+    font-size: 1.2rem;
+
+  }
+  .section__img {
+    width: 470px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .bd-grid {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

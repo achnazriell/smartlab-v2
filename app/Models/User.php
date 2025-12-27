@@ -54,12 +54,12 @@ class User extends Authenticatable
 
     public function class()
     {
-        return $this->belongsToMany(Classes::class, 'teacher_classes', 'user_id', 'classes_id');
+        return $this->belongsToMany(Classes::class, 'teacher_classes', 'teacher_id', 'classes_id');
     }
 
     public function classes()
     {
-        return $this->belongsToMany(Classes::class, 'class_approvals', 'user_id', 'class_id');
+        return $this->belongsToMany(Classes::class, 'teacher_classes', 'teacher_id', 'classes_id');
     }
 
     public function collections()
@@ -75,11 +75,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class);
     }
-    public function materis(){
+    public function materis()
+    {
         return $this->hasMany(Materi::class);
     }
 
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
 
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
 
     protected static function boot()
     {

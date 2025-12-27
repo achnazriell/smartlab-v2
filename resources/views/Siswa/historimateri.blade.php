@@ -15,7 +15,7 @@
     <meta property="og:type" content="article" />
     <meta name="csrf-token" content="8IMVNabevkMVEFpvO472s41XBcvpCVja5sJxIXQO">
     <meta property="og:description" content="Improve your skill with hummatech internship.">
-
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!--begin::Fonts(mandatory for all pages)-->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" /> <!--end::Fonts-->
 
@@ -164,20 +164,22 @@
                 </button>
 
                 <!-- Dropdown menu -->
-                <div id="dropdownHover"
-                    class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
+                <div id="dropdownHover" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
                     <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownHoverButton">
                         <li>
                             <a href="#"
-                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas 10</a>
+                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas
+                                10</a>
                         </li>
                         <li>
                             <a href="#"
-                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas 11</a>
+                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas
+                                11</a>
                         </li>
                         <li>
                             <a href="#"
-                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas 12</a>
+                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-blue-400 dark:hover:text-white">Kelas
+                                12</a>
                         </li>
                     </ul>
                 </div>

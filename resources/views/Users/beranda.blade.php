@@ -325,10 +325,7 @@
                 Akses materi belajar interaktif kapan saja, di mana saja.
             </p>
             <div class="mt-8 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 md:gap-5 animate-on-scroll">
-                <a href="{{ route('register') }}"
-                    class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
-                    <span class="relative z-10">Daftar</span>
-                </a>
+
                 <a href="{{ route('login') }}"
                     class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
                     <span class="relative z-10">Masuk</span>
@@ -486,20 +483,16 @@
     </section>
 
     <!-- =================== CTA =================== -->
-    <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-24">
+    <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-48">
         <img src="{{ asset('image/motif bawah landing.png') }}" class="absolute inset-0 w-full h-full object-cover"
             alt="motif bawah" />
         <div class="relative z-10 text-center text-blue-900 px-4 animate-on-scroll mb-16">
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-poppins mb-8 md:mb-12">
                 Ayo berkembang <br />bersama Smart-LAB!
             </h1>
-            <a href="{{ route('register') }}"
-                class="btn-hover inline-block px-8 md:px-16 lg:px-20 py-3 md:py-4 bg-blue-600 text-white text-base md:text-lg font-bold rounded-xl hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 pulse-hover">Daftar
-                Sekarang</a>
-        </div>
 
         <!-- =================== FOOTER =================== -->
-        <footer class="w-full py-8 md:py-12 text-white relative z-10 mt-28">
+        <footer class="w-full py-8 md:py-12 text-white relative z-10 mt-48">
             <div class="container mx-auto px-4 flex flex-col justify-between min-h-[300px]">
                 <!-- Isi Footer -->
                 <div class="flex flex-row lg:flex-col justify-center items-center gap-8 lg:gap-36">

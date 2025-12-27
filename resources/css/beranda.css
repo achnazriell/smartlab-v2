@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    user-select: none;
+}
+
+.relative.h-56.overflow-hidden.rounded-lg.md\:h-96 img {
+    width: 100%;
+    height: 100%;
+    background-size: cover; /* Atur ke 'cover' untuk memastikan gambar memenuhi slider */
+    object-position: center; /* Atur posisi tengah gambar */
+}
+
+section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+.jumlah-container {
+    position: absolute; /* Absolute positioning */
+    top:47rem; /* Vertikal di tengah halaman */
+    left: 50%; /* Horizontal di tengah halaman */
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%; /* Sesuaikan lebar jika perlu */
+    max-width: 600px; /* Batas maksimal lebar container */
+    z-index: 1; /* Pastikan tetap di atas jika ada elemen lain */
+}
+
+.jumlah-gambar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    max-width: 100%;
+    height: auto;
+}
+
+.jumlah-teks {
+    position: relative;
+    left: 20px;
+    z-index: 2;
+    display: flex; /* Menggunakan flexbox */
+    justify-content: center; /* Memusatkan konten secara horizontal */
+    gap: 180px; /* Jarak antara siswa dan guru */
+    align-items: center; /* Sejajarkan secara vertikal */
+}
+
+.jumlah-teks h1 {
+    font-size: 40px;
+    font-family: 'Poppins', sans-serif; /* Pastikan font tersedia */
+    font-weight: 600;
+    line-height: 45px;
+    color: #050C9C;
+}
+
+.jumlah-teks p {
+    margin: 0;
+    padding: 0;
+}
+
+.jumlahsiswa{
+    text-align: center; /* Agar teks di dalamnya rata tengah */
+    margin: 0; /* Hilangkan margin tambahan */
+}
+.jumlahguru {
+    text-align: center; /* Agar teks di dalamnya rata tengah */
+    margin: 0; /* Hilangkan margin tambahan */
+}
+
+.content {
+    position: relative;
+    padding: 20px;
+    margin-top: 100px; /* Tambahkan jarak untuk elemen di bawahnya */
+}

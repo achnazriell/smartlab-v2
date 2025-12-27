@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExamController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CariController;
@@ -19,12 +20,11 @@ use App\Http\Controllers\SelectClassController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\UserPageController;
 
-Auth::routes();
-
+Auth::routes(['register' => false]);
 
 // Proses
-Route::post('register-murid', [RegisterController::class, 'registerMurid'])->name('register_murid');
-Route::post('register-guru', [RegisterController::class, 'registerGuru'])->name('register_guru');
+// Route::post('register-murid', [RegisterController::class, 'registerMurid'])->name('register_murid');
+// Route::post('register-guru', [RegisterController::class, 'registerGuru'])->name('register_guru');
 Route::put('/update/{teacher}', [TeacherController::class, 'updateAssign'])->name('teacher.updateAssign');
 Route::put('/student/{student}', [StudentController::class, 'assign'])->name('murid.assignMurid');
 Route::post('/approve', [StudentController::class, 'store'])->name('class.approval.store');
@@ -33,13 +33,17 @@ Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])
 
 
 // Landing
-Route::get('/landing', [function () {
-    return view('Users.landing');
-}]);
+Route::get('/landing', [
+    function () {
+        return view('Users.landing');
+    }
+]);
 
-Route::get('/', [function () {
-    return view('Users.beranda');
-}]);
+Route::get('/', [
+    function () {
+        return view('Users.beranda');
+    }
+]);
 
 // Route Admin
 Route::middleware(['auth', 'role:Admin'])->group(function () {
@@ -49,9 +53,12 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::resource('materis', MateriController::class);
     Route::resource('tasks', TaskController::class);
     Route::resource('comments', CommentController::class);
-    Route::resource('teachers', TeacherController::class);
     Route::get('/search', [SearchController::class, 'index'])->name('search');
+    Route::resource('teachers', TeacherController::class);
     Route::get('/Students', [StudentController::class, 'User'])->name('Students');
+    Route::resource('students', StudentController::class);
+    Route::post('/teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
+    Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
 });
 
 // Route Guru
@@ -61,26 +68,27 @@ Route::middleware(['auth', 'role:Guru|Admin'])->group(function () {
     Route::get('/cari', [CariController::class, 'index'])->name('cari');
     Route::resource('materis', MateriController::class);
     Route::resource('tasks', TaskController::class);
-    Route::get('/assessment/{task}',[AssessmentController::class,'index'])->name('assesments');
+    Route::get('/assessment/{task}', [AssessmentController::class, 'index'])->name('assesments');
     Route::resource('collections', CollectionController::class);
     Route::post('/assessments/store/{task}', [AssessmentController::class, 'store'])->name('assessments.store');
+    Route::resource('exams', ExamController::class);
 });
 
-    // Route Murid
-    Route::middleware('auth')->group(function () {
-        Route::get('/PilihKelas',[SelectClassController::class,'index'])->name('SelectClass');
-        Route::get('/dashboard', [UserPageController::class,'Dashboard'])->name('dashboard');
-        Route::get('/mapel', [UserPageController::class,'showSubject'])->name('mapel');
-        Route::get('/materi/{materi_id}', [UserPageController::class, 'showMateri'])->name('Materi');
-        Route::get('/tugas', [UserPageController::class,'showTask'])->name('Tugas');
-        Route::put('/tasks/{task_id}/collection', [CollectionController::class,'updateCollection'])->name('updateCollection');
-    });
+// Route Murid
+Route::middleware('auth')->group(function () {
+    Route::get('/PilihKelas', [SelectClassController::class, 'index'])->name('SelectClass');
+    Route::get('/dashboard', [UserPageController::class, 'Dashboard'])->name('dashboard');
+    Route::get('/mapel', [UserPageController::class, 'showSubject'])->name('mapel');
+    Route::get('/materi/{materi_id}', [UserPageController::class, 'showMateri'])->name('Materi');
+    Route::get('/tugas', [UserPageController::class, 'showTask'])->name('Tugas');
+    Route::put('/tasks/{task_id}/collection', [CollectionController::class, 'updateCollection'])->name('updateCollection');
+});
 
-    // route::get('/historimateri', [HomeController::class, 'historimateri'])->name('historimateri');
-    route::get('/historimateri', function(){
-        return view('Siswa.historimateri');
-    })->name('historimateri');
+// route::get('/historimateri', [HomeController::class, 'historimateri'])->name('historimateri');
+route::get('/historimateri', function () {
+    return view('Siswa.historimateri');
+})->name('historimateri');
 
-    route::get('/pilihkelasmateri', function(){
-        return view('Siswa.pilihkelasmateri');
-    })->name('pilihkelasmateri');
+route::get('/pilihkelasmateri', function () {
+    return view('Siswa.pilihkelasmateri');
+})->name('pilihkelasmateri');

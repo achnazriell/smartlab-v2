@@ -11,17 +11,27 @@ class Subject extends Model
         'name_subject'
     ];
 
-    public function Classes(){
+    public function Classes()
+    {
         return $this->hasMany(Classes::class);
     }
-    public function materi(){
+    public function materi()
+    {
         return $this->hasMany(Materi::class);
     }
 
-    public function Task(){
+    public function Task()
+    {
         return $this->hasMany(Task::class);
     }
-    public function user(){
+    public function user()
+    {
         return $this->hasMany(User::class);
     }
+
+    public function teacher()
+    {
+        return $this->belongsTo(User::class, 'teacher_id');
+    }
+
 }

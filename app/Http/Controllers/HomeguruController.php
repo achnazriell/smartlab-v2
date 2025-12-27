@@ -27,7 +27,7 @@ class HomeguruController extends Controller
      */
     public function index()
     {
-        $teacherClasses = TeacherClass::where('user_id', auth()->id())->with('class.users.roles')->get();
+        $teacherClasses = TeacherClass::where('teacher_id', auth()->id())->with('class.users.roles')->get();
 
         $students = [];
         foreach ($teacherClasses as $teacherClass) {

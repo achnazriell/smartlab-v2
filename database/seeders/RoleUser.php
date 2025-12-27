@@ -20,7 +20,6 @@ class RoleUser extends Seeder
         User::create([
             'name'=>'Admin',
             'email'=>'admin123@gmail.com',
-            'NIP'=>'123456789',
             'password'=>Hash::make('123456789'),
         ])->assignRole('Admin');
 

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Smart-Lab</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* Added centered card design animations */
@@ -214,10 +214,10 @@
             <!-- Footer Text -->
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-600">
-                    Belum punya akun?
-                    <a href="{{ route('register') }}"
+                    Lupa Kata Sandi?
+                    <a href="#"
                         class="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-300 hover:underline">
-                        Daftar Sekarang!
+                        Hubungi Admin
                     </a>
                 </p>
             </div>

@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+* {
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background: #f3f4f6;
+}
+
+/* Smooth transitions */
+a,
+button {
+  transition: all 0.2s ease;
+}
+
+/* Active menu item */
+.nav-active {
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Sidebar hover effect */
+aside a:hover {
+  transform: translateY(-2px);
+}
+
+/* Profile dropdown animation */
+#profile-dropdown {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  aside {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  aside:not(.-translate-x-full) {
+    transform: translateX(0);
+  }
+
+  main {
+    padding-left: 0 !important;
+  }
+}

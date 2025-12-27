@@ -3,7 +3,7 @@
 @section('content')
 <div class="space-y-6">
     <!-- Modern welcome banner with gradient -->
-    <div class="card-modern p-8 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white overflow-hidden relative">
+    <div class="card-modern p-8 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-xl text-white overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
 

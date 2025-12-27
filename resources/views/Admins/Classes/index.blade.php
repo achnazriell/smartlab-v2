@@ -1,318 +1,457 @@
-    @extends('layouts.app')
-    @section('content')
-        <!-- CSS -->
-        <style>
-            #searchForm.show {
-                opacity: 1;
-                visibility: visible;
-            }
-        </style>
-        <div class="container mx-auto p-4">
-            <div class="container mx-auto pt-2">
-                <div class="flex items-center space-x-2">
-                    <h1 class="text-2xl font-bold mr-auto">Kelas</h1>
-                    <!-- Tombol Search dengan Form Animasi -->
+@extends('layouts.app')
+
+@section('content')
+    <div class="p-6 space-y-6">
+        <!-- Page header -->
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 font-poppins">Manajemen Kelas</h1>
+                <p class="text-slate-600 mt-1">Kelola data kelas dan penempatan siswa</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                {{-- Search form --}}
+                <form id="searchForm" action="{{ route('classes.index') }}" method="GET" class="flex items-center mt-5">
                     <div class="relative flex items-center">
-                        <!-- Tombol Search -->
-                        <form action="{{ route('classes.index') }}" method="GET" class="mt-4">
-                            <button id="searchButton" name="search"
-                                class="p-3 border-2 bg-white text-black rounded-lg flex items-center justify-center transition-all duration-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-[14px] w-[14px]" viewBox="0 0 24 24">
-                                    <path fill="black"
-                                        d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14" />
-                                </svg>
-                            </button>
-                        </form>
-
-                        <!-- Form Pencarian -->
-                        <form id="searchForm" action="" method="GET"
-                            class="absolute right-full mr-2 mt-4 transition-all duration-300
-                        {{ request('search') ? 'opacity-100 visible' : 'opacity-0 invisible' }}">
-                            <input type="text" name="search_class" placeholder="Cari..."
-                                value="{{ old('search', request('search')) }}"
-                                class="p-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </form>
-                    </div>
-
-                    <form action="{{ route('classes.index') }}" method="GET" class="mt-4">
-                        @php
-                            $nextOrder = request('order', 'desc') === 'desc' ? 'asc' : 'desc';
-                        @endphp
-                        <input type="hidden" name="order" value="{{ $nextOrder }}">
-                        <button type="submit"
-                            class="p-3 border-2 bg-white text-black rounded-lg flex items-center justify-center">
-                            @if (request('order', 'desc') === 'desc')
-                                <svg class="w-[14px] h-[14px] fill-[#000000]" viewBox="0 0 576 512"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <!--!Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
-                                    <path
-                                        d="M151.6 42.4C145.5 35.8 137 32 128 32s-17.5 3.8-23.6 10.4l-88 96c-11.9 13-11.1 33.3 2 45.2s33.3 11.1 45.2-2L96 146.3 96 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-301.7 32.4 35.4c11.9 13 32.2 13.9 45.2 2s13.9-32.2 2-45.2l-88-96zM320 480l32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-32 0c-17.7 0-32 14.3-32 32s14.3 32 32 32zm0-128l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0c-17.7 0-32 14.3-32 32s14.3 32 32 32zm0-128l160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32zm0-128l224 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32z" />
-                                </svg>
-                            @else
-                                <svg class="w-[15px] h-[15px] fill-[#000000]" viewBox="0 0 576 512"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                                    <path
-                                        d="M151.6 469.6C145.5 476.2 137 480 128 480s-17.5-3.8-23.6-10.4l-88-96c-11.9-13-11.1-33.3 2-45.2s33.3-11.1 45.2 2L96 365.7V64c0-17.7 14.3-32 32-32s32 14.3 32 32V365.7l32.4-35.4c11.9-13 32.2-13.9 45.2-2s13.9 32.2 2 45.2l-88 96zM320 480c-17.7 0-32-14.3-32-32s14.3-32 32-32h32c17.7 0 32 14.3 32 32s-14.3 32-32 32H320zm0-128c-17.7 0-32-14.3-32-32s14.3-32 32-32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32H320zm0-128c-17.7 0-32-14.3-32-32s14.3-32 32-32H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H320zm0-128c-17.7 0-32-14.3-32-32s14.3-32 32-32H544c17.7 0 32 14.3 32 32s-14.3 32-32 32H320z">
-                                    </path>
-                                </svg>
-                            @endif
+                        <input type="text" name="search_class" id="searchInput" placeholder="Cari kelas..."
+                            value="{{ request('search_class') }}"
+                            class="search-input w-0 px-0 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out text-sm">
+                        <button type="button" id="searchToggle"
+                            class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
                         </button>
-                    </form>
+                    </div>
+                </form>
 
-                    <!-- Tombol Tambah Materi -->
-                    <a class="w-[120px] h-[43px] p-2 border-2 text-xs text-white bg-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-700 transition"
-                        onclick="openModal('classModal')">
-                        <svg class="w-[15px] h-[15px] fill-[#ffffff] me-2" viewBox="0 0 448 512"
-                            xmlns="http://www.w3.org/2000/svg">
-
-                            <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-                            <path
-                                d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z">
-                            </path>
-
+                @if (request('search_class'))
+                    <a href="{{ route('classes.index') }}"
+                        class="flex items-center space-x-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
                         </svg>
-                        Tambah
+                        <span>Reset</span>
                     </a>
-                </div>
-                @if (session('success'))
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
-                        role="alert">
-                        <strong class="font-bold">{{ session('success') }}</strong>
-                        <button onclick="this.parentElement.style.display='none'"
-                            class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
                 @endif
-                @if ($errors->any())
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-                        role="alert">
-                        <strong class="font-bold">Kesalahan Validasi:</strong>
-                        <ul class="list-disc ml-5 mt-2">
+
+                <button type="button" onclick="openAddModal()"
+                    class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline">Tambah Kelas</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        @if (session('success'))
+            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg relative" role="alert">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <strong class="font-medium">{{ session('success') }}</strong>
+                </div>
+                <button onclick="this.parentElement.style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3 text-green-600 hover:text-green-800">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg relative" role="alert">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <strong class="font-medium">Kesalahan Validasi:</strong>
+                        <ul class="list-disc ml-5 mt-2 space-y-1">
                             @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
+                                <li class="text-sm">{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button onclick="this.parentElement.style.display='none'"
-                            class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
                     </div>
-                @endif
+                </div>
+                <button onclick="this.parentElement.style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3 text-red-600 hover:text-red-800">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
 
-                <div class="block max-w bg-white rounded-lg shadow hover:bg-white">
-                    <h6 class="font-semibold p-3 text-sm ps-5">Daftar Kelas</h6>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white text-center rounded-lg">
-                            <thead>
-                                <tr class="border">
-                                    <th class="px-4 py-2 text-gray-500 text-xs font-semibold">No</th>
-                                    <th class="px-4 py-2 text-gray-500 text-xs font-semibold">Nama Kelas</th>
-                                    <th class="px-4 py-2 text-gray-500 text-xs font-semibold">Deskripsi Kelas</th>
-                                    <th class="px-4 py-2 text-gray-500 text-xs font-semibold">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $offset = ($classes->currentPage() - 1) * $classes->perPage();
-                                @endphp
-                                @foreach ($classes as $index => $class)
-                                    <tr class="border">
-                                        <td class="px-4 py-2 border">{{ $offset + $index + 1 }}</td>
-                                        <td class="py-2 px-4 border">{{ $class->name_class }}</td>
-                                        <td class="py-2 px-4 border">{{ $class->description ?? 'Kosong' }}</td>
-                                        <td class="py-2 px-4 border space-x-5">
-                                            <!-- Tombol Ubah untuk Modal -->
-                                            <button type="button" class="text-yellow-500 rounded-sm"
-                                                onclick="openModal('editClassModal-{{ $class->id }}')">
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                                    fill="currentColor" class="size-6">
-                                                    <path
-                                                        d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z" />
-                                                    <path
-                                                        d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
-                                                </svg>
-                                            </button>
-                                            <!-- Tombol Hapus -->
-                                            <form action="{{ route('classes.destroy', $class->id) }}" method="POST"
-                                                class="inline-block ml-2">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-500 rounded-sm"
-                                                    onclick="return confirm('Apakah anda yakin ingin menghapus Kelas ini?')">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                                        fill="currentColor" class="size-6">
-                                                        <path fill-rule="evenodd"
-                                                            d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
-                                                            clip-rule="evenodd" />
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900 font-poppins">Daftar Kelas</h2>
+                <p class="text-sm text-slate-600 mt-1">Total: {{ $classes->total() }} kelas</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">No</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nama Kelas</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deskripsi</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        @php
+                            $offset = ($classes->currentPage() - 1) * $classes->perPage();
+                        @endphp
+                        @foreach ($classes as $class)
+                            <tr class="hover:bg-slate-50 transition-colors duration-200">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{{ $loop->iteration + $offset }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-slate-900">{{ $class->name_class }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $class->description ?? 'Tidak ada deskripsi' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <div class="flex items-center space-x-2">
+                                        <button type="button" onclick="openEditModal({{ $class->id }})"
+                                            class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200">
+                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                            Edit
+                                        </button>
+                                        <button type="button" onclick="openDeleteModal({{ $class->id }})"
+                                            class="inline-flex items-center px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors duration-200">
+                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Hapus
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            @php
+                                $nameClass = $class->name_class ?? '';
+                                $classParts = is_string($nameClass) ? explode('-', $nameClass) : [];
+                                $classGrade = $classParts[0] ?? '';
+                                $className = $classParts[1] ?? '';
+                            @endphp
+
+                            {{-- Modal Edit --}}
+                            <div id="editModal{{ $class->id }}" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal({{ $class->id }})"></div>
+                                <div class="fixed inset-0 z-10 overflow-y-auto">
+                                    <div class="flex min-h-full items-center justify-center p-4">
+                                        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                                            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-amber-50 rounded-t-xl">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold text-slate-900">Edit Kelas</h3>
+                                                        <p class="text-sm text-slate-500">{{ $class->name_class }}</p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="closeEditModal({{ $class->id }})"
+                                                    class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                                     </svg>
                                                 </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    @php
-                                        $nameClass = $class->name_class ?? ''; // Ambil nama kelas dari kelas jika ada
-                                        $classParts = is_string($nameClass) ? explode('-', $nameClass) : []; // Cek apakah $nameClass adalah string
-                                        $classGrade = $classParts[0] ?? ''; // Bagian pertama (angkatan)
-                                        $className = $classParts[1] ?? ''; // Bagian kedua (nama kelas)
-                                    @endphp
-                                    <!-- Modal Update/Ubah -->
-                                    <div class="classModal fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50 z-50"
-                                        style="display: none;" id="editClassModal-{{ $class->id }}">
-                                        <div class="bg-white rounded-lg overflow-hidden w-full max-w-lg mx-4">
-                                            <div class="p-5">
-                                                <h5 class="text-lg font-bold">Ubah Kelas</h5>
-                                                <form action="{{ route('classes.update', $class->id) }}" method="POST"
-                                                    class="mt-4">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <!-- Input Angkatan Kelas -->
-                                                    <div class="mb-4">
-                                                        <label for="class_grade" class="block text-gray-700">Angkatan
-                                                            Kelas</label>
-                                                        <select name="name_class[0]" id="class_grade"
-                                                            class="w-full px-3 py-2 border rounded">
-                                                            <option value="" disabled
-                                                                {{ $classGrade === '' ? 'selected' : '' }}>Pilih Angkatan
-                                                            </option>
-                                                            <option value="10"
-                                                                {{ $classGrade == 10 ? 'selected' : '' }}>10</option>
-                                                            <option value="11"
-                                                                {{ $classGrade == 11 ? 'selected' : '' }}>11</option>
-                                                            <option value="12"
-                                                                {{ $classGrade == 12 ? 'selected' : '' }}>12</option>
+                                            </div>
+                                            <form action="{{ route('classes.update', $class->id) }}" method="POST">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="p-6 space-y-4">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-slate-700 mb-1">Angkatan Kelas</label>
+                                                        <select name="name_class[0]" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
+                                                            <option value="" disabled {{ $classGrade === '' ? 'selected' : '' }}>Pilih Angkatan</option>
+                                                            <option value="10" {{ $classGrade == 10 ? 'selected' : '' }}>10</option>
+                                                            <option value="11" {{ $classGrade == 11 ? 'selected' : '' }}>11</option>
+                                                            <option value="12" {{ $classGrade == 12 ? 'selected' : '' }}>12</option>
                                                         </select>
                                                     </div>
-                                                    <!-- Input Nama Kelas -->
-                                                    <div class="mb-4">
-                                                        <label for="class_name" class="block text-gray-700">Nama
-                                                            Kelas</label>
-                                                        <input type="text" id="class_name" name="name_class[1]"
-                                                            class="w-full px-4 py-2 border rounded"
-                                                            value="{{ $className }}">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Kelas</label>
+                                                        <input type="text" name="name_class[1]" value="{{ $className }}"
+                                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
                                                     </div>
-                                                    <!-- Input Deskripsi -->
-                                                    <div class="mb-4">
-                                                        <label for="description"
-                                                            class="block text-gray-700">Deskripsi</label>
-                                                        <textarea id="description" class="w-full px-4 py-2 border rounded" rows="3" name="description">{{ $class->description }}</textarea>
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
+                                                        <textarea name="description" rows="3"
+                                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">{{ $class->description }}</textarea>
                                                     </div>
-                                                    <!-- Tombol Aksi -->
-                                                    <div class="flex justify-end space-x-4">
-                                                        <button type="submit"
-                                                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
-                                                            Simpan Perubahan
-                                                        </button>
-                                                        <button type="button"
-                                                            class="bg-gray-300 hover:bg-gray-400 text-white px-4 py-2 rounded"
-                                                            onclick="closeModal('editClassModal-{{ $class->id }}')">
-                                                            Batal
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </div>
+                                                </div>
+                                                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
+                                                    <button type="button" onclick="closeEditModal({{ $class->id }})"
+                                                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                                                        Batal
+                                                    </button>
+                                                    <button type="submit"
+                                                        class="px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors duration-200 flex items-center">
+                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                        </svg>
+                                                        Simpan Perubahan
+                                                    </button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                </div>
+                            </div>
 
-                    <!-- Modal Tambah Kelas -->
-                    <div id="classModal" class="fixed inset-0 flex items-center justify-center" style="display: none;">
-                        <div class="bg-white rounded-lg overflow-hidden w-full max-w-lg mx-4">
-                            <div class="p-5">
-                                <h5 class="text-lg font-bold">Tambah Kelas</h5>
-                                <form action="{{ route('classes.store') }}" method="POST" class="mt-4">
-                                    @csrf
-                                    <div class="mb-4">
-                                        <label for="name_class_0" class="block text-gray-700">Angkatan</label>
-                                        <select name="name_class[0]" id="name_class_0"
-                                            class="w-full px-3 py-2 border rounded">
-                                            <option value="" disabled selected>Pilih Angkatan</option>
-                                            <option value="10" {{ old('name_class.0') == '10' ? 'selected' : '' }}>10
-                                            </option>
-                                            <option value="11" {{ old('name_class.0') == '11' ? 'selected' : '' }}>11
-                                            </option>
-                                            <option value="12" {{ old('name_class.0') == '12' ? 'selected' : '' }}>12
-                                            </option>
-                                        </select>
-                                        @error('name_class.0')
-                                            <div class="text-red-500">{{ $message }}</div>
-                                        @enderror
+                            {{-- Modal Delete --}}
+                            <div id="deleteModal{{ $class->id }}" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeDeleteModal({{ $class->id }})"></div>
+                                <div class="fixed inset-0 z-10 overflow-y-auto">
+                                    <div class="flex min-h-full items-center justify-center p-4">
+                                        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                                            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-red-50 rounded-t-xl">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold text-slate-900">Hapus Kelas</h3>
+                                                        <p class="text-sm text-slate-500">Konfirmasi penghapusan</p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onclick="closeDeleteModal({{ $class->id }})"
+                                                    class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <div class="p-6">
+                                                <div class="text-center">
+                                                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                                                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <p class="text-slate-600 mb-2">Anda yakin ingin menghapus kelas:</p>
+                                                    <p class="text-lg font-semibold text-slate-900 mb-4">{{ $class->name_class }}</p>
+                                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                        <p class="text-sm text-red-600 flex items-center justify-center">
+                                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                            Aksi ini tidak bisa dibatalkan!
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <form action="{{ route('classes.destroy', $class->id) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
+                                                    <button type="button" onclick="closeDeleteModal({{ $class->id }})"
+                                                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                                                        Batal
+                                                    </button>
+                                                    <button type="submit"
+                                                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center">
+                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                        </svg>
+                                                        Hapus Kelas
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                {{ $classes->links('vendor.pagination.tailwind') }}
+            </div>
+        </div>
+    </div>
 
-                                    <div class="mb-4">
-                                        <label for="name_class_1" class="block text-gray-700">Nama Kelas</label>
-                                        <input type="text" name="name_class[1]" id="name_class_1"
-                                            class="w-full px-4 py-2 border rounded" value="{{ old('name_class.1') }}">
-                                        @error('name_class.1')
-                                            <div class="text-red-500">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="block text-gray-700">Deskripsi</label>
-                                        <textarea class="w-full px-4 py-2 border rounded" rows="3" name="description">{{ old('description') }}</textarea>
-                                    </div>
-                                    <button type="submit"
-                                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">Tambah
-                                        Kelas</button>
-                                    <button type="button"
-                                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-                                        onclick="closeModal('classModal')">Batal</button>
-                                </form>
+    {{-- Modal Tambah Kelas --}}
+    <div id="addModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-900">Tambah Kelas Baru</h3>
+                                <p class="text-sm text-slate-500">Isi data kelas</p>
                             </div>
                         </div>
+                        <button type="button" onclick="closeAddModal()"
+                            class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <script>
-                        document.getElementById("toggleButton").addEventListener("click", function() {
-                            const iconUp = document.getElementById("iconUp");
-                            const iconDown = document.getElementById("iconDown");
-
-                            // Toggle visibility
-                            if (iconDown.classList.contains("hidden")) {
-                                iconDown.classList.remove("hidden");
-                                iconUp.classList.add("hidden");
-                            } else {
-                                iconDown.classList.add("hidden");
-                                iconUp.classList.remove("hidden");
-                            }
-
-                            // Example: Update data sorting logic here
-                            console.log(iconDown.classList.contains("hidden") ? "Data terbaru" : "Data terlama");
-                        });
-
-                        function openModal(id) {
-                            console.log(`Opening modal: ${id}`);
-                            document.getElementById(id).style.display = 'flex';
-                        }
-
-                        function closeModal(id) {
-                            console.log(`Closing modal: ${id}`);
-                            document.getElementById(id).style.display = 'none';
-                        }
-
-
-                        // Open the modal if validation fails
-                        @if (session('success'))
-                            document.addEventListener("DOMContentLoaded", function() {
-                                closeModal('classModal'); // Menutup modal setelah data berhasil ditambah
-                            });
-                        @endif
-                    </script>
-                    <script>
-                        document.getElementById('searchButton').addEventListener('click', function(e) {
-                            e.preventDefault(); // Mencegah pengiriman form
-                            const form = document.getElementById('searchForm');
-                            form.classList.toggle('show'); // Toggle class "show"
-                        });
-                    </script>
-
-                    <div class="pagination py-3 px-5">
-                        {{ $classes->links('vendor.pagination.tailwind') }}
-                    </div>
+                    <form action="{{ route('classes.store') }}" method="POST">
+                        @csrf
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Angkatan <span class="text-red-500">*</span></label>
+                                <select name="name_class[0]" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                    <option value="" disabled selected>Pilih Angkatan</option>
+                                    <option value="10" {{ old('name_class.0') == '10' ? 'selected' : '' }}>10</option>
+                                    <option value="11" {{ old('name_class.0') == '11' ? 'selected' : '' }}>11</option>
+                                    <option value="12" {{ old('name_class.0') == '12' ? 'selected' : '' }}>12</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Kelas <span class="text-red-500">*</span></label>
+                                <input type="text" name="name_class[1]" value="{{ old('name_class.1') }}" required placeholder="Contoh: IPA 1"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
+                                <textarea name="description" rows="3" placeholder="Deskripsi kelas (opsional)"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">{{ old('description') }}</textarea>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3 rounded-b-xl">
+                            <button type="button" onclick="closeAddModal()"
+                                class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors duration-200">
+                                Batal
+                            </button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                Tambah Kelas
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    @endsection
+    </div>
+
+    <script>
+        function openEditModal(id) {
+            document.getElementById('editModal' + id).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditModal(id) {
+            document.getElementById('editModal' + id).classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function openDeleteModal(id) {
+            document.getElementById('deleteModal' + id).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteModal(id) {
+            document.getElementById('deleteModal' + id).classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // Search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchToggle = document.getElementById('searchToggle');
+            const searchInput = document.getElementById('searchInput');
+            const searchForm = document.getElementById('searchForm');
+            let isSearchOpen = {{ request('search_class') ? 'true' : 'false' }};
+
+            function setSearchOpenStyle() {
+                searchInput.style.width = '200px';
+                searchInput.style.paddingLeft = '12px';
+                searchInput.style.paddingRight = '12px';
+                searchInput.style.border = '1px solid #cbd5e1';
+                searchInput.style.borderRadius = '9999px';
+                searchInput.style.marginRight = '8px';
+            }
+
+            function setSearchClosedStyle() {
+                searchInput.style.width = '0';
+                searchInput.style.paddingLeft = '0';
+                searchInput.style.paddingRight = '0';
+                searchInput.style.border = '0';
+                searchInput.style.marginRight = '0';
+            }
+
+            function toggleSearch() {
+                isSearchOpen = !isSearchOpen;
+                if (isSearchOpen) {
+                    setSearchOpenStyle();
+                    searchInput.focus();
+                } else {
+                    setSearchClosedStyle();
+                }
+            }
+
+            if (isSearchOpen) {
+                setSearchOpenStyle();
+            }
+
+            searchToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (isSearchOpen && searchInput.value.trim() !== '') {
+                    searchForm.submit();
+                } else if (!isSearchOpen) {
+                    toggleSearch();
+                } else {
+                    searchForm.submit();
+                }
+            });
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchForm.submit();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!searchForm.contains(e.target) && isSearchOpen && searchInput.value.trim() === '') {
+                    toggleSearch();
+                }
+            });
+
+            // Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('[id^="editModal"], [id^="deleteModal"]').forEach(function(modal) {
+                        if (!modal.classList.contains('hidden')) {
+                            modal.classList.add('hidden');
+                            document.body.style.overflow = '';
+                        }
+                    });
+                    if (!document.getElementById('addModal').classList.contains('hidden')) {
+                        closeAddModal();
+                    }
+                }
+            });
+        });
+    </script>
+@endsection

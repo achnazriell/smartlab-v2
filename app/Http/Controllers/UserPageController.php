@@ -32,12 +32,6 @@ class UserPageController extends Controller
                     $subQuery->where('user_id', $user->id)
                         ->where('status', 'Belum mengumpulkan'); // Hitung tugas belum dikumpulkan
                 });
-            },
-            'user' => function ($query) use ($kelasIds) {
-                // Mengambil guru yang mengajar di kelas yang dimiliki oleh user
-                $query->whereHas('class', function ($q) use ($kelasIds) {
-                    $q->whereIn('classes.id', $kelasIds);
-                });
             }
         ])->paginate(6);
 
@@ -82,9 +76,11 @@ class UserPageController extends Controller
 
         // Query Task
         $tasksQuery = Task::select('tasks.*', 'collections.status as collection_status')
-            ->with(['collections' => function ($query) {
-                $query->where('user_id', Auth::id());
-            }])
+            ->with([
+                'collections' => function ($query) {
+                    $query->where('user_id', Auth::id());
+                }
+            ])
             ->leftJoin('collections', function ($join) {
                 $join->on('tasks.id', '=', 'collections.task_id')
                     ->where('collections.user_id', '=', Auth::id());
@@ -119,27 +115,27 @@ class UserPageController extends Controller
         $countSiswa = User::whereHas('roles', function ($query) {
             $query->where('roles.name', 'Murid');
         })
-        ->whereHas('class', function ($query) use ($kelasID) {
-            $query->whereIn('classes_id', $kelasID);
-        })
-        ->count();
+            ->whereHas('class', function ($query) use ($kelasID) {
+                $query->whereIn('classes_id', $kelasID);
+            })
+            ->count();
 
         $subjectName = Subject::whereHas('materi', function ($query) use ($materi_id) {
             $query->where('subject_id', $materi_id);
         })
-        ->orWhereHas('Task',function ($q) use ($materi_id){
-            $q->where('subject_id',$materi_id);
-        })->distinct()->pluck('name_subject')->first();
+            ->orWhereHas('Task', function ($q) use ($materi_id) {
+                $q->where('subject_id', $materi_id);
+            })->distinct()->pluck('name_subject')->first();
 
-        $teacherName = User::whereHas('tasks',function ($query) use ($materi_id){
-            $query->where('subject_id',$materi_id);
+        $teacherName = User::whereHas('tasks', function ($query) use ($materi_id) {
+            $query->where('subject_id', $materi_id);
         })
-        ->orWhereHas('materis',function ($query) use($materi_id) {
-            $query->where('subject_id',$materi_id);
-        })
-        ->distinct()->pluck('name')->first();
+            ->orWhereHas('materis', function ($query) use ($materi_id) {
+                $query->where('subject_id', $materi_id);
+            })
+            ->distinct()->pluck('name')->first();
 
-        return view('Siswa.materi', compact('materis', 'tasks', 'subjectName', 'materi_id', 'activeTab','countSiswa','teacherName'));
+        return view('Siswa.materi', compact('materis', 'tasks', 'subjectName', 'materi_id', 'activeTab', 'countSiswa', 'teacherName'));
     }
 
     public function showTask(Request $request)
@@ -150,9 +146,11 @@ class UserPageController extends Controller
 
         $kelasId = $user->class->pluck('id');
         $tasksQuery = Task::select('tasks.*', 'collections.status as collection_status')
-            ->with(['collections' => function ($query) {
-                $query->where('user_id', Auth::id());
-            }])
+            ->with([
+                'collections' => function ($query) {
+                    $query->where('user_id', Auth::id());
+                }
+            ])
             ->leftJoin('collections', function ($join) {
                 $join->on('tasks.id', '=', 'collections.task_id')
                     ->where('collections.user_id', '=', Auth::id());
@@ -164,8 +162,8 @@ class UserPageController extends Controller
                 // Memperbaiki pencarian agar lebih terstruktur
                 $query->where('title_task', 'like', '%' . $search . '%')
                     ->orWhereHas('Subject', function ($q) use ($search) {
-                        $q->where('name_subject', 'like', '%' . $search . '%');
-                    });
+                    $q->where('name_subject', 'like', '%' . $search . '%');
+                });
             })
             ->orderByRaw("FIELD(collections.status, 'Belum mengumpulkan', 'Sudah mengumpulkan', 'Tidak mengumpulkan') ASC");
 

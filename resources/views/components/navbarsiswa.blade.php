@@ -1,198 +1,140 @@
-<!--begin::Header-->
-<div id="kt_app_header" class="app-header" style="z-index: 50;">
-    <!--begin::Header container-->
-    <div class="app-container container-fluid d-flex align-items-stretch justify-content-between shadow-md"
-        id="kt_app_header_container">
-        <!--begin::Header logo-->
-        <div class="app-header-logo d-flex align-items-center ps-lg-2 me-lg-10">
-            <!--Menu sidebar mobile-->
-            <div class="btn btn-icon btn-color-gray-500 btn-active-color-primary w-35px h-35px ms-n2 me-2 d-flex d-lg-none"
-                id="kt_app_sidebar_mobile_toggle">
-                <!--begin::Svg Icon | path: icons/duotune/abstract/abs015.svg-->
-                <span class="svg-icon svg-icon-1"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path d="M21 7H3C2.4 7 2 6.6 2 6V4C2 3.4 2.4 3 3 3H21C21.6 3 22 3.4 22 4V6C22 6.6 21.6 7 21 7Z"
-                            fill="currentColor" />
-                        <path opacity="0.3"
-                            d="M21 14H3C2.4 14 2 13.6 2 13V11C2 10.4 2.4 10 3 10H21C21.6 10 22 10.4 22 11V13C22 13.6 21.6 14 21 14ZM22 20V18C22 17.4 21.6 17 21 17H3C2.4 17 2 17.4 2 18V20C2 20.6 2.4 21 3 21H21C21.6 21 22 20.6 22 20Z"
-                            fill="currentColor" />
-                    </svg>
-                </span>
-                <!--end::Svg Icon-->
-            </div>
-            <!--end::Mobile toggle-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
 
-            <!--begin::Logo image-->
-            <a href="/dashboard">
-                <img alt="Logo" src="{{ asset('image/logo.png') }}" class="h-16" />
-                {{-- <img id="logo-image" alt="Logo" src="{{ asset('image/Smart-Lab blue.png') }}"
-                        class="h-40px ms-3 mt-2" /> --}}
-            </a>
-            <!--end::Logo image-->
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm z-50 flex items-center justify-between px-6">
+    <!-- Logo -->
+    <a href="/dashboard" class="flex items-center">
+        <img src="{{ asset('image/logo.png') }}" alt="Smart-Lab" class="h-10">
+    </a>
+
+    <!-- User Info -->
+    <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+            <p class="text-sm font-semibold text-gray-800 uppercase">{{ Auth::user()->name }}</p>
+            <span class="inline-block px-2 py-0.5 text-xs font-medium text-blue-600 bg-blue-100 rounded">{{ Auth::user()->getRoleNames()->first() }}</span>
         </div>
-        <!--end::Header logo-->
-        <!--begin::Header wrapper-->
-        <div class="d-flex align-items-stretch justify-content-end flex-lg-grow-1">
-            <!--begin::Navbar-->
-            <div class="app-navbar flex-shrink-0">
-                <!--begin::User menu-->
-                <div class="app-navbar-item ms-3 ms-md-6" id="kt_header_user_menu_toggle">
-                    <!--begin::Menu wrapper-->
-                    <div class="d-none d-md-flex flex-column align-items-end justify-content-center me-2 me-md-4">
-                        <p class="text-md font-medium font-poppins text-gray-700 ml-8">
-                            <span class="uppercase">{{ Auth::user()->name }}</span>
-                        </p>
-                        <span class="fs-8 badge badge-light-success">{{ Auth::user()->getRoleNames()->first() }}</span>
-                    </div>
 
-                    <!-- Profile Button -->
-                    <div>
-                        <a href="#" id="profile-button"
-                            class="flex items-center p-3 text-white bg-blue-400 hover:bg-blue-700 transition rounded-full border border-blue-500"
-                            onclick="toggleDropdown('dropdown-profile')">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                class="h-6 w-6">
-                                <path fill-rule="evenodd"
-                                    d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    </div>
-                    <!-- Dropdown Profile -->
-                    <div id="dropdown-profile"
-                        class="absolute hidden p-4 bg-white shadow-lg rounded-md w-max min-w-[200px] text-gray-800 text-sm  transition-transform transform scale-95 opacity-0 origin-top scale-100 opacity-100 z-50"
-                        style="top: 100px; right: 20px;">
-                        <!-- Display Email -->
-                        <h1 class="font-poppins px-4 py-2 text-xl font-bold text-gray-500 break-words">PROFILE</h1>
-                        <div class="font-poppins px-4 py-2 text-md text-gray-500 break-words">Nama:
-                            {{ Auth::user()->name }}
-                        </div>
-                        <div class="font-poppins px-4 py-2 border-b text-md text-gray-500">Email:
-                            {{ Auth::user()->email }}
-                        </div>
+        <!-- Profile Button -->
+        <div class="relative">
+            <button onclick="toggleProfileDropdown()" class="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                </svg>
+            </button>
 
-                        <!-- Logout Button -->
-                        <form action="{{ route('logout') }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                class="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 m-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900 flex items-center space-x-2">
-                                <!-- Icon -->
-                                <svg class="w-6 h-6 text-white dark:text-white" aria-hidden="true"
-                                    xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-                                    viewBox="0 0 24 24">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M20 12H8m12 0-4 4m4-4-4-4M9 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h2" />
-                                </svg>
-                                <!-- Text -->
-                                <span>Keluar</span>
-                            </button>
-                        </form>
-                    </div>
+            <!-- Profile Dropdown -->
+            <div id="profile-dropdown" class="hidden absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
+                <div class="p-4 border-b border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-500 mb-2">PROFILE</h3>
+                    <p class="text-sm text-gray-600">Nama: {{ Auth::user()->name }}</p>
+                    <p class="text-sm text-gray-600">Email: {{ Auth::user()->email }}</p>
                 </div>
-                <!--end::User menu-->
+                <div class="p-3">
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            KELUAR
+                        </button>
+                    </form>
+                </div>
             </div>
-            <!--end::Navbar-->
         </div>
-        <!--end::Header wrapper-->
     </div>
-    <!--end::Header container-->
-</div>
-<!--end::Header-->
-<!--begin::Wrapper-->
-<div class="app-wrapper flex-column flex-row-fluid " id="kt_app_wrapper">
+</header>
 
-    {{-- SIDEBAR --}}
-    <!--begin::Sidebar-->
-    <div id="kt_app_sidebar" class="app-sidebar bg-gray-50 shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)]" style="z-index: 0;"
-        data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}"
-        data-kt-drawer-overlay="true" data-kt-drawer-width="auto" data-kt-drawer-direction="start"
-        data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+<!-- Sidebar -->
+<aside class="fixed left-0 top-16 bottom-0 w-20 bg-gray-50 border-r border-gray-200 z-40 flex flex-col py-4">
+    <nav class="flex flex-col items-center gap-2 px-2">
+        <!-- Beranda -->
+        <a href="/dashboard" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('dashboard') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
+            <svg class="w-6 h-6 {{ request()->is('dashboard') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+            </svg>
+            <span class="text-xs font-medium mt-1 {{ request()->is('dashboard') ? 'text-blue-600' : 'text-blue-800' }}">Beranda</span>
+        </a>
 
-        <!--begin::Sidebar primary-->
-        <div class="app-sidebar-primary bg-gray-50">
-            <!--end::Header-->
-            <!--begin::Sidebar navbar-->
-            <div class="app-sidebar-nav flex-grow-1 hover-scroll-overlay-y px-5 pt-2" id="kt_app_sidebar_primary_nav"
-                data-kt-scroll="true" data-kt-scroll-height="auto"
-                data-kt-scroll-dependencies="#kt_app_header, #kt_app_sidebar_primary_header, #kt_app_sidebar_primary_footer"
-                data-kt-scroll-wrappers="#kt_app_content, #kt_app_sidebar_primary_nav" data-kt-scroll-offset="5px">
-                <!--begin::Nav-->
-                <ul class="nav">
-                    <li class="nav-item py-1">
-                        <a href="/dashboard"
-                            class="nav-link py-4 px-1 btn <?= request()->is('dashboard') ? 'active' : '' ?>"
-                            style="background-color: <?= request()->is('dashboard') ? 'blue' : 'transparent' ?>; color: <?= request()->is('dashboard') ? 'white' : 'inherit' ?>;">
-                            <svg class="w-6 h-6 text-blue-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd"
-                                    d="M11.293 3.293a1 1 0 0 1 1.414 0l6 6 2 2a1 1 0 0 1-1.414 1.414L19 12.414V19a2 2 0 0 1-2 2h-3a1 1 0 0 1-1-1v-3h-2v3a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2v-6.586l-.293.293a1 1 0 0 1-1.414-1.414l2-2 6-6Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <span class="pt-2 fs-9 fs-lg-7 fw-bold text-blue-800">Beranda</span>
-                        </a>
-                    </li>
-                    <li class="nav-item py-1">
-                        <a href="/mapel"
-                            class="nav-link py-4 px-1 btn <?= request()->is('mapel', 'materi') ? 'active' : '' ?>"
-                            style="background-color: <?= request()->is('mapel', 'materi') ? 'blue' : 'transparent' ?>; color: <?= request()->is('mapel', 'materi') ? 'white' : 'inherit' ?>;">
-                            <svg class="w-6 h-6 text-blue-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd"
-                                    d="M11 4.717c-2.286-.58-4.16-.756-7.045-.71A1.99 1.99 0 0 0 2 6v11c0 1.133.934 2.022 2.044 2.007 2.759-.038 4.5.16 6.956.791V4.717Zm2 15.081c2.456-.631 4.198-.829 6.956-.791A2.013 2.013 0 0 0 22 16.999V6a1.99 1.99 0 0 0-1.955-1.993c-2.885-.046-4.76.13-7.045.71v15.081Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <span class="pt-2 fs-9 fs-lg-7 fw-bold text-blue-800">Mapel</span>
-                        </a>
-                    </li>
-                    <li class="nav-item py-1">
-                        <a href="/tugas" class="nav-link py-4 px-1 btn <?= request()->is('tugas') ? 'active' : '' ?>"
-                            style="background-color: <?= request()->is('tugas') ? 'blue' : 'transparent' ?>; color: <?= request()->is('tugas') ? 'white' : 'inherit' ?>;">
-                            <svg class="w-6 h-6 text-blue-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd"
-                                    d="M8 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1h2a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2Zm6 1h-4v2H9a1 1 0 0 0 0 2h6a1 1 0 1 0 0-2h-1V4Zm-3 8a1 1 0 0 1 1-1h3a1 1 0 1 1 0 2h-3a1 1 0 0 1-1-1Zm-2-1a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H9Zm2 5a1 1 0 0 1 1-1h3a1 1 0 1 1 0 2h-3a1 1 0 0 1-1-1Zm-2-1a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H9Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <span class="pt-2 fs-9 fs-lg-7 fw-bold text-blue-800">Tugas</span>
-                        </a>
-                    </li>
-                    <li class="nav-item py-1">
-                        <a href="/pilihkelasmateri" class="nav-link py-4 px-1 btn <?= request()->is('pilihkelasmateri') ? 'active' : '' ?>"
-                            style="background-color: <?= request()->is('pilihkelasmateri') ? 'blue' : 'transparent' ?>; color: <?= request()->is('pilihkelasmateri') ? 'white' : 'inherit' ?>;">
-                            <svg class="w-6 h-6 text-blue-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="M8.17 2.25h9.23c.667 0 1.336.109 1.803.593c.46.478.547 1.14.547 1.757v11.8c0 .543-.072 1.077-.35 1.509a1.65 1.65 0 0 1-.65.583v.908c0 .666-.108 1.335-.591 1.802c-.478.462-1.14.548-1.757.548H5.75a1.5 1.5 0 0 1-1.5-1.5V6.017c-.003-.498-.006-1.12.13-1.687c.167-.692.552-1.363 1.371-1.78c.338-.172.694-.24 1.074-.27c.365-.03.81-.03 1.345-.03m-2.42 18h10.652c.547 0 .683-.096.714-.126c.025-.024.134-.155.134-.724v-.65h-10a1.5 1.5 0 0 0-1.5 1.5" />
-                            </svg>
-                            <span class="pt-2 fs-9 fs-lg-7 fw-bold text-blue-800">Materi</span>
-                        </a>
-                    </li>
+        <!-- Mapel -->
+        <a href="/mapel" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('mapel', 'materi') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
+            <svg class="w-6 h-6 {{ request()->is('mapel', 'materi') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+            </svg>
+            <span class="text-xs font-medium mt-1 {{ request()->is('mapel', 'materi') ? 'text-blue-600' : 'text-blue-800' }}">Mapel</span>
+        </a>
 
-                    @if (auth()->check() && !auth()->user()->class()->exists())
-                        <li class="nav-item py-1">
-                            <a href="/PilihKelas"
-                                class="nav-link py-4 px-1 btn {{ request()->is('PilihKelas') ? 'active' : '' }}"
-                                style="background-color: <?= request()->is('PilihKelas') ? 'blue' : 'transparent' ?>; color: <?= request()->is('PilihKelas') ? 'white' : 'inherit' ?>;">
-                                <svg class="w-6 h-6 text-blue-800" xmlns="http://www.w3.org/2000/svg" width="24"
-                                    height="24" viewBox="0 0 24 24">
-                                    <path fill="currentColor"
-                                        d="M7.402 4.5C7 5.196 7 6.13 7 8v3.027C7.43 11 7.914 11 8.435 11h7.13c.52 0 1.005 0 1.435.027V8c0-1.87 0-2.804-.402-3.5A3 3 0 0 0 15.5 3.402C14.804 3 13.87 3 12 3s-2.804 0-3.5.402A3 3 0 0 0 7.402 4.5M6.25 15.991c-.502-.02-.806-.088-1.014-.315c-.297-.324-.258-.774-.18-1.675c.055-.65.181-1.088.467-1.415C6.035 12 6.858 12 8.505 12h6.99c1.647 0 2.47 0 2.982.586c.286.326.412.764.468 1.415c.077.9.116 1.351-.181 1.675c-.208.227-.512.295-1.014.315V21a.75.75 0 1 1-1.5 0v-5h-8.5v5a.75.75 0 1 1-1.5 0z" />
-                                </svg>
-                                <span class="pt-2 fs-9 fs-lg-7 fw-bold text-blue-800">Kelas</span>
-                            </a>
-                        </li>
-                    @endif
-                </ul>
-                <!--end::Nav-->
-            </div>
-            <!--end::Sidebar navbar-->
-        </div>
-        <!--end::Sidebar primary-->
-    </div>
-    <!--end::Sidebar-->
+        <!-- Tugas -->
+        <a href="/tugas" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('tugas') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
+            <svg class="w-6 h-6 {{ request()->is('tugas') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 00-.673-.05A3 3 0 0015 1.5h-1.5a3 3 0 00-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V9.375zM6 12a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V12zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 15a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V15zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75zM6 18a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75V18zm2.25 0a.75.75 0 01.75-.75h3.75a.75.75 0 010 1.5H9a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-xs font-medium mt-1 {{ request()->is('tugas') ? 'text-blue-600' : 'text-blue-800' }}">Tugas</span>
+        </a>
 
-    <script>
-        function toggleDropdown(dropdownId) {
-            const dropdown = document.getElementById(dropdownId);
-            dropdown.classList.toggle('hidden');
+        <!-- Materi -->
+        <a href="/pilihkelasmateri" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('pilihkelasmateri') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
+            <svg class="w-6 h-6 {{ request()->is('pilihkelasmateri') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625z" />
+                <path d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
+            </svg>
+            <span class="text-xs font-medium mt-1 {{ request()->is('pilihkelasmateri') ? 'text-blue-600' : 'text-blue-800' }}">Materi</span>
+        </a>
+
+        @if (auth()->check() && !auth()->user()->class()->exists())
+        <!-- Kelas -->
+        <a href="/PilihKelas" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('PilihKelas') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
+            <svg class="w-6 h-6 {{ request()->is('PilihKelas') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+            </svg>
+            <span class="text-xs font-medium mt-1 {{ request()->is('PilihKelas') ? 'text-blue-600' : 'text-blue-800' }}">Kelas</span>
+        </a>
+        @endif
+    </nav>
+</aside>
+
+<!-- Mobile Menu Button -->
+<button onclick="toggleMobileSidebar()" class="lg:hidden fixed bottom-4 left-4 z-50 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+</button>
+
+
+<script>
+    function toggleProfileDropdown() {
+        const dropdown = document.getElementById('profile-dropdown');
+        dropdown.classList.toggle('hidden');
+    }
+
+    function toggleMobileSidebar() {
+        const sidebar = document.querySelector('aside');
+        sidebar.classList.toggle('-translate-x-full');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('profile-dropdown');
+        const profileBtn = event.target.closest('button[onclick="toggleProfileDropdown()"]');
+
+        if (!profileBtn && !dropdown.contains(event.target)) {
+            dropdown.classList.add('hidden');
         }
-    </script>
+    });
+</script>
+
+</body>
+</html>
