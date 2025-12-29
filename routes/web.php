@@ -18,6 +18,7 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\SelectClassController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\UserPageController;
 
 Auth::routes(['register' => false]);
@@ -32,12 +33,7 @@ Route::put('/class-approvals/{id}/approve', [StudentController::class, 'approve'
 Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])->name('class.approval.reject');
 
 
-// Landing
-Route::get('/landing', [
-    function () {
-        return view('Users.landing');
-    }
-]);
+Route::get('/', [LandingController::class, 'index']);
 
 Route::get('/', [
     function () {
