@@ -6,56 +6,44 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <div class="p-6 space-y-6">
-        <!-- Page header -->
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900 font-poppins">Manajemen Murid</h1>
-                <p class="text-slate-600 mt-1">Kelola data murid dan penempatan kelas</p>
+        <!-- Hero Section -->
+        <div class="relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 mb-6 overflow-hidden border border-blue-100">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 font-poppins">Data Murid</h1>
+                    <nav class="flex mt-2 text-sm text-slate-500 font-medium" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-2">
+                            <li class="inline-flex items-center">
+                                <a href="#" class="hover:text-blue-600 transition-colors">Dashboard</a>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <span class="mx-2 text-slate-400">•</span>
+                                    <span class="text-slate-900 font-semibold">Murid</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="hidden md:block">
+                    <img src="https://pkl.hummatech.com/assets-user/dist/images/breadcrumb/ChatBc.png" alt="Illustration"
+                        class="w-36 h-w-36 object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-300">
+                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-                {{-- Search form --}}
-                <form id="searchForm" action="{{ route('Students') }}" method="GET" class="flex items-center mt-5">
-                    <div class="relative flex items-center">
-                        <input type="text" name="search_student" id="searchInput" placeholder="Cari murid..."
-                            value="{{ request('search_student') }}"
-                            class="search-input w-0 px-0 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out text-sm">
-                        <button type="button" id="searchToggle"
-                            class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </form>
-
-                @if (request('search_student'))
-                    <a href="{{ route('Students') }}"
-                        class="flex items-center space-x-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"></path>
-                        </svg>
-                        <span>Reset</span>
-                    </a>
-                @endif
-
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl"></div>
+        </div>
+        <!-- Page Actions header -->
+        <div class="flex flex-row items-center justify-between gap-4 ">
+            <h2 class="text-xl font-bold text-slate-800">Data Murid</h2>
+            <div class="flex items-center gap-2 sm:gap-3">
                 <button type="button" id="btnImportMurid"
                     class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 16l4-5h-3V4h-2v7H8l4 5zm8 2H4v2h16v-2z" />
-                    </svg>
-                    <span class="hidden sm:inline">Import Murid</span>
-                </button>
 
-                <button type="button" onclick="openAddModal()"
-                    class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span class="hidden sm:inline">Tambah Murid</span>
+                    <span>Import Murid</span>
+                </button>
+                <button type="button" data-modal-target="modalTambahMurid" data-modal-toggle="modalTambahMurid"
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-200">
+                    <span>Tambah</span>
                 </button>
             </div>
         </div>
@@ -104,9 +92,35 @@
 
         <!-- Table -->
         <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h2 class="text-lg font-semibold text-slate-900 font-poppins">Daftar Murid</h2>
-                <p class="text-sm text-slate-600 mt-1">Total: {{ $students->total() }} murid</p>
+            <div class="flex justify-between px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900 font-poppins">Daftar Murid</h2>
+                    <p class="text-sm text-slate-600 mt-1">Total: {{ $students->total() }} Murid</p>
+                </div>
+                <div class="flex space-x-1">
+                    @if (request('search_student'))
+                        <a href="{{ route('students.index') }}"
+                            class="w-8 h-8 p-3 mt-1 rounded-lg flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200transition-colors duration-200 text-sm">
+                            X
+                        </a>
+                    @endif
+                    {{-- Search form --}}
+                    <form id="searchForm" action="{{ route('students.index') }}" method="GET" class="flex items-center ">
+                        <div class="relative flex items-center">
+                            <input type="text" name="search_student" id="searchInput" placeholder="Cari Murid..."
+                                value="{{ request('search_student') }}"
+                                class="search-input w-0 px-0 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out text-sm">
+                            <button type="button" id="searchToggle"
+                                class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
@@ -124,7 +138,8 @@
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Kelas</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Aksi
                             </th>
                         </tr>
                     </thead>
@@ -141,36 +156,36 @@
                                         <div
                                             class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                             <span
-                                                class="text-blue-600 font-medium text-sm">{{ strtoupper(substr($student->name, 0, 1)) }}</span>
+                                                class="text-blue-600 font-medium text-sm">{{ strtoupper(substr($student->user->name, 0, 1)) }}</span>
                                         </div>
-                                        <div class="text-sm font-medium text-slate-900">{{ $student->name }}</div>
+                                        <div class="text-sm font-medium text-slate-900">{{ $student->user->name }}</div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $student->email }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $student->user->email }}
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                                     <span
-                                        class="font-mono text-slate-400">{{ $student->plain_password ?? '••••••••' }}</span>
+                                        class="font-mono text-slate-400">{{ $student->user->plain_password ?? '••••••••' }}</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="font-mono text-sm bg-slate-100 px-2 py-1 rounded">
-                                        {{ $student->student->nis }}
+                                        {{ $student->nis }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    @if ($student->classes && count($student->classes) > 0)
-                                        @foreach ($student->classes as $cls)
-                                            <span
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
-                                                {{ $cls->name_class }}
-                                            </span>
-                                        @endforeach
+                                <td class="px-6 py-4 text-sm">
+                                    @if ($student->class)
+                                        <span
+                                            class="inline-flex px-3 py-1 w-20 text-center rounded-full text-xs bg-blue-100 text-blue-800">
+                                            {{ $student->class->name_class }}
+                                        </span>
                                     @else
                                         <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            class="inline-flex px-2.5 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800">
                                             Belum ditempatkan
                                         </span>
                                     @endif
                                 </td>
+
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <div class="flex items-center space-x-2">
                                         <button type="button" onclick="openEditModal({{ $student->id }})"
@@ -270,22 +285,22 @@
                                                     <div>
                                                         <label
                                                             class="block text-sm font-medium text-slate-700 mb-1">Kelas</label>
-                                                        <select name="class_id" multiple
+                                                        {{-- Simplified select structure and updated placeholder text for single selection --}}
+                                                        <select name="class_id" required
                                                             class="edit-class-select-{{ $student->id }} w-full"
                                                             id="editClassSelect{{ $student->id }}">
+                                                            <option value="">-- Pilih Kelas --</option>
                                                             @php
-                                                                $selectedClasses = $student->classes
-                                                                    ? $student->classes->pluck('id')->toArray()
-                                                                    : [];
+                                                                $selectedClass = $student->class?->id;
                                                             @endphp
                                                             @foreach ($classes as $class)
                                                                 <option value="{{ $class->id }}"
-                                                                    {{ in_array($class->id, $selectedClasses) ? 'selected' : '' }}>
+                                                                    {{ $class->id == $selectedClass ? 'selected' : '' }}>
                                                                     {{ $class->name_class }}
                                                                 </option>
                                                             @endforeach
                                                         </select>
-                                                        <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas
+                                                        <p class="text-xs text-slate-500 mt-1">Pilih kelas murid
                                                         </p>
                                                     </div>
                                                 </div>
@@ -565,13 +580,14 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Kelas <span
                                         class="text-red-500">*</span></label>
-                                <select name="class_id[]" multiple required class="add-class-select w-full"
-                                    id="addClassSelect">
+                                {{-- Updated select name and class to be consistent with single selection logic --}}
+                                <select name="class_id" id="addClassSelect" required class="add-class-select w-full">
+                                    <option value="">-- Pilih Kelas --</option>
                                     @foreach ($classes as $class)
                                         <option value="{{ $class->id }}">{{ $class->name_class }}</option>
                                     @endforeach
                                 </select>
-                                <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas</p>
+                                <p class="text-xs text-slate-500 mt-1">Pilih kelas murid</p>
                             </div>
                         </div>
                         <div
@@ -653,7 +669,11 @@
             let isSearchOpen = {{ request('search_student') ? 'true' : 'false' }};
 
             function setSearchOpenStyle() {
-                searchInput.style.width = '200px';
+                if (window.matchMedia('(min-width: 1024px)').matches) {
+                    searchInput.style.width = '200px';
+                } else {
+                    searchInput.style.width = '100px';
+                }
                 searchInput.style.paddingLeft = '12px';
                 searchInput.style.paddingRight = '12px';
                 searchInput.style.border = '1px solid #cbd5e1';

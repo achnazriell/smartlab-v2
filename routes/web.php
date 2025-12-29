@@ -55,7 +55,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::resource('comments', CommentController::class);
     Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::resource('teachers', TeacherController::class);
-    Route::get('/Students', [StudentController::class, 'User'])->name('Students');
+    Route::get('/Students', [StudentController::class, 'index'])->name('Students');
     Route::resource('students', StudentController::class);
     Route::post('/teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');

@@ -75,6 +75,50 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-wrapper table {
+            width: 100%;
+            min-width: 800px;
+            /* sesuaikan dengan jumlah kolom */
+            border-collapse: collapse;
+        }
+
+        /* optional: biar teks gak bikin kolom terlalu tinggi */
+        .table-wrapper th,
+        .table-wrapper td {
+            white-space: nowrap;
+        }
+
+        .panel {
+            padding: 15px;
+        }
+
+        .scroll-inner {
+            &::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            &::-webkit-scrollbar:horizontal {
+                height: 10px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background-color: transparentize(#ccc, 0.7);
+            }
+
+            &::-webkit-scrollbar-thumb {
+                border-radius: 15px;
+                background: transparentize(#ccc, 0.5);
+                box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.811);
+            }
+        }
+
         /* Mobile sidebar slide animation */
         @media (max-width: 767px) {
 
@@ -201,22 +245,11 @@ window.addEventListener('scroll', () => {
 
                             <a href="{{ route('teachers.index') }}"
                                 class="flex items-center py-2.5 px-3 text-white/90 hover:text-white hover:bg-blue-500/50 rounded-lg transition-all duration-200 text-sm {{ request()->routeIs('teachers.*') ? 'bg-blue-500/50 text-white' : '' }}">
-                                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
                                 <span>Guru</span>
                             </a>
 
                             <a href="/Students"
                                 class="flex items-center py-2.5 px-3 text-white/90 hover:text-white hover:bg-blue-500/50 rounded-lg transition-all duration-200 text-sm {{ request()->is('Students*') ? 'bg-blue-500/50 text-white' : '' }}">
-                                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z">
-                                    </path>
-                                </svg>
                                 <span>Murid</span>
                             </a>
                         </div>
@@ -263,7 +296,7 @@ window.addEventListener('scroll', () => {
         </aside>
 
         <!-- Main content - no margin shift on mobile -->
-        <div class="flex-1 flex flex-col transition-all duration-300"
+        <div class="flex-1 flex flex-col transition-all duration-300 w-full overflow-x-hidden"
             :class="{
                 'md:ml-80': sidebarOpen,
                 'md:ml-16': !sidebarOpen
@@ -354,7 +387,7 @@ window.addEventListener('scroll', () => {
                 </div>
             </header>
 
-            <main class="flex-1 max-w-screen-sm lg:max-w-screen-2xl overflow-y-auto bg-slate-50">
+            <main class="overflow-y-auto bg-slate-50 flex-1 overflow-x-hidden">
                 @yield('content')
             </main>
         </div>

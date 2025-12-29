@@ -14,12 +14,12 @@
                         $globalIndex = ($students->currentPage() - 1) * $students->perPage();
                     @endphp
 
-                    @if ($teacherClass->class->users()->count() > 0) <!-- Periksa jika ada siswa -->
+                    @if ($teacherClass->classes->users()->count() > 0) <!-- Periksa jika ada siswa -->
                         @foreach ($students as $student)
                             <tr class="border">
                                 <td class="px-4 py-2">{{ $globalIndex + $loop->iteration }}</td>
-                                <td class="px-4 py-2">{{ $student->name }}</td>
-                                <td class="px-4 py-2">{{ $student->email }}</td>
+                                <td class="px-4 py-2">{{ $student->user->name }}</td>
+                                <td class="px-4 py-2">{{ $student->user->email }}</td>
                             </tr>
                         @endforeach
                     @else

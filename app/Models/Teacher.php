@@ -2,32 +2,40 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Teacher extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
         'NIP',
-        'subject_id',
     ];
 
+    // 🔹 RELASI KE USER
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function subject()
+    // 🔹 RELASI MAPEL (teacher_subjects)
+    public function subjects()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsToMany(
+            Subject::class,
+            'teacher_subjects',
+            'teacher_id',
+            'subject_id'
+        );
     }
 
-    public function class()
+    // 🔹 RELASI KELAS (teacher_classes)
+    public function classes()
     {
-        return $this->belongsToMany(Classes::class, 'teacher_classes', 'teacher_id', 'classes_id');
+        return $this->belongsToMany(
+            Classes::class,
+            'teacher_classes',
+            'teacher_id',
+            'classes_id'
+        );
     }
-
 }

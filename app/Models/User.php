@@ -4,16 +4,15 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -21,7 +20,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $guarded = [
-        'id'
+        'id',
     ];
 
     /**
@@ -47,9 +46,14 @@ class User extends Authenticatable
         ];
     }
 
-    public function subject()
+    public function subjects()
     {
-        return $this->belongsTo(Subject::class, 'subject_id');
+        return $this->belongsToMany(
+            Subject::class,
+            'teacher_subjects', // pivot table
+            'teacher_id',
+            'subject_id'
+        );
     }
 
     public function class()
@@ -71,10 +75,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Assessment::class);
     }
+
     public function tasks()
     {
         return $this->hasMany(Task::class);
     }
+
     public function materis()
     {
         return $this->hasMany(Materi::class);

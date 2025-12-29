@@ -61,7 +61,7 @@
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach ($teacherClasses as $teacherClass)
-                    @if ($teacherClass->class->name_class)
+                    @if ($teacherClass->classes->name_class)
                         <div class="group relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
                             <!-- Background Pattern -->
                             <div class="absolute inset-0 bg-white/5 rounded-2xl"></div>
@@ -70,12 +70,12 @@
                             <div class="relative z-10">
                                 <div class="flex items-start justify-between mb-4">
                                     <div class="flex-1">
-                                        <h3 class="text-2xl font-bold mb-2">{{ $teacherClass->class->name_class }}</h3>
+                                        <h3 class="text-2xl font-bold mb-2">{{ $teacherClass->classes->name_class }}</h3>
                                         <div class="flex items-center space-x-2 text-blue-100">
                                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                                 <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd"/>
                                             </svg>
-                                            <span class="text-sm font-medium">{{ $muridCounts[$teacherClass->class->id] ?? 0 }} Siswa</span>
+                                            <span class="text-sm font-medium">{{ $muridCounts[$teacherClass->classes->id] ?? 0 }} Siswa</span>
                                         </div>
                                     </div>
                                     <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
@@ -95,7 +95,7 @@
                                         </div>
                                     </div>
 
-                                    <button onclick="openModal('detailModal-{{ $teacherClass->class->id }}')"
+                                    <button onclick="openModal('detailModal-{{ $teacherClass->classes->id }}')"
                                             class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm">
                                         Lihat Detail
                                     </button>
@@ -110,16 +110,16 @@
 
     <!-- Modern modals for class details -->
     @foreach ($teacherClasses as $teacherClass)
-        <div id="detailModal-{{ $teacherClass->class->id }}"
+        <div id="detailModal-{{ $teacherClass->classes->id }}"
              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-xl font-bold">Detail Kelas {{ $teacherClass->class->name_class }}</h3>
+                            <h3 class="text-xl font-bold">Detail Kelas {{ $teacherClass->classes->name_class }}</h3>
                             <p class="text-blue-100 text-sm">Daftar siswa dan informasi kelas</p>
                         </div>
-                        <button onclick="closeModal('detailModal-{{ $teacherClass->class->id }}')"
+                        <button onclick="closeModal('detailModal-{{ $teacherClass->classes->id }}')"
                                 class="p-2 hover:bg-white/20 rounded-lg transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -129,10 +129,10 @@
                 </div>
 
                 <div class="p-6 overflow-y-auto max-h-96">
-                    <div id="table-container-{{ $teacherClass->class->id }}">
+                    <div id="table-container-{{ $teacherClass->classes->id }}">
                         @include('partials.studentList', [
-                            'students' => $students[$teacherClass->class->id] ?? [],
-                            'classId' => $teacherClass->class->id,
+                            'students' => $students[$teacherClass->classes->id] ?? [],
+                            'classId' => $teacherClass->classes->id,
                         ])
                     </div>
                 </div>

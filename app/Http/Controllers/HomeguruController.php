@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classes;
+use App\Models\Student;
 use App\Models\TeacherClass;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class HomeguruController extends Controller
 {
@@ -27,42 +27,39 @@ class HomeguruController extends Controller
      */
     public function index()
     {
-        $teacherClasses = TeacherClass::where('teacher_id', auth()->id())->with('class.users.roles')->get();
+        $teacherClasses = TeacherClass::with([
+            'classes.studentList.user',
+        ])->get();
 
         $students = [];
+        $muridCounts = [];
         foreach ($teacherClasses as $teacherClass) {
-            $students[$teacherClass->class->id] = User::whereHas('class', function ($query) use ($teacherClass) {
-                $query->where('classes.id', $teacherClass->class->id);
-            })
-                ->whereHas('roles', function ($query) {
-                    $query->where('name', 'Murid');
-                })
-                ->orderBy('name')
+            if (! $teacherClass->classes) {
+                continue;
+            }
+
+            $classId = $teacherClass->classes->id;
+
+            $students[$classId] = Student::where('class_id', $classId)
+                ->whereHas('user.roles', fn ($q) => $q->where('name', 'Murid'))
+                ->with('user')
                 ->paginate(10);
+
+            $muridCounts[$classId] = $students[$classId]->total();
         }
 
-        $muridCounts = $teacherClasses->mapWithKeys(function ($teacherClass) {
-            $muridCount = User::whereHas('class', function ($query) use ($teacherClass) {
-                $query->where('classes.id', $teacherClass->class->id); // Spesifik ke kelas tertentu
-            })
-            ->whereHas('roles', function ($query) {
-                $query->where('name', 'Murid'); // Filter berdasarkan role 'Murid'
-            })
-            ->count();
-
-            return [$teacherClass->class->id => $muridCount]; // Key: ID kelas, Value: jumlah murid
-        });
-
-        return view('Guru.dashboardGuru', compact('teacherClasses', 'students', 'muridCounts'));
+        return view('Guru.dashboardGuru', compact(
+            'teacherClasses',
+            'students',
+            'muridCounts'
+        ));
     }
-
-
 
     public function getClassDetails(Request $request, $classId)
     {
         $class = Classes::find($classId);
 
-        if (!$class) {
+        if (! $class) {
             return response()->json(['message' => 'Kelas tidak ditemukan'], 404);
         }
 

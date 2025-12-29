@@ -11,19 +11,15 @@ class TeacherClass extends Model
         'user_id'
     ];
 
-    public function class()
+    // relasi ke kelas
+    public function classes()
     {
         return $this->belongsTo(Classes::class, 'classes_id');
     }
+
+    // relasi ke guru (user)
     public function user()
     {
-        return $this->belongsTo(User::class, 'class_user', 'class_id', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
-
-    public function teacher()
-    {
-        return $this->belongsToMany(User::class, 'teacher_classes', 'classes_id', 'teacher_id')
-            ->withPivot('classes_id');
-    }
-
 }

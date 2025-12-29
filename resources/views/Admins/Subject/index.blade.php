@@ -2,50 +2,41 @@
 
 @section('content')
     <div class="p-6 space-y-6">
-        <!-- Page header -->
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900 font-poppins">Manajemen Mata Pelajaran</h1>
-                <p class="text-slate-600 mt-1">Kelola data mata pelajaran</p>
+        <!-- Hero Section -->
+        <div
+            class="relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 mb-6 overflow-hidden border border-blue-100">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 font-poppins">Data Mapel</h1>
+                    <nav class="flex mt-2 text-sm text-slate-500 font-medium" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-2">
+                            <li class="inline-flex items-center">
+                                <a href="#" class="hover:text-blue-600 transition-colors">Dashboard</a>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <span class="mx-2 text-slate-400">•</span>
+                                    <span class="text-slate-900 font-semibold">Mapel</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="hidden md:block">
+                    <img src="https://pkl.hummatech.com/assets-user/dist/images/breadcrumb/ChatBc.png" alt="Illustration"
+                        class="w-36 h-w-36 object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-300">
+                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-                {{-- Search form --}}
-                <form id="searchForm" action="{{ route('subject.index') }}" method="GET" class="flex items-center mt-5">
-                    <div class="relative flex items-center">
-                        <input type="text" name="search" id="searchInput" placeholder="Cari mapel..."
-                            value="{{ request('search') }}"
-                            class="search-input w-0 px-0 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out text-sm">
-                        <button type="button" id="searchToggle"
-                            class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </form>
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl"></div>
+        </div>
 
-                @if (request('search'))
-                    <a href="{{ route('subject.index') }}"
-                        class="flex items-center space-x-1 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"></path>
-                        </svg>
-                        <span>Reset</span>
-                    </a>
-                @endif
-
-                <button type="button" onclick="openAddModal()"
-                    class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span class="hidden sm:inline">Tambah Mapel</span>
-                </button>
-            </div>
+        <!-- Page Actions header -->
+        <div class="flex flex-row items-center justify-between gap-4 ">
+            <h2 class="text-xl font-bold text-slate-800">Data Mapel</h2>
+            <button type="button" onclick="openAddModal()"
+                class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
+                <span>Tambah Mapel</span>
+            </button>
         </div>
 
         <!-- Alerts -->
@@ -92,13 +83,39 @@
 
         <!-- Table -->
         <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h2 class="text-lg font-semibold text-slate-900 font-poppins">Daftar Mata Pelajaran</h2>
-                <p class="text-sm text-slate-600 mt-1">Total: {{ $subjects->total() }} mapel</p>
+            <div class="flex justify-between px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900 font-poppins">Daftar Mapel</h2>
+                    <p class="text-sm text-slate-600 mt-1">Total: {{ $subjects->total() }} Mapel</p>
+                </div>
+                <div class="flex space-x-1">
+                    @if (request('search'))
+                        <a href="{{ route('subject.index') }}"
+                            class="w-8 h-8 p-3 mt-1 rounded-lg flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200transition-colors duration-200 text-sm">
+                            X
+                        </a>
+                    @endif
+                    {{-- Search form --}}
+                    <form id="searchForm" action="{{ route('subject.index') }}" method="GET" class="flex items-center ">
+                        <div class="relative flex items-center">
+                            <input type="text" name="search" id="searchInput" placeholder="Cari Mapel..."
+                                value="{{ request('search') }}"
+                                class="search-input w-0 px-0 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out text-sm">
+                            <button type="button" id="searchToggle"
+                                class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="w-full overflow-x-auto">
                 <table class="min-w-max border-collapse w-full text-left text-sm">
-                    <thead class="bg-slate-50 border-b border-slate-200">
+                    <thead class="bg-slate-50 border-b border-slate-200 ">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">No
                             </th>
@@ -413,7 +430,11 @@
             let isSearchOpen = {{ request('search') ? 'true' : 'false' }};
 
             function setSearchOpenStyle() {
-                searchInput.style.width = '200px';
+                if (window.matchMedia('(min-width: 1024px)').matches) {
+                    searchInput.style.width = '200px';
+                } else {
+                    searchInput.style.width = '100px';
+                }
                 searchInput.style.paddingLeft = '12px';
                 searchInput.style.paddingRight = '12px';
                 searchInput.style.border = '1px solid #cbd5e1';
