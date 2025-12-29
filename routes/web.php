@@ -18,6 +18,7 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\SelectClassController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\UserPageController;
 
@@ -35,11 +36,8 @@ Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])
 
 Route::get('/', [LandingController::class, 'index']);
 
-Route::get('/', [
-    function () {
-        return view('Users.beranda');
-    }
-]);
+Route::get('/beranda', [BerandaController::class, 'index']);
+
 
 // Route Admin
 Route::middleware(['auth', 'role:Admin'])->group(function () {
