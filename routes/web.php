@@ -34,9 +34,7 @@ Route::put('/class-approvals/{id}/approve', [StudentController::class, 'approve'
 Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])->name('class.approval.reject');
 
 
-Route::get('/', [LandingController::class, 'index']);
-
-Route::get('/beranda', [BerandaController::class, 'index']);
+Route::get('/', [BerandaController::class, 'index']);
 
 
 // Route Admin
