@@ -205,7 +205,7 @@
                             d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
                     <span id="login-text">Masuk ke Dashboard</span>
-                    <div id="login-spinner" class="hidden flex items-center">
+                    <div id="login-spinner" class=" flex items-center">
                         <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2">
                         </div>
                         <span>Memproses...</span>
