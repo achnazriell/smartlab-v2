@@ -20,8 +20,7 @@ class RoleUser extends Seeder
         User::create([
             'name' => 'Admin',
             'email' => 'admin123@gmail.com',
-            'password' => Hash::make('123456789'),
-            'role' => 'Admin', // wajib diisi supaya NOT NULL constraint tidak error
+            'password' => Hash::make('123456789')
         ])->assignRole('Admin');
     }
 }
