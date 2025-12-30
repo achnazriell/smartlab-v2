@@ -7,7 +7,8 @@
     <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
     <title>SmartLab</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     @vite(['resources/css/app.css', 'resources/css/style.css', 'resources/js/app.js'])
 
     <script src="https://unpkg.com/flowbite@1.3.4/dist/flowbite.js"></script>
