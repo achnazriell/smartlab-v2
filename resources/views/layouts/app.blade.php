@@ -151,11 +151,12 @@ window.addEventListener('scroll', () => {
 });" x-cloak>
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay backdrop -->
-        <div x-show="mobileSidebarOpen && isMobile" x-transition:enter="transition-opacity ease-out duration-300"
+        <!-- Memastikan backdrop muncul dengan z-index yang benar -->
+        <div x-show="mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
             x-transition:leave="transition-opacity ease-in duration-200" x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0" @click="mobileSidebarOpen = false"
-            class="fixed inset-0 z-40 sidebar-overlay md:hidden">
+            class="fixed inset-0 z-40 bg-black/50 md:hidden">
         </div>
 
         <!-- Updated sidebar for mobile overlay behavior -->
@@ -165,29 +166,31 @@ window.addEventListener('scroll', () => {
                 'w-80': sidebarOpen && !isMobile,
                 'w-16': !sidebarOpen && !isMobile,
                 'w-80 translate-x-0': isMobile && mobileSidebarOpen,
-                '-translate-x-full': isMobile && !mobileSidebarOpen
+                'w-80 -translate-x-full': isMobile && !mobileSidebarOpen
             }">
-
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between p-6 border-b border-blue-500">
-                <div class="text-center font-bold text-xl text-white" x-show="sidebarOpen || mobileSidebarOpen"
-                    x-transition>
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                            <span class="text-blue-600 font-bold text-sm">S</span>
-                        </div>
-                        <span>SmartLab Admin</span>
-                    </div>
+                <div class="text-center font-bold text-xl text-white"
+                    x-show="sidebarOpen || (isMobile && mobileSidebarOpen)" x-transition>
                 </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 font-bold text-sm">S</span>
+                    </div>
+                    <span>SmartLab Admin</span>
+                </div>
+
                 <div class="flex items-center justify-center"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'w-full'">
-                    <!-- Close button for mobile, toggle for desktop -->
+                    <!-- Perbaiki logika toggle tombol di dalam sidebar -->
                     <button @click="isMobile ? mobileSidebarOpen = false : sidebarOpen = !sidebarOpen"
                         class="p-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            <path x-show="!sidebarOpen && !mobileSidebarOpen" stroke-linecap="round"
+                                stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            <path x-show="sidebarOpen || mobileSidebarOpen" stroke-linecap="round"
+                                stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
