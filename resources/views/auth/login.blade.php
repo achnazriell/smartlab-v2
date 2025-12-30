@@ -7,8 +7,105 @@
     <title>Login - Smart-Lab</title>
     <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <style>
+        /* Added centered card design animations */
+        @keyframes float {
 
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes float-delayed {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes pulse-slow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes slide-in-up {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .animate-float-delayed {
+            animation: float-delayed 8s ease-in-out infinite;
+        }
+
+        .animate-pulse-slow {
+            animation: pulse-slow 4s ease-in-out infinite;
+        }
+
+        .animate-slide-in-up {
+            animation: slide-in-up 0.6s ease-out;
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.8s ease-out;
+        }
+
+        .animation-delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .animation-delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .input-focus-effect:focus {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+        }
+
+        .button-hover-effect:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
+        }
     </style>
 </head>
 
@@ -130,7 +227,31 @@
     </div>
 
     <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeOpen = document.getElementById('eye-open');
+            const eyeClosed = document.getElementById('eye-closed');
 
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                passwordInput.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        }
+
+        document.querySelector('form').addEventListener('submit', function() {
+            const btn = document.getElementById('login-btn');
+            const text = document.getElementById('login-text');
+            const spinner = document.getElementById('login-spinner');
+
+            btn.disabled = true;
+            text.classList.add('hidden');
+            spinner.classList.remove('hidden');
+        });
     </script>
 </body>
 

@@ -8,6 +8,7 @@
     <title>Smart-LAB</title>
 
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
 
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('style/beranda.css') }}" />
