@@ -116,37 +116,37 @@
 </head>
 
 <body class="bg-slate-50 font-sans" x-data="{
-    sidebarOpen: window.innerWidth >= 768,
+    sidebarOpen: false,
     mobileSidebarOpen: false,
     userMenuOpen: false,
     headerScrolled: false,
-    isMobile: window.innerWidth < 768
-}" x-init="
+    isMobile: false
+}" x-init="const checkScreen = () => {
     isMobile = window.innerWidth < 768;
-    sidebarOpen = !isMobile;
 
-    window.addEventListener('resize', () => {
-        isMobile = window.innerWidth < 768;
-        if (!isMobile) {
-            mobileSidebarOpen = false;
-        } else {
-            sidebarOpen = false;
-        }
-    });
-    window.addEventListener('scroll', () => {
-        headerScrolled = window.scrollY > 10;
-    });" x-cloak>
+    if (isMobile) {
+        sidebarOpen = false;
+        mobileSidebarOpen = false;
+    } else {
+        sidebarOpen = true;
+        mobileSidebarOpen = false;
+    }
+};
+
+checkScreen();
+
+window.addEventListener('resize', checkScreen);
+
+window.addEventListener('scroll', () => {
+    headerScrolled = window.scrollY > 10;
+});" x-cloak>
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay backdrop -->
         <!-- Memastikan backdrop benar-benar menutupi seluruh layar di bawah z-index sidebar -->
-        <div x-show="isMobile && mobileSidebarOpen"
-            x-transition:enter="transition-opacity ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition-opacity ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            @click="mobileSidebarOpen = false"
+        <div x-show="isMobile && mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-in duration-200" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0" @click="mobileSidebarOpen = false"
             class="fixed inset-0 z-40 bg-black/60 md:hidden">
         </div>
 
