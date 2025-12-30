@@ -7,7 +7,8 @@
 
     <div class="p-6 space-y-6">
         <!-- Hero Section -->
-        <div class="relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 mb-6 overflow-hidden border border-blue-100">
+        <div
+            class="relative bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 mb-6 overflow-hidden border border-blue-100">
             <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 font-poppins">Data Murid</h1>
@@ -37,13 +38,12 @@
             <h2 class="text-xl font-bold text-slate-800">Data Murid</h2>
             <div class="flex items-center gap-2 sm:gap-3">
                 <button type="button" id="btnImportMurid"
-                    class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-md">
-
-                    <span>Import Murid</span>
+                    class="flex items-center space-x-2 px-4 py-2 bg-green-200 text-green-600 rounded-lg hover:bg-green-300 transition-colors duration-200 shadow-md">
+                    <span class="font-semibold">Import</span>
                 </button>
-                <button type="button" data-modal-target="modalTambahMurid" data-modal-toggle="modalTambahMurid"
-                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-200">
-                    <span>Tambah</span>
+                <button type="button" onclick="openAddModal()"
+                    class="flex items-center space-x-2 px-4 py-2 bg-blue-200 text-blue-600 rounded-lg hover:bg-blue-300 transition-colors duration-200 shadow-md">
+                    <span class="font-semibold">Tambah</span>
                 </button>
             </div>
         </div>

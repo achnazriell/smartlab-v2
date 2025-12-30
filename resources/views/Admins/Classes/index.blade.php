@@ -30,15 +30,12 @@
             <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl"></div>
         </div>
 
-        <!-- Page Actions header -->
         <div class="flex flex-row items-center justify-between gap-4 ">
             <h2 class="text-xl font-bold text-slate-800">Data Kelas</h2>
-            <div class="flex items-center gap-2 sm:gap-3">
-                <button type="button" data-modal-target="modalTambahKelas" data-modal-toggle="modalTambahKelas"
-                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-200">
-                    <span>Tambah</span>
-                </button>
-            </div>
+            <button type="button" onclick="openAddModal()"
+                class="flex items-center space-x-2 px-4 py-2 bg-blue-200 text-blue-600 rounded-lg hover:bg-blue-300 transition-colors duration-200 shadow-md">
+                <span class="font-semibold">Tambah</span>
+            </button>
         </div>
 
         <!-- Alerts -->

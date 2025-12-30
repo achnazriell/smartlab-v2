@@ -34,8 +34,8 @@
         <div class="flex flex-row items-center justify-between gap-4 ">
             <h2 class="text-xl font-bold text-slate-800">Data Mapel</h2>
             <button type="button" onclick="openAddModal()"
-                class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
-                <span>Tambah Mapel</span>
+                class="flex items-center space-x-2 px-4 py-2 bg-blue-200 text-blue-600 rounded-lg hover:bg-blue-300 transition-colors duration-200 shadow-md">
+                <span class="font-semibold">Tambah</span>
             </button>
         </div>
 
