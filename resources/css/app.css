@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
-      user-select: none;
+body {
+    user-select: none;
 }
 
 #teacherModal {
@@ -216,7 +216,7 @@ body{
     overflow: hidden;
     padding: 1rem;
     border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -243,11 +243,11 @@ body{
 
 @media (min-width: 768px) {
     .custom-max-w {
-      max-width: 1000px;
+        max-width: 1000px;
     }
-  }
+}
 
-  .svg-container {
+.svg-container {
     position: relative;
     width: 200px;
     height: 200px;
@@ -280,8 +280,6 @@ body{
     z-index: 10;
 }
 
-
-
 #modulModal {
     display: flex;
     align-items: center;
@@ -312,4 +310,98 @@ body{
     justify-content: center;
     transition: all 0.3s ease-in-out;
     z-index: 50;
+}
+
+/* Added centered card design animations */
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes float-delayed {
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+}
+
+@keyframes pulse-slow {
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+}
+
+@keyframes slide-in-up {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+    animation: float-delayed 8s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-slide-in-up {
+    animation: slide-in-up 0.6s ease-out;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.8s ease-out;
+}
+
+.animation-delay-200 {
+    animation-delay: 0.2s;
+}
+
+.animation-delay-300 {
+    animation-delay: 0.3s;
+}
+
+.input-focus-effect:focus {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.button-hover-effect:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.25);
 }
