@@ -121,26 +121,33 @@
     userMenuOpen: false,
     headerScrolled: false,
     isMobile: window.innerWidth < 768
-}" x-init="window.addEventListener('resize', () => {
+}" x-init="
     isMobile = window.innerWidth < 768;
-    if (!isMobile) {
-        mobileSidebarOpen = false;
-        sidebarOpen = true;
-    } else {
-        sidebarOpen = false;
-    }
-});
-window.addEventListener('scroll', () => {
-    headerScrolled = window.scrollY > 10;
-});" x-cloak>
+    sidebarOpen = !isMobile;
+
+    window.addEventListener('resize', () => {
+        isMobile = window.innerWidth < 768;
+        if (!isMobile) {
+            mobileSidebarOpen = false;
+        } else {
+            sidebarOpen = false;
+        }
+    });
+    window.addEventListener('scroll', () => {
+        headerScrolled = window.scrollY > 10;
+    });" x-cloak>
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay backdrop -->
-        <!-- Overlay backdrop hanya muncul di mobile saat sidebar terbuka -->
-        <div x-show="isMobile && mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
-            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-            x-transition:leave="transition-opacity ease-in duration-200" x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0" @click="mobileSidebarOpen = false"
-            class="fixed inset-0 z-40 bg-black/50 md:hidden">
+        <!-- Memastikan backdrop benar-benar menutupi seluruh layar di bawah z-index sidebar -->
+        <div x-show="isMobile && mobileSidebarOpen"
+            x-transition:enter="transition-opacity ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="mobileSidebarOpen = false"
+            class="fixed inset-0 z-40 bg-black/60 md:hidden">
         </div>
 
         <!-- Sidebar diperbaiki logic classnya agar tidak mini di mobile -->
@@ -158,15 +165,15 @@ window.addEventListener('scroll', () => {
                 <div class="text-center font-bold text-xl text-white" x-show="sidebarOpen || mobileSidebarOpen"
                     x-transition>
                     <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center flex-shrink-0">
                             <span class="text-blue-600 font-bold text-sm">S</span>
                         </div>
-                        <span class="whitespace-nowrap">SmartLab Admin</span>
+                        <span class="whitespace-nowrap overflow-hidden">SmartLab Admin</span>
                     </div>
                 </div>
                 <div class="flex items-center justify-center"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'w-full'">
-                    <!-- Perbaikan tombol toggle di dalam sidebar -->
+                    <!-- Perbaikan tombol toggle: di mobile tombol ini akan menutup sidebar -->
                     <button @click="isMobile ? mobileSidebarOpen = false : sidebarOpen = !sidebarOpen"
                         class="p-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -268,7 +275,7 @@ window.addEventListener('scroll', () => {
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
                         </path>
                     </svg>
                     <span x-show="sidebarOpen || mobileSidebarOpen" x-transition class="whitespace-nowrap">Kelola
@@ -285,7 +292,8 @@ window.addEventListener('scroll', () => {
         <div class="flex-1 flex flex-col transition-all duration-300 w-full overflow-x-hidden"
             :class="{
                 'md:ml-80': sidebarOpen && !isMobile,
-                'md:ml-16': !sidebarOpen && !isMobile
+                'md:ml-16': !sidebarOpen && !isMobile,
+                'ml-0': isMobile // Memastikan tidak ada margin di mobile agar konten tidak terdorong
             }">
             <!-- Updated header with mobile hamburger and centered logo -->
             <header class="bg-white border-b border-slate-200 sticky top-0 z-30 transition-shadow duration-300"
