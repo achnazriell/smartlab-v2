@@ -64,12 +64,6 @@
             display: none !important;
         }
 
-        /* Mobile sidebar overlay styles */
-        .sidebar-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            transition: opacity 0.3s ease;
-        }
-
         /* Header scroll effect */
         .header-scrolled {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -85,11 +79,9 @@
         .table-wrapper table {
             width: 100%;
             min-width: 800px;
-            /* sesuaikan dengan jumlah kolom */
             border-collapse: collapse;
         }
 
-        /* optional: biar teks gak bikin kolom terlalu tinggi */
         .table-wrapper th,
         .table-wrapper td {
             white-space: nowrap;
@@ -118,21 +110,10 @@
                 box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.811);
             }
         }
-
-        /* Mobile sidebar slide animation */
-        @media (max-width: 767px) {
-
-            /* Hide mini sidebar completely on mobile */
-            .sidebar-desktop-mini {
-                display: none !important;
-            }
-        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/preline@latest/dist/preline.min.js"></script>
 </head>
-
-<!-- Added mobileSidebarOpen and headerScrolled state -->
 
 <body class="bg-slate-50 font-sans" x-data="{
     sidebarOpen: window.innerWidth >= 768,
@@ -144,6 +125,9 @@
     isMobile = window.innerWidth < 768;
     if (!isMobile) {
         mobileSidebarOpen = false;
+        sidebarOpen = true;
+    } else {
+        sidebarOpen = false;
     }
 });
 window.addEventListener('scroll', () => {
@@ -151,15 +135,15 @@ window.addEventListener('scroll', () => {
 });" x-cloak>
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay backdrop -->
-        <!-- Memastikan backdrop muncul dengan z-index yang benar -->
-        <div x-show="mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
+        <!-- Overlay backdrop hanya muncul di mobile saat sidebar terbuka -->
+        <div x-show="isMobile && mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
             x-transition:leave="transition-opacity ease-in duration-200" x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0" @click="mobileSidebarOpen = false"
             class="fixed inset-0 z-40 bg-black/50 md:hidden">
         </div>
 
-        <!-- Updated sidebar for mobile overlay behavior -->
+        <!-- Sidebar diperbaiki logic classnya agar tidak mini di mobile -->
         <aside
             class="sidebar-transition bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 shadow-2xl border-r border-blue-300 fixed left-0 top-0 h-full z-50"
             :class="{
@@ -168,35 +152,33 @@ window.addEventListener('scroll', () => {
                 'w-80 translate-x-0': isMobile && mobileSidebarOpen,
                 'w-80 -translate-x-full': isMobile && !mobileSidebarOpen
             }">
+
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between p-6 border-b border-blue-500">
-                <div class="text-center font-bold text-xl text-white"
-                    x-show="sidebarOpen || (isMobile && mobileSidebarOpen)" x-transition>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <span class="text-blue-600 font-bold text-sm">S</span>
+                <div class="text-center font-bold text-xl text-white" x-show="sidebarOpen || mobileSidebarOpen"
+                    x-transition>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                            <span class="text-blue-600 font-bold text-sm">S</span>
+                        </div>
+                        <span class="whitespace-nowrap">SmartLab Admin</span>
                     </div>
-                    <span>SmartLab Admin</span>
                 </div>
-
                 <div class="flex items-center justify-center"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'w-full'">
-                    <!-- Perbaiki logika toggle tombol di dalam sidebar -->
+                    <!-- Perbaikan tombol toggle di dalam sidebar -->
                     <button @click="isMobile ? mobileSidebarOpen = false : sidebarOpen = !sidebarOpen"
                         class="p-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors duration-200">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="size-6">
-                            <path x-show="!sidebarOpen && !mobileSidebarOpen" stroke-linecap="round"
-                                stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            <path x-show="sidebarOpen || mobileSidebarOpen" stroke-linecap="round"
-                                stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                         </svg>
                     </button>
                 </div>
             </div>
 
-            <nav class="mt-6 px-4 overflow-y-auto h-full pb-20">
+            <nav class="mt-6 px-4 overflow-y-auto h-[calc(100vh-100px)] pb-20">
                 <!-- Dashboard -->
                 <a href="{{ route('home') }}"
                     class="flex items-center py-3 px-4 mb-2 text-white hover:bg-blue-500 rounded-lg transition-all duration-200 group relative {{ request()->routeIs('dashboard') ? 'bg-blue-500' : '' }}"
@@ -256,6 +238,7 @@ window.addEventListener('scroll', () => {
                                 <span>Murid</span>
                             </a>
                         </div>
+                    </button>
                 </div>
 
                 <!-- Kelola Kelas -->
@@ -301,14 +284,14 @@ window.addEventListener('scroll', () => {
         <!-- Main content - no margin shift on mobile -->
         <div class="flex-1 flex flex-col transition-all duration-300 w-full overflow-x-hidden"
             :class="{
-                'md:ml-80': sidebarOpen,
-                'md:ml-16': !sidebarOpen
+                'md:ml-80': sidebarOpen && !isMobile,
+                'md:ml-16': !sidebarOpen && !isMobile
             }">
             <!-- Updated header with mobile hamburger and centered logo -->
             <header class="bg-white border-b border-slate-200 sticky top-0 z-30 transition-shadow duration-300"
                 :class="headerScrolled ? 'header-scrolled' : 'card-shadow'">
                 <div class="flex justify-between items-center px-4 md:px-6 py-3 md:py-4">
-                    <!-- Mobile hamburger button -->
+                    <!-- Tombol hamburger hanya muncul di mobile -->
                     <div class="flex items-center">
                         <button @click="mobileSidebarOpen = true"
                             class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 mr-2">
