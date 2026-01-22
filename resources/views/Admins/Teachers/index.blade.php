@@ -146,11 +146,6 @@
                                     NIP
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                    Mata
-                                    Pelajaran</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                    Kelas</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Aksi
                                 </th>
                             </tr>
@@ -182,32 +177,22 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
                                         {{ $teacher->teacher->NIP ?? '-' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                        @if ($teacher->teacher && $teacher->teacher->subjects)
-                                            @foreach ($teacher->teacher->subjects as $subject)
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-1">
-                                                    {{ $subject->name_subject }}
-                                                </span>
-                                            @endforeach
-                                        @else
-                                            <span class="text-slate-400">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if ($teacher->teacher && $teacher->teacher->classes)
-                                            @foreach ($teacher->teacher->classes as $class)
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-1">
-                                                    {{ $class->name_class }}
-                                                </span>
-                                            @endforeach
-                                        @else
-                                            <span class="text-slate-400">-</span>
-                                        @endif
-                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <div class="flex items-center space-x-2">
+                                            <!-- Perbaiki tombol Detail dengan styling yang lebih baik -->
+                                            <button
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                                                onclick="openDetailModal({{ $teacher->teacher->id }})">
+                                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                                    </path>
+                                                </svg>
+                                                Detail
+                                            </button>
                                             <button type="button" onclick="openEditModal({{ $teacher->id }})"
                                                 class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200">
                                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor"
@@ -231,7 +216,66 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <div id="detailModal{{ $teacher->teacher->id }}"
+                                    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
 
+                                    <div
+                                        class="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+
+                                        <!-- HEADER -->
+                                        <div
+                                            class="px-6 py-5 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-2xl">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 6.253v13m0-13C6.5 6.253 2 10.998 2 17s4.5 10.747 10 10.747 10-4.692 10-10.747c0-5.002-4.5-10.747-10-10.747z">
+                                                        </path>
+                                                    </svg>
+                                                </div>
+                                                <h3 class="text-lg font-bold text-slate-900">Detail Mengajar Guru</h3>
+                                            </div>
+                                        </div>
+
+                                        <div id="detailContent{{ $teacher->teacher->id }}"
+                                            class="p-6 space-y-3 overflow-y-auto flex-1">
+
+                                            @php
+                                                $teacherClasses = $teacher->teacher->teacherClasses;
+                                            @endphp
+
+                                            @if ($teacherClasses->isEmpty())
+                                                <p class="text-center text-slate-500 text-sm">
+                                                    📚 Belum ada data mengajar
+                                                </p>
+                                            @else
+                                                @foreach ($teacherClasses as $tc)
+                                                    <div class="border border-slate-200 rounded-lg p-4">
+                                                        <div class="font-semibold text-slate-900">
+                                                            {{ $tc->classes->name_class }}
+                                                        </div>
+
+                                                        <div class="text-sm text-slate-600 mt-1">
+                                                            {{ $tc->subjects->pluck('name_subject')->join(', ') }}
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            @endif
+                                        </div>
+
+                                        <!-- FOOTER (TETAP) -->
+                                        <div
+                                            class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50 rounded-b-2xl">
+                                            <button onclick="closeDetailModal({{ $teacher->teacher->id }})"
+                                                class="px-4 py-2 bg-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-300 transition-all duration-200">
+                                                Tutup
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                                 {{-- Modal Edit dengan Select2 untuk pilih kelas --}}
                                 <div id="editModal{{ $teacher->id }}" class="fixed inset-0 z-50 hidden"
                                     aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
@@ -625,12 +669,12 @@
     {{-- Modal Tambah Guru --}}
     <div id="addModal" class="fixed inset-0 z-50 hidden" aria-labelledby="add-modal-title" role="dialog"
         aria-modal="true">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddModal()"></div>
+        <div class="absolute inset-0  p-4">
             <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
                     <div
-                        class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+                        class="px-6 py-4 border-b bg-blue-50 shrink-0 border-slate-200 flex justify-between items-center rounded-t-xl">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 24 24"
@@ -652,9 +696,10 @@
                             </svg>
                         </button>
                     </div>
-                    <form action="{{ route('teachers.store') }}" method="POST">
+                    <form class="flex flex-col flex-1 overflow-hidden" action="{{ route('teachers.store') }}"
+                        method="POST">
                         @csrf
-                        <div class="p-6 space-y-4">
+                        <div class="p-6 space-y-4 overflow-y-auto flex-1">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span
                                         class="text-red-500">*</span></label>
@@ -679,16 +724,6 @@
                                 <input type="text" name="NIP" required placeholder="Masukkan NIP"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono">
                             </div>
-                            {{-- Mengubah Mata Pelajaran menjadi Multiple Select --}}
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Mata Pelajaran
-                                    (Multiple)</label>
-                                <select name="subject_id[]" id="addSubjectSelect" multiple required class="w-full">
-                                    @foreach ($subjects as $subject)
-                                        <option value="{{ $subject->id }}">{{ $subject->name_subject }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
                             {{-- Mengubah Kelas menjadi Multiple Select --}}
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Kelas (Multiple)</label>
@@ -697,6 +732,9 @@
                                         <option value="{{ $class->id }}">{{ $class->name_class }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div id="subject-per-class" class="space-y-4 mt-4">
+
                             </div>
                         </div>
                         <div
@@ -718,6 +756,20 @@
 
     {{-- Script dengan Select2 untuk modal edit kelas --}}
     <script>
+        function openDetailModal(id) {
+            const modal = document.getElementById('detailModal' + id);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetailModal(id) {
+            const modal = document.getElementById('detailModal' + id);
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
         function openEditModal(id) {
             document.getElementById('editModal' + id).classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -762,32 +814,24 @@
             document.getElementById('addModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             setTimeout(function() {
-                $('#addSubjectSelect').select2({
-                    placeholder: '-- Pilih Mata Pelajaran --',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#addModal')
-                });
                 $('#addClassSelect').select2({
                     placeholder: '-- Pilih Kelas --',
                     allowClear: true,
                     width: '100%',
                     dropdownParent: $('#addModal')
                 });
+                initClassSelect();
             }, 100);
         }
 
         function closeAddModal() {
             document.getElementById('addModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
-            if ($('#addSubjectSelect').hasClass('select2-hidden-accessible')) {
-                $('#addSubjectSelect').val(null).trigger('change');
-                $('#addSubjectSelect').select2('destroy');
-            }
-            if ($('#addClassSelect').hasClass('select2-hidden-accessible')) {
-                $('#addClassSelect').val(null).trigger('change');
-                $('#addClassSelect').select2('destroy');
-            }
+
+            $('#addClassSelect').val(null).trigger('change');
+            $('#addClassSelect').select2('destroy');
+
+            document.getElementById('subject-per-class').innerHTML = '';
         }
 
         $(document).ready(function() {
@@ -958,5 +1002,51 @@
                 }
             });
         });
+    </script>
+    <script>
+        const subjects = @json($subjects);
+
+        function initClassSelect() {
+            $('#addClassSelect').select2({
+                placeholder: '-- Pilih Kelas --',
+                width: '100%',
+                dropdownParent: $('#addModal')
+            });
+
+            $('#addClassSelect').on('change', function() {
+                const container = document.getElementById('subject-per-class');
+                container.innerHTML = '';
+
+                const selectedClasses = $(this).select2('data');
+
+                selectedClasses.forEach(cls => {
+                    const classId = cls.id;
+                    const className = cls.text;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = `
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        Mata Pelajaran Kelas ${className}
+                    </label>
+                    <select name="subjects[${classId}][]"
+                        class="subject-select w-full" multiple required>
+                        ${subjects.map(s =>
+                            `<option value="${s.id}">${s.name_subject}</option>`
+                        ).join('')}
+                    </select>
+                `;
+
+                    container.appendChild(wrapper);
+                });
+
+                setTimeout(() => {
+                    $('.subject-select').select2({
+                        placeholder: '-- Pilih Mata Pelajaran --',
+                        width: '100%',
+                        dropdownParent: $('#addModal')
+                    });
+                }, 50);
+            });
+        }
     </script>
 @endsection

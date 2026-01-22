@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Classes;
 use App\Models\Student;
+use App\Models\Task;
+use App\Models\Teacher;
 use App\Models\TeacherClass;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class HomeguruController extends Controller
 {
@@ -27,31 +30,59 @@ class HomeguruController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+
+        $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
+
         $teacherClasses = TeacherClass::with([
             'classes.studentList.user',
-        ])->get();
+            'subjects'
+        ])
+            ->where('teacher_id', $teacher->id)
+            ->limit(3)
+            ->get();
 
-        $students = [];
-        $muridCounts = [];
-        foreach ($teacherClasses as $teacherClass) {
-            if (! $teacherClass->classes) {
-                continue;
-            }
+        $totalKelas = $teacherClasses->count();
+        $totalSiswa = 0;
+        $kelasData = [];
 
-            $classId = $teacherClass->classes->id;
+        $tugasBerjalan = Task::where('user_id', $user->id)
+            ->where('date_collection', '>=', now())
+            ->count();
 
-            $students[$classId] = Student::where('class_id', $classId)
-                ->whereHas('user.roles', fn ($q) => $q->where('name', 'Murid'))
-                ->with('user')
-                ->paginate(10);
+        $tugasLewat = Task::where('user_id', $user->id)
+            ->where('date_collection', '<', now())
+            ->count();
 
-            $muridCounts[$classId] = $students[$classId]->total();
+        $tugasDinilai = Task::where('user_id', $user->id)
+            ->where('date_collection', '<', now())
+            ->whereDoesntHave('collections.assessment', function ($q) {
+                $q->whereNull('mark_task');
+            })
+            ->count();
+
+
+        foreach ($teacherClasses as $tc) {
+            if (!$tc->classes) continue;
+
+            $class = $tc->classes;
+            $jumlahSiswa = $class->studentList->count();
+            $totalSiswa += $jumlahSiswa;
+
+            $kelasData[] = [
+                'kelas' => $class->name_class,
+                'mapel' => $tc->subjects->pluck('name_subject')->toArray(),
+                'jumlah_siswa' => $jumlahSiswa,
+            ];
         }
 
         return view('Guru.dashboardGuru', compact(
-            'teacherClasses',
-            'students',
-            'muridCounts'
+            'totalKelas',
+            'totalSiswa',
+            'kelasData',
+            'tugasBerjalan',
+            'tugasDinilai',
+            'tugasLewat'
         ));
     }
 
@@ -76,5 +107,20 @@ class HomeguruController extends Controller
         }
 
         return response()->json(['message' => 'Permintaan tidak valid'], 400);
+    }
+
+    public function kelasSaya()
+    {
+        $user = auth()->user();
+        $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
+
+        $teacherClasses = TeacherClass::with([
+            'classes.studentList.user',
+            'subjects'
+        ])
+            ->where('teacher_id', $teacher->id)
+            ->paginate(9); // 👈 pagination biar rapi
+
+        return view('Guru.kelas.index', compact('teacherClasses'));
     }
 }

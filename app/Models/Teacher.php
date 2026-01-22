@@ -17,15 +17,15 @@ class Teacher extends Model
         return $this->belongsTo(User::class);
     }
 
-    // 🔹 RELASI MAPEL (teacher_subjects)
-    public function subjects()
+    public function exams()
     {
-        return $this->belongsToMany(
-            Subject::class,
-            'teacher_subjects',
-            'teacher_id',
-            'subject_id'
-        );
+        // BENAR: hasMany dengan foreign key 'teacher_id'
+        return $this->hasMany(Exam::class, 'teacher_id');
+    }
+
+    public function teacherClasses()
+    {
+        return $this->hasMany(TeacherClass::class);
     }
 
     // 🔹 RELASI KELAS (teacher_classes)
@@ -35,7 +35,18 @@ class Teacher extends Model
             Classes::class,
             'teacher_classes',
             'teacher_id',
-            'classes_id'
+            relatedPivotKey: 'classes_id'
+        );
+    }
+
+    // app/Models/Teacher.php
+    public function subjects()
+    {
+        return $this->belongsToMany(
+            Subject::class,
+            'teacher_subjects',
+            'teacher_id',
+            'subject_id'
         );
     }
 }

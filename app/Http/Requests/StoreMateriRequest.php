@@ -22,20 +22,22 @@ class StoreMateriRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'class_id'=>['required','exists:classes,id'],
-            'title_materi'=>['required'],
-            'file_materi'=>['required','mimes:pdf','max:10240'],
+            'subject_id' => 'required|exists:subjects,id',
+            'class_id' => 'required|array',
+            'class_id.*' => 'exists:classes,id',
+            'title_materi' => ['required'],
+            'file_materi' => ['required', 'mimes:pdf', 'max:10240'],
         ];
     }
     public function messages()
     {
         return [
-            'class_id.required'=>'Kelas Belum Di-Pilih',
-            'class_id.exists'=>'Kelas Tidak Ada',
-            'title_materi.required'=>'Judul Materi Belum Di-isi',
-            'file_materi.required'=>'File Materi Belum Di-isi',
-            'file_materi.mimes'=>'File Materi Harus Bertipe PDF',
-            'file_materi.max'=>'File Materi Harus Dibawah 10 MB',
+            'class_id.required' => 'Kelas Belum Di-Pilih',
+            'class_id.exists' => 'Kelas Tidak Ada',
+            'title_materi.required' => 'Judul Materi Belum Di-isi',
+            'file_materi.required' => 'File Materi Belum Di-isi',
+            'file_materi.mimes' => 'File Materi Harus Bertipe PDF',
+            'file_materi.max' => 'File Materi Harus Dibawah 10 MB',
         ];
     }
 }

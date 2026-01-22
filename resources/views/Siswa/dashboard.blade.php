@@ -3,79 +3,17 @@
 @section('content')
     {{-- Restructured layout with proper responsive grid and consistent spacing --}}
     <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4 sm:p-6 lg:p-8">
+        <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
+            <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
+        </div>
         {{-- Header Section --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-900">Dashboard</h1>
-            <p class="text-sm sm:text-base text-gray-600" id="current-date"></p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-8">
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-950">Dashboard</h1>
+            <p class="text-sm sm:text-base text-gray-500 font-medium" id="current-date"></p>
         </div>
 
-        {{-- Main grid layout - 1 column on mobile, 2 columns on lg screens --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            {{-- Right Column - Profile Panel (full width on mobile, sidebar on lg) --}}
-            <div class="lg:col-span-1">
-                <div class="rounded-2xl shadow-md overflow-hidden h-full"
-                    style="background-image: url('image/wallpaper_blue.jpeg'); background-size: cover; background-position: center;">
-                    <div class="p-5 sm:p-6 flex flex-col items-center text-white min-h-[300px] sm:min-h-[350px]">
-                        {{-- Avatar --}}
-                        <div class="flex flex-col items-center mb-4">
-                            <svg class="w-20 h-20 sm:w-24 sm:h-24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd"
-                                    d="M12 20a7.966 7.966 0 0 1-5.002-1.756l.002.001v-.683c0-1.794 1.492-3.25 3.333-3.25h3.334c1.84 0 3.333 1.456 3.333 3.25v.683A7.966 7.966 0 0 1 12 20ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10c0 5.5-4.44 9.963-9.932 10h-.138C6.438 21.962 2 17.5 2 12Zm10-5c-1.84 0-3.333 1.455-3.333 3.25S10.159 13.5 12 13.5c1.84 0 3.333-1.455 3.333-3.25S13.841 7 12 7Z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-lg sm:text-xl font-semibold mt-3 text-center">{{ Auth::user()->name }}</span>
-                            <span
-                                class="bg-blue-200 text-blue-800 font-bold text-xs sm:text-sm px-4 py-1 rounded-full mt-2">
-                                Murid
-                            </span>
-                        </div>
-
-                        {{-- Profile Details --}}
-                        <div class="w-full mt-4 space-y-3 text-sm sm:text-base">
-                            <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24">
-                                    <path fill="currentColor"
-                                        d="M7.402 4.5C7 5.196 7 6.13 7 8v3.027C7.43 11 7.914 11 8.435 11h7.13c.52 0 1.005 0 1.435.027V8c0-1.87 0-2.804-.402-3.5A3 3 0 0 0 15.5 3.402C14.804 3 13.87 3 12 3s-2.804 0-3.5.402A3 3 0 0 0 7.402 4.5M6.25 15.991c-.502-.02-.806-.088-1.014-.315c-.297-.324-.258-.774-.18-1.675c.055-.65.181-1.088.467-1.415C6.035 12 6.858 12 8.505 12h6.99c1.647 0 2.47 0 2.982.586c.286.326.412.764.468 1.415c.077.9.116 1.351-.181 1.675c-.208.227-.512.295-1.014.315V21a.75.75 0 1 1-1.5 0v-5h-8.5v5a.75.75 0 1 1-1.5 0z" />
-                                </svg>
-                                <div>
-                                    <span class="font-semibold">Kelas:</span>
-                                    @forelse ($class as $kelas)
-                                        {{ $kelas->name_class }}{{ !$loop->last ? ',' : '' }}
-                                    @empty
-                                        Belum Dapat Kelas
-                                    @endforelse
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24">
-                                    <path fill="currentColor"
-                                        d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2m0 4l-8 5l-8-5V6l8 5l8-5z" />
-                                </svg>
-                                <div class="break-all">
-                                    <span class="font-semibold">Email:</span> {{ Auth::user()->email }}
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24">
-                                    <path fill="currentColor"
-                                        d="M7.75 2.5a.75.75 0 0 0-1.5 0v1.58c-1.44.115-2.384.397-3.078 1.092c-.695.694-.977 1.639-1.093 3.078h19.842c-.116-1.44-.398-2.384-1.093-3.078c-.694-.695-1.639-.977-3.078-1.093V2.5a.75.75 0 0 0-1.5 0v1.513C15.585 4 14.839 4 14 4h-4c-.839 0-1.585 0-2.25.013z" />
-                                    <path fill="currentColor" fill-rule="evenodd"
-                                        d="M2 12c0-.839 0-1.585.013-2.25h19.974C22 10.415 22 11.161 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14zm15 2a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-4-5a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-6-3a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <div>
-                                    <span class="font-semibold">Masa Berakhir:</span>
-                                    {{ \Carbon\Carbon::parse(Auth::user()->graduation_date)->translatedFormat('j F Y') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {{-- Main grid layout - 1 column on mobile, 3 columns on lg screens --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {{-- Left Column - Welcome Banner & Task Cards --}}
             <div class="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
                 {{-- Welcome Banner --}}
@@ -98,7 +36,6 @@
                     </div>
                 </div>
 
-                {{-- Task Cards Grid - stack on mobile, side by side on sm+ --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     {{-- Card Tugas Belum Dikerjakan --}}
                     <a href="{{ route('Tugas', ['status' => 'Belum mengumpulkan']) }}"
@@ -157,6 +94,51 @@
                     </a>
                 </div>
             </div>
+
+            {{-- Right Column - Informational Cards --}}
+            <div class="flex flex-col gap-4 sm:gap-6">
+                {{-- Aktivitas Terakhir Card --}}
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4 sm:p-6">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 rounded-lg bg-white/20 backdrop-blur-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M4 2a1 1 0 00-.894.553L.446 9.002a1 1 0 000 1.996l2.66 6.449A1 1 0 004 17h12a1 1 0 00.894-.553l3.66-6.447a1 1 0 000-1.996l-3.66-6.449A1 1 0 0016 2H4zm0 2h12l2.236 5-2.236 5H4L1.764 9 4 4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-white">Aktivitas Terakhir</h3>
+                        </div>
+                    </div>
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div
+                            class="flex items-start gap-3 pb-4 border-b border-gray-200 hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900"><span class="font-semibold">Menyelesaikan Kuis</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Hari ini pukul 14:30</p>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-start gap-3 pb-4 border-b border-gray-200 hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900"><span class="font-semibold">Mengumpulkan Tugas</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Kemarin pukul 10:15</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900"><span class="font-semibold">Membaca Materi</span></p>
+                                <p class="text-xs text-gray-500 mt-1">2 hari yang lalu</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -175,5 +157,10 @@
             dateElement.textContent = `${dayName}, ${today.toLocaleDateString('id-ID', options)}`;
         }
         updateDate();
+        
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+        }
     </script>
 @endsection

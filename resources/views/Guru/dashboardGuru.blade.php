@@ -1,172 +1,158 @@
 @extends('layouts.appTeacher')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Modern welcome banner with gradient -->
-    <div class="card-modern p-8 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-xl text-white overflow-hidden relative">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
-        <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
-
-        <div class="relative z-10">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl text-blue-500 font-poppins font-semibold mb-2">Selamat Datang, {{ Auth::user()->name }}!</h1>
-                    <p class="text-blue-400 font-semibold text-lg">Kelola kelas dan pembelajaran dengan mudah di SmartLab</p>
-                    <div class="mt-4 flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                            <span class="text-blue-400">Guru Profesional</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="text-blue-400">{{ now()->format('d M Y') }}</span>
-                        </div>
-                    </div>
+    <div class="space-y-8">
+        <!-- Welcome Section -->
+        <div
+            class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-800 p-8 lg:p-12 text-white shadow-2xl shadow-blue-200">
+            <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl">
+            </div>
+            <div
+                class="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-blue-400/20 rounded-full blur-2xl">
+            </div>
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                <div class="max-w-2xl">
+                    <h1 class="text-3xl lg:text-4xl font-semibold mb-4 font-display tracking-tight">Selamat datang kembali,
+                        {{ Auth::user()->name }}! 👋</h1>
                 </div>
-                <div class="hidden lg:block">
-                    <div class="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center">
-                        <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <div class="flex flex-shrink-0">
+                    <a href="{{ route('tasks.create') }}"
+                        class="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-xl">
+                        Buat Tugas Baru
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+                class="card-modern p-6 group rounded-xl bg-white shadow-md hover:border-blue-300 transition-all duration-300">
+                <div class="flex items-center justify-between mb-6">
+                    <div
+                        class="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
                 </div>
+                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Siswa Aktif</p>
+                <p class="text-4xl font-semibold text-slate-900 mt-2 font-display tracking-tight">{{ $totalSiswa }}</p>
+            </div>
+
+            <div
+                class="card-modern p-6 group rounded-xl bg-white shadow-md hover:border-amber-300 transition-all duration-300">
+                <div class="flex items-center justify-between mb-6">
+                    <div
+                        class="p-4 bg-amber-50 text-amber-600 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                    Tugas Berjalan
+                </p>
+
+                @if ($tugasBerjalan === null)
+                    <p class="text-sm text-slate-400 italic mt-2">
+                        Fitur belum tersedia
+                    </p>
+                @else
+                    <p class="text-4xl font-semibold text-slate-900 mt-2">
+                        {{ $tugasBerjalan }}
+                    </p>
+                @endif
+            </div>
+
+            <div
+                class="card-modern p-6 group rounded-xl bg-white shadow-md hover:border-emerald-300 transition-all duration-300">
+                <div class="flex items-center justify-between mb-6">
+                    <div
+                        class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                    Selesai Dinilai
+                </p>
+
+                @if ($tugasDinilai === null)
+                    <p class="text-sm text-slate-400 italic mt-2">
+                        Belum ada data penilaian
+                    </p>
+                @else
+                    <p class="text-4xl font-semibold text-slate-900 mt-2">
+                        {{ $tugasDinilai }}
+                    </p>
+                @endif
             </div>
         </div>
-    </div>
 
-    <!-- Modern class cards grid -->
-    <div class="card-modern p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">Kelas yang Diajar</h2>
-            <div class="flex items-center space-x-2 text-sm text-gray-500">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path fill-rule="evenodd" d="M4.125 3C3.089 3 2.25 3.84 2.25 4.875V18a3 3 0 0 0 3 3h15a3 3 0 0 1-3-3V4.875C17.25 3.839 16.41 3 15.375 3H4.125Z" clip-rule="evenodd"/>
-                </svg>
-                <span>Total: {{ $teacherClasses->count() }} Kelas</span>
-            </div>
-        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Classes Section -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-slate-800 font-display tracking-tight">Kelas Saya</h2>
+                    <a href="{{ route('guru.kelas') }}"
+                        class="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center group">
+                        Lihat Semua
+                        <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Class Card 1 -->
+                    @foreach ($kelasData as $kelas)
+                        <div
+                            class="card-modern p-6 rounded-xl bg-white shadow-md hover:border-blue-400 transition-all group">
+                            <div class="flex justify-between items-start mb-6">
+                                <div
+                                    class="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center text-white font-semibold text-xl">
+                                    {{ strtoupper(substr($kelas['kelas'], 0, 1)) }}
+                                </div>
+                                <span class="text-xs font-bold px-3 py-1 bg-white border rounded-xl">
+                                    {{ $kelas['jumlah_siswa'] }} Siswa
+                                </span>
+                            </div>
 
-        @if ($teacherClasses->isEmpty())
-            <div class="text-center py-12">
-                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                </svg>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Kelas</h3>
-                <p class="text-gray-500">Anda belum memiliki kelas yang diajar</p>
-            </div>
-        @else
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach ($teacherClasses as $teacherClass)
-                    @if ($teacherClass->classes->name_class)
-                        <div class="group relative bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
-                            <!-- Background Pattern -->
-                            <div class="absolute inset-0 bg-white/5 rounded-2xl"></div>
-                            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10"></div>
+                            <h3 class="text-xl font-bold text-slate-800 mb-1">
+                                {{ $kelas['kelas'] }}
+                            </h3>
 
-                            <div class="relative z-10">
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="flex-1">
-                                        <h3 class="text-2xl font-bold mb-2">{{ $teacherClass->classes->name_class }}</h3>
-                                        <div class="flex items-center space-x-2 text-blue-100">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd"/>
-                                            </svg>
-                                            <span class="text-sm font-medium">{{ $muridCounts[$teacherClass->classes->id] ?? 0 }} Siswa</span>
-                                        </div>
-                                    </div>
-                                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                            <path fill-rule="evenodd" d="M4.125 3C3.089 3 2.25 3.84 2.25 4.875V18a3 3 0 0 0 3 3h15a3 3 0 0 1-3-3V4.875C17.25 3.839 16.41 3 15.375 3H4.125Z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </div>
+                            <p class="text-sm italic text-slate-500 mb-6">
+                                @foreach ($kelas['mapel'] as $subject)
+                                    <span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs mr-1">
+                                        {{ $subject }}
+                                    </span>
+                                @endforeach
+                            </p>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700">
+                                    <span>Progres Materi</span>
+                                    <span class="text-slate-400">–</span>
                                 </div>
 
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center space-x-4 text-sm text-blue-100">
-                                        <div class="flex items-center space-x-1">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                <path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z" clip-rule="evenodd"/>
-                                            </svg>
-                                            <span>Aktif</span>
-                                        </div>
-                                    </div>
-
-                                    <button onclick="openModal('detailModal-{{ $teacherClass->classes->id }}')"
-                                            class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm">
-                                        Lihat Detail
-                                    </button>
+                                <div class="w-full h-2.5 bg-slate-100 rounded-full">
+                                    <div class="h-full bg-slate-300 rounded-full w-0"></div>
                                 </div>
+
+                                <p class="text-xs text-slate-400 italic mt-2">
+                                    Progres akan muncul setelah materi tersedia
+                                </p>
                             </div>
                         </div>
-                    @endif
-                @endforeach
-            </div>
-        @endif
-    </div>
-
-    <!-- Modern modals for class details -->
-    @foreach ($teacherClasses as $teacherClass)
-        <div id="detailModal-{{ $teacherClass->classes->id }}"
-             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-bold">Detail Kelas {{ $teacherClass->classes->name_class }}</h3>
-                            <p class="text-blue-100 text-sm">Daftar siswa dan informasi kelas</p>
-                        </div>
-                        <button onclick="closeModal('detailModal-{{ $teacherClass->classes->id }}')"
-                                class="p-2 hover:bg-white/20 rounded-lg transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="p-6 overflow-y-auto max-h-96">
-                    <div id="table-container-{{ $teacherClass->classes->id }}">
-                        @include('partials.studentList', [
-                            'students' => $students[$teacherClass->classes->id] ?? [],
-                            'classId' => $teacherClass->classes->id,
-                        ])
-                    </div>
+                    @endforeach
                 </div>
             </div>
         </div>
-    @endforeach
-</div>
-
-<script>
-function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-    }
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    const modals = document.querySelectorAll('[id^="detailModal-"]');
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            modal.classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-    });
-});
-</script>
+    </div>
 @endsection

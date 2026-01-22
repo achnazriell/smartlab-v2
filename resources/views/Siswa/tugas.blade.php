@@ -1,45 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<!--begin::Head-->
+@extends('layouts.appSiswa')
 
-<!-- Mirrored from preview.keenthemes.com/metronic8/demo31/ by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 14 Feb 2023 14:27:54 GMT -->
-<!-- Added by HTTrack -->
-<meta http-equiv="content-type" content="text/html;charset=UTF-8" /><!-- /Added by HTTrack -->
-
-<head>
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
-    <title>Smart-LAB</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:type" content="article" />
-    <meta name="csrf-token" content="8IMVNabevkMVEFpvO472s41XBcvpCVja5sJxIXQO">
-    <meta property="og:description" content="Improve your skill with hummatech internship.">
-
-    @vite(['resources/css/app.css', 'resources/css/style.css', 'resources/js/app.js'])
-
-    <link rel="icon" href="https://class.hummatech.com/app-assets/logo_file/Logo-Kelas-Industri.png"
-        type="image/png" />
-    <link rel="shortcut icon" href="https://class.hummatech.com/app-assets/logo_file/Logo-Kelas-Industri.png" />
-
-    <!--begin::Fonts(mandatory for all pages)-->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" /> <!--end::Fonts-->
-
-    <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
-    <link href="https://class.hummatech.com/user-assets/plugins/global/plugins.bundle.css" rel="stylesheet"
-        type="text/css" />
-    <link href="https://class.hummatech.com/user-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-    <!--end::Global Stylesheets Bundle-->
-
-    <link href="https://class.hummatech.com/user-assets/plugins/custom/datatables/datatables.bundle.css"
-        rel="stylesheet" type="text/css" />
-
-    {{-- flowbite --}}
-    <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
-
-    <!-- Link Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-
+@section('content')
     <style>
         .taskModal {
             top: 0;
@@ -100,44 +61,11 @@
         }
     </style>
 
-</head>
-<!--end::Head-->
-
-<!--begin::Body-->
-
-<body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true"
-    data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-toolbar="true"
-    data-kt-app-sidebar-push-footer="true" data-kt-app-sidebar-stacked="true" class="app-default">
-    <!--begin::Theme mode setup on page load-->
-    <script>
-        var defaultThemeMode = "light";
-        var themeMode;
-
-        if (document.documentElement) {
-            if (document.documentElement.hasAttribute("data-bs-theme-mode")) {
-                themeMode = document.documentElement.getAttribute("data-bs-theme-mode");
-            } else {
-                if (localStorage.getItem("data-bs-theme") !== null) {
-                    themeMode = localStorage.getItem("data-bs-theme");
-                } else {
-                    themeMode = defaultThemeMode;
-                }
-            }
-
-            if (themeMode === "system") {
-                themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-            }
-
-            document.documentElement.setAttribute("data-bs-theme", themeMode);
-        }
-    </script>
-    <!--end::Theme mode setup on page load-->
-
-    <x-navbarsiswa></x-navbarsiswa>
-
     <!--begin::App-->
     <div class="container p-10">
-
+        <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
+            <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
+        </div>
         <div class="flex justify-between items-center my-8">
             <h1 class="text-2xl text-gray-700 font-poppins font-bold">
                 Daftar Tugas
@@ -207,11 +135,9 @@
             </div>
         </div>
         @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
-                role="alert">
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                 <strong class="font-bold">{{ session('success') }}</strong>
-                <button onclick="this.parentElement.style.display='none'"
-                    class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <button onclick="this.parentElement.style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -224,13 +150,12 @@
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
-                <button onclick="this.parentElement.style.display='none'"
-                    class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <button onclick="this.parentElement.style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
         @endif
-        @if (auth()->user() && auth()->user()->class()->exists())
+        @if (auth()->user()->student && auth()->user()->student->class)
             <div class="space-y-6">
                 @forelse ($tasks as $task)
                     <div style="position: relative;">
@@ -242,12 +167,12 @@
                             @endforeach
                             <h2 class="text-xl font-bold mb-2">{{ $task->title_task }}</h2>
                             <p class="text-gray-600" style="margin-right: 150px">
-                                Mapel : {{$task->Subject->name_subject}}
+                                Mapel : {{ $task->Subject->name_subject }}
                             </p>
 
                             <!-- Status Sudah Dikerjakan dengan ikon -->
                             @php
-                                $status = $task->collections->first()->status ?? 'default';
+                                $status = $task->collection_status ?? 'Belum mengumpulkan';
                             @endphp
 
                             @if ($status === 'Tidak mengumpulkan')
@@ -298,7 +223,7 @@
                                     Lihat detail
                                 </button>
                                 @php
-                                    $status = $task->collections->first()->status ?? 'default';
+                                    $status = $task->collection_status ?? 'Belum mengumpulkan';
                                 @endphp
                                 @if ($status === 'Belum mengumpulkan')
                                     <button
@@ -342,8 +267,8 @@
             </div>
         @endif
         @foreach ($tasks as $task)
-            <div id="tugasModal-{{ $task->id }}"
-                class="tugasModal fixed inset-0 flex items-center justify-center" style="display: none;">
+            <div id="tugasModal-{{ $task->id }}" class="tugasModal fixed inset-0 flex items-center justify-center"
+                style="display: none;">
                 <div class="bg-white rounded-lg px-7 py-5 w-[40%] h-auto shadow-lg">
                     <h5 class="text-xl font-bold mb-4">Pengumpulan Tugas</h5>
 
@@ -361,9 +286,8 @@
                         <div class="mb-5">
                             <label class="text-gray-700 block font-medium mb-3">Upload File (PDF atau Gambar)</label>
                             <div class="relative border-2 rounded-xl  border-gray-300">
-                                <input type="file" id="file_collection-{{ $task->id }}"
-                                    name="file_collection" class="hidden" accept=".pdf,image/*"
-                                    onchange="updateFileName(this)">
+                                <input type="file" id="file_collection-{{ $task->id }}" name="file_collection"
+                                    class="hidden" accept=".pdf,image/*" onchange="updateFileName(this)">
                                 <label for="file_collection-{{ $task->id }}"
                                     class="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer inline-block">
                                     Pilih File
@@ -388,7 +312,8 @@
             <div id="showTaskModal_{{ $task->id }}"
                 class="taskModal fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50 z-50 "
                 style="display:none;">
-                <div class="bg-white rounded-lg shadow-lg w-[90%] md:w-[60%] lg:w-[50%] h-auto max-h-[90%] px-5 py-5 overflow-y-auto">
+                <div
+                    class="bg-white rounded-lg shadow-lg w-[90%] md:w-[60%] lg:w-[50%] h-auto max-h-[90%] px-5 py-5 overflow-y-auto">
                     {{-- Header Modal --}}
                     <div class="flex justify-between items-center border-b pb-4 mr-3">
                         <h5 class="text-2xl font-bold text-gray-800">Detail Tugas</h5>
@@ -464,101 +389,101 @@
             </span>
             <!--end::Svg Icon-->
         </div>
+    </div>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <script src="https://class.hummatech.com/user-assets/js/scripts.bundle.js"></script>
+    <script>
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+        }
 
-        <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
-        <script src="https://class.hummatech.com/user-assets/js/scripts.bundle.js"></script>
-        <script>
-            function updateFileName(input) {
-                const fileNameSpan = document.getElementById(`file-name-${input.id.split('-')[1]}`);
-                const fileName = input.files[0]?.name || 'Tidak ada file yang dipilih';
-                fileNameSpan.textContent = fileName;
+        function updateFileName(input) {
+            const fileNameSpan = document.getElementById(`file-name-${input.id.split('-')[1]}`);
+            const fileName = input.files[0]?.name || 'Tidak ada file yang dipilih';
+            fileNameSpan.textContent = fileName;
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex'; // Tampilkan modal
             }
+        }
 
-            function openModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modal) {
-                    modal.style.display = 'flex'; // Tampilkan modal
-                }
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none'; // Sembunyikan modal
             }
+        }
+    </script>
 
-            function closeModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modal) {
-                    modal.style.display = 'none'; // Sembunyikan modal
-                }
-            }
-        </script>
-
-        <script>
-            var options = {
-                series: [44, 55, 41, 17, 15],
-                chart: {
-                    type: 'donut',
-                },
-                responsive: [{
-                    breakpoint: 480,
-                    options: {
-                        chart: {
-                            width: 200
-                        },
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }]
-            };
-
-            var chart = new ApexCharts(document.querySelector("#kt_attendance"), options);
-            chart.render();
-        </script>
-        <!--end::Javascript-->
-        <script>
-            $('.notification-link').click(function(e) {
-                $.ajax({
-                    url: '/delete-notification/' + e.target.id,
-                    type: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    <script>
+        var options = {
+            series: [44, 55, 41, 17, 15],
+            chart: {
+                type: 'donut',
+            },
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        width: 200
                     },
-                    // success: function(response) {
-                    //     // Redirect ke halaman tujuan setelah penghapusan berhasil
-                    //     window.location.href = $(this).attr('href');
-                    // },
-                    error: function(xhr) {
-                        // Tangani kesalahan jika terjadi
-                        console.error(xhr.responseText);
+                    legend: {
+                        position: 'bottom'
                     }
-                });
-            })
-        </script>
+                }
+            }]
+        };
 
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const filterButton = document.getElementById('filterButton');
-                const filterDropdown = document.getElementById('filterDropdown');
-
-                filterButton.addEventListener('click', (event) => {
-                    event.stopPropagation(); // Mencegah event bubbling
-                    filterDropdown.classList.toggle('hidden');
-                });
-
-                // Tutup dropdown jika klik di luar dropdown
-                document.addEventListener('click', () => {
-                    filterDropdown.classList.add('hidden');
-                });
+        var chart = new ApexCharts(document.querySelector("#kt_attendance"), options);
+        chart.render();
+    </script>
+    <!--end::Javascript-->
+    <script>
+        $('.notification-link').click(function(e) {
+            $.ajax({
+                url: '/delete-notification/' + e.target.id,
+                type: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                // success: function(response) {
+                //     // Redirect ke halaman tujuan setelah penghapusan berhasil
+                //     window.location.href = $(this).attr('href');
+                // },
+                error: function(xhr) {
+                    // Tangani kesalahan jika terjadi
+                    console.error(xhr.responseText);
+                }
             });
-        </script>
+        })
+    </script>
 
-        <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015"
-            integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ=="
-            data-cf-beacon='{"rayId":"8f0bc3aff833fd88","version":"2024.10.5","r":1,"token":"a20ac1c0d36b4fa6865d9d244f4efe5a","serverTiming":{"name":{"cfExtPri":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}}}'
-            crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterButton = document.getElementById('filterButton');
+            const filterDropdown = document.getElementById('filterDropdown');
 
-        <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+            filterButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Mencegah event bubbling
+                filterDropdown.classList.toggle('hidden');
+            });
 
-</body>
-<!--end::Body-->
+            // Tutup dropdown jika klik di luar dropdown
+            document.addEventListener('click', () => {
+                filterDropdown.classList.add('hidden');
+            });
+        });
+    </script>
 
-<!-- Mirrored from preview.keenthemes.com/metronic8/demo31/ by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 14 Feb 2023 14:30:13 GMT -->
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015"
+        integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ=="
+        data-cf-beacon='{"rayId":"8f0bc3aff833fd88","version":"2024.10.5","r":1,"token":"a20ac1c0d36b4fa6865d9d244f4efe5a","serverTiming":{"name":{"cfExtPri":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}}}'
+        crossorigin="anonymous"></script>
 
-</html>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
+
+@endsection

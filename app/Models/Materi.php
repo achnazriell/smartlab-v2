@@ -26,7 +26,9 @@ class Materi extends Model
     {
         return $this->belongsToMany(Classes::class, 'materi_classes', 'materi_id', 'class_id');
     }
-    public function users(){
-        return $this->belongsTo(User::class,'user_id');
+
+    public function users()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

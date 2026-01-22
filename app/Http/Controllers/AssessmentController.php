@@ -21,58 +21,36 @@ class AssessmentController extends Controller
         // Ubah $task menjadi model
         $task = Task::findOrFail($task);
 
-        $assessments = Assessment::with(['user', 'collection.task'])
-            ->select(
-                'assessments.*',
-                'assessments.status as assessments_status',
-                'collections.status as collections_status'
-            )
-            ->whereHas('collection.task', function ($query) use ($user, $task) {
-                $query->where('user_id', $user->id)
-                    ->where('id', $task->id);
+        $collections = Collection::with([
+            'user.classes',
+            'assessment'
+        ])
+            ->where('task_id', $task->id)
+            ->where('status', 'Sudah mengumpulkan')
+            ->whereHas('task', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
             })
-            ->whereHas('collection', function ($query) {
-                $query->where('status', 'Sudah mengumpulkan');
+            ->when($search, function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'like', "%$search%");
+                });
             })
-            ->where(function ($query) use ($search) {
-                $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%');
-                })
-                    ->orWhereHas('collection.task', function ($q) use ($search) {
-                        $q->where('title_task', 'like', '%' . $search . '%');
-                    })
-                    ->orWhereHas('user.classes', function ($q) use ($search) {
-                        $q->where('name_class', 'like', '%' . $search . '%');
-                    });
-            })
-            ->join('users', 'user_id', '=', 'users.id')
-            ->join('collections', 'assessments.collection_id', '=', 'collections.id')
-            ->orderByRaw("FIELD(collections.status, 'Belum Di-nilai', 'Sudah Di-nilai') ASC")
-            ->orderBy('users.name', 'asc')
+            ->orderBy('created_at', 'asc')
             ->paginate(5);
 
-        $tasks = Task::where('user_id', $user->id)->get();
-
-        $countSiswa = User::whereHas('roles', function ($query) {
-            $query->where('roles.name', 'Murid');
-        })
-            ->whereHas('class', function ($query) use ($task) {
-                $query->where('classes.id', $task->class_id); // Spesifikkan tabel dengan menambahkan alias `classes.id`
-            })
+        // hitung
+        $countSiswa = User::whereHas('roles', fn($q) => $q->where('name', 'Murid'))
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $task->class_id))
             ->count();
 
-        $countCollection = User::whereHas('roles', function ($query) {
-            $query->where('roles.name', 'Murid'); // Pastikan hanya menghitung siswa
-        })
-            ->whereHas('class', function ($query) use ($task) {
-                $query->where('classes.id', $task->class_id); // Sesuaikan dengan kelas tugas
-            })
-            ->whereHas('collections', function ($query) use ($task) {
-                $query->where('task_id', $task->id) // Pastikan tidak memiliki tugas yang dimaksud
-                    ->where('status', 'Sudah mengumpulkan'); // Pastikan status 'belum mengumpulkan'
-            })
-            ->count();
-        return view('Guru.Assesments.index', compact('assessments', 'tasks', 'task', 'countSiswa', 'countCollection'));
+        $countCollection = $collections->total();
+
+        return view('Guru.Assesments.index', compact(
+            'collections',
+            'task',
+            'countSiswa',
+            'countCollection'
+        ));
     }
     /**
      * Store a newly created resource in storage.

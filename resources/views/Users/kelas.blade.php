@@ -191,7 +191,7 @@
                             <h2 class="text-2xl font-semibold mb-6">Kelas 12</h2>
                             <select name="class_id"
                                 class="w-full py-3 px-4 rounded-lg bg-white text-gray-700 border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 transition">
-                                <option value="" disabled selected>Pilih Kelas</option> 
+                                <option value="" disabled selected>Pilih Kelas</option>
                                 @foreach ($kelas12 as $kelas)
                                     <option value="{{ $kelas->id }}"
                                         {{ old('class_id') == $kelas->id ? 'selected' : '' }}>{{ $kelas->name_class }}

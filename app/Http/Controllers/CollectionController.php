@@ -15,20 +15,72 @@ class CollectionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function byTask(Request $request, Task $task)
     {
         $user = auth()->user();
-        $collections = Collection::with(['user', 'task'])
-            ->whereHas('task', function ($query) use ($user){
-                $query->where('user_id',$user->id);
+        $search = $request->search;
+
+        $collections = Collection::with(['user.classes', 'task'])
+            ->where('task_id', $task->id) // 🔥 INI KUNCI UTAMA
+            ->whereHas('task', function ($q) use ($user) {
+                $q->where('user_id', $user->id); // hanya tugas milik guru
             })
-            ->orderByRaw("FIELD(status, 'Sudah mengumpulkan') DESC") // 'Sudah mengumpulkan' at the top
-            ->orderBy('status', 'asc') // Sort remaining statuses alphabetically or as needed
+            ->when($search, function ($q) use ($search) {
+                $q->whereHas('user', function ($u) use ($search) {
+                    $u->where('name', 'like', "%$search%");
+                });
+            })
+            ->orderByRaw("FIELD(status, 'Sudah mengumpulkan', 'Belum mengumpulkan')")
+            ->latest()
             ->paginate(5);
 
-        return view('Guru.Collections.index', compact('collections'));
+        return view('Guru.Collections.index', compact('collections', 'task'));
     }
 
+
+    public function updateCollection(Request $request, $task_id)
+    {
+        $request->validate([
+            'file_collection' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ], [
+            'file_collection.required' => 'File tugas wajib diunggah',
+        ]);
+
+        $user = auth()->user();
+        $user_id = $user->id;
+
+        $task = Task::findOrFail($task_id);
+
+        // Ambil atau buat collection
+        $collection = Collection::updateOrCreate(
+            [
+                'task_id' => $task->id,
+                'user_id' => $user_id,
+            ],
+            [
+                'status' => 'Belum mengumpulkan',
+            ]
+        );
+
+        // Upload file
+        if ($request->hasFile('file_collection')) {
+            $file = $request->file('file_collection');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('collections', $fileName, 'public');
+
+            // Hapus file lama jika ada
+            if ($collection->file_collection && Storage::exists('public/' . $collection->file_collection)) {
+                Storage::delete('public/' . $collection->file_collection);
+            }
+
+            $collection->update([
+                'file_collection' => $filePath,
+                'status' => 'Sudah mengumpulkan',
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Tugas berhasil dikumpulkan!');
+    }
 
 
     /**
@@ -68,66 +120,7 @@ class CollectionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function updateCollection(Request $request, $task_id)
-    {
-        $request->validate([
-            'file_collection' => 'required|mimes:pdf,jpg,jpeg,png|max:2048',
-        ],
-    [
-        'file_collection.required' => 'File Tugas Wajib Diisi',
-    ]);
 
-        $user_id = auth()->id();
-        $task = Task::find($task_id);
-
-        if (!$task) {
-            return redirect()->back()->with('error', 'Tugas tidak ditemukan.');
-        }
-        $collection = Collection::where('task_id', $task_id)
-            ->where('user_id', $user_id)
-            ->first();
-
-        if (!$collection) {
-            return redirect()->back()->with('error', 'Pengumpulan tugas tidak ditemukan.');
-        }
-            if (now()->greaterThan($task->date_collection)) {
-                $collection->update([
-                    'status' => 'Tidak mengumpulkan',
-                ]);
-            }
-        if ($task->status == 'Sudah di Nilai') {
-            $collection->update([
-                'status' => 'Sudah di Nilai',
-            ]);
-        }
-        if ($request->hasFile('file_collection')) {
-            $file = $request->file('file_collection');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('collections', $fileName, 'public');
-            if ($collection->file_collection && Storage::exists('public/' . $collection->file_collection)) {
-                Storage::delete('public/' . $collection->file_collection);
-            }
-            $collection->update([
-                'file_collection' => $filePath,
-                'status' => 'Sudah mengumpulkan',
-            ]);
-        }
-
-        $assessment = Assessment::where('collection_id', $collection->id)
-            ->where('user_id', $user_id)
-            ->first();
-        if (!$assessment) {
-            $assessment = new Assessment();
-            $assessment->collection_id = $collection->id;
-            $assessment->user_id = $user_id;
-            $assessment->status = 'Belum Di-nilai';
-            $assessment->mark_task = null;
-            $assessment->save();
-        }
-        else {
-        }
-        return redirect()->back()->with('success', 'Tugas berhasil dikumpulkan!');
-    }
 
     /**
      * Remove the specified resource from storage.

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classes;
+use App\Models\Subject;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -24,22 +27,17 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Hitung jumlah total Murid
         $totalMurid = User::whereHas('roles', function ($query) {
             $query->where('name', 'Murid');
         })->count();
 
-        // Hitung jumlah total Guru
-        $totalguru = User::whereHas('roles', function ($query) {
+        $totalGuru = User::whereHas('roles', function ($query) {
             $query->where('name', 'Guru');
         })->count();
 
-        // Karena subject_id dan relasi class sudah tidak ada,
-        // maka assignCount dan notAssignCount dibuat default 0
-        $assignCount = 0;
-        $notAssignCount = $totalguru;
+        $totalClasses = Classes::count();
+        $totalSubjects = Subject::count();
 
-        // Jumlah murid per tahun
         $muridPerTahun = User::selectRaw('YEAR(created_at) as year, COUNT(*) as total')
             ->whereHas('roles', function ($query) {
                 $query->where('name', 'Murid');
@@ -50,13 +48,23 @@ class HomeController extends Controller
 
         $totals = $muridPerTahun->pluck('total')->toArray();
 
+        $guruPerMapel = DB::table('teacher_subjects')
+            ->join('subjects', 'teacher_subjects.subject_id', '=', 'subjects.id')
+            ->select('subjects.name_subject', DB::raw('COUNT(DISTINCT teacher_subjects.teacher_id) as total'))
+            ->groupBy('subjects.name_subject')
+            ->get();
+
+        $mapelLabels = $guruPerMapel->pluck('name_subject');
+        $mapelTotals = $guruPerMapel->pluck('total');
+
         return view('Admins.dashboardAdmin', compact(
             'totalMurid',
-            'totalguru',
-            'assignCount',
-            'notAssignCount',
-            'totals'
+            'totalGuru',
+            'totalClasses',
+            'totalSubjects',
+            'totals',
+            'mapelLabels',
+            'mapelTotals'
         ));
     }
-
 }

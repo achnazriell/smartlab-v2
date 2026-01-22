@@ -2,12 +2,11 @@
 
 @section('content')
     <div class="max-w-4xl mx-auto space-y-6">
-        <!-- Step Indicator -->
         <div class="flex items-center justify-center space-x-4 mb-8">
             <div class="flex items-center text-blue-600">
                 <span
                     class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-600 text-white font-bold text-sm">1</span>
-                <span class="ml-2 font-semibold">Pengaturan Ujian</span>
+                <span class="ml-2 font-semibold">Pengaturan Soal</span>
             </div>
             <div class="w-12 h-px bg-slate-300"></div>
             <div class="flex items-center text-slate-400">
@@ -17,147 +16,473 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="p-6 border-b border-slate-200 bg-slate-50">
-                <h2 class="text-xl font-bold text-slate-800 font-poppins">Tambah Ujian Baru</h2>
-                <p class="text-slate-500 text-sm">Lengkapi informasi dasar ujian sebelum membuat butir soal.</p>
+        {{-- Error Messages --}}
+        @if($errors->any())
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-6">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.282 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <strong class="font-bold">Terjadi Kesalahan!</strong>
+            </div>
+            <ul class="mt-2 ml-8 list-disc">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-lg mb-6">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.282 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <strong class="font-bold">Error!</strong>
+            </div>
+            <p class="mt-2 ml-8">{{ session('error') }}</p>
+        </div>
+        @endif
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" x-data="{
+            examType: '{{ old('type', 'UH') }}',
+            showOtherInput: {{ old('type') == 'Lainnya' ? 'true' : 'false' }},
+            updateType(e) {
+                this.examType = e.target.value;
+                this.showOtherInput = (this.examType === 'Lainnya');
+            }
+        }">
+
+            <div class="p-6 border-b border-slate-200 transition-colors duration-300"
+                :class="examType === 'QUIZ' ? 'bg-purple-50' : 'bg-slate-50'">
+                <h2 class="text-xl font-bold font-poppins transition-colors"
+                    :class="examType === 'QUIZ' ? 'text-purple-700' : 'text-slate-800'">
+                    <span x-text="examType === 'QUIZ' ? 'Setup Gamified Quiz' : 'Tambah Soal Baru'"></span>
+                </h2>
+                <p class="text-slate-500 text-sm">
+                    <span
+                        x-text="examType === 'QUIZ' ? 'Atur mode permainan interaktif ala Quizizz.' : 'Lengkapi informasi dasar ujian formal.'"></span>
+                </p>
             </div>
 
-            <form action="{{ route('exams.store') }}" method="POST" class="p-6 space-y-8">
+            <form action="{{ route('guru.exams.store') }}" method="POST" class="p-6 space-y-8">
                 @csrf
-                <!-- Informasi Dasar -->
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
-                        <label class="text-sm font-semibold text-slate-700">Nama Ujian</label>
-                        <input type="text" name="title" placeholder="Contoh: Ulangan Harian Bab 1"
-                            class="w-full px-4 py-2 rounded-lg border" required>
+                        <label class="text-sm font-semibold text-slate-700">Nama Soal / Judul Kuis</label>
+                        <input type="text" name="title" placeholder="Contoh: Bilangan Bulat"
+                            value="{{ old('title') }}"
+                            class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2"
+                            :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'" required>
                     </div>
                     <div class="space-y-1">
-                        <label class="text-sm font-semibold text-slate-700">Jenis Ujian</label>
-                        <select
-                            class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="UH">Ulangan Harian (UH)</option>
-                            <option value="UTS">UTS</option>
-                            <option value="UAS">UAS</option>
+                        <label class="text-sm font-semibold text-slate-700">Jenis Soal</label>
+                        <select name="type" @change="updateType"
+                            class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 outline-none transition-all"
+                            :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'">
+                            <option value="UH" {{ old('type', 'UH') == 'UH' ? 'selected' : '' }}>Ulangan Harian (UH)</option>
+                            <option value="UTS" {{ old('type') == 'UTS' ? 'selected' : '' }}>UTS</option>
+                            <option value="UAS" {{ old('type') == 'UAS' ? 'selected' : '' }}>UAS</option>
+                            <option value="QUIZ" {{ old('type') == 'QUIZ' ? 'selected' : '' }}>Interactive Quiz (Game Mode)</option>
+                            <option value="Lainnya" {{ old('type') == 'Lainnya' ? 'selected' : '' }}>Lainnya...</option>
                         </select>
+
+                        <div x-show="showOtherInput" x-transition class="mt-2">
+                            <input type="text" name="custom_type" placeholder="Masukkan jenis soal..."
+                                value="{{ old('custom_type') }}"
+                                class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                        </div>
                     </div>
+
+                    {{-- Bagian Mata Pelajaran --}}
                     <div class="space-y-1">
                         <label class="text-sm font-semibold text-slate-700">Mata Pelajaran</label>
-                        <select name="subject_id" required>
+                        <select name="subject_id" required
+                            class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2"
+                            :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'"
+                            x-on:change="getClassesBySubject($event.target.value)">
                             <option value="">-- Pilih Mapel --</option>
-                            @foreach ($subjects as $subject)
-                                <option value="{{ $subject->id }}">
-                                    {{ $subject->name_subject }}
+                            @foreach ($mapels as $mapel)
+                                <option value="{{ $mapel->id }}" {{ old('subject_id') == $mapel->id ? 'selected' : '' }}>
+                                    {{ $mapel->name_subject }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
+
+                    {{-- Bagian Kelas Target (akan di-update via AJAX) --}}
                     <div class="space-y-1">
-                        <label class="text-sm font-semibold text-slate-700">Kelas</label>
-                        <select name="class_id" required>
-                            <option value="">-- Pilih Kelas --</option>
-                            @foreach ($classes as $class)
-                                <option value="{{ $class->id }}">
-                                    {{ $class->name_class }}
-                                </option>
-                            @endforeach
+                        <label class="text-sm font-semibold text-slate-700">Kelas Target</label>
+                        <select name="class_id" required id="class-select"
+                            class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2"
+                            :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'">
+                            <option value="">-- Pilih Mapel terlebih dahulu --</option>
+                            {{-- Options akan diisi via JavaScript --}}
                         </select>
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-sm font-semibold text-slate-700">Waktu Pengerjaan (Menit)</label>
-                        <input type="number" placeholder="90"
-                            class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                </div>
+
+                {{-- TAMBAHKAN BAGIAN INI: Pengaturan Keamanan untuk Ujian Formal --}}
+                <div x-show="examType !== 'QUIZ'" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100">
+
+                    {{-- Durasi dan Waktu --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Tanggal Mulai</label>
-                            <input type="datetime-local"
-                                class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <label class="text-sm font-semibold text-slate-700">Durasi Pengerjaan (Menit)</label>
+                            <input type="number" name="duration" placeholder="90" min="1" max="300"
+                                value="{{ old('duration', 90) }}"
+                                class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                required>
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Tanggal Selesai</label>
-                            <input type="datetime-local"
-                                class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Mulai</label>
+                                <input type="datetime-local" name="start_date" required
+                                    value="{{ old('start_date') }}"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Selesai</label>
+                                <input type="datetime-local" name="end_date" required
+                                    value="{{ old('end_date') }}"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Pengaturan Dasar --}}
+                    <div class="pt-6 border-t border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Pengaturan Dasar</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                            @include('components.toggle-switch', [
+                                'label' => 'Acak Urutan Soal',
+                                'name' => 'shuffle_question',
+                                'checked' => old('shuffle_question', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Acak Urutan Jawaban',
+                                'name' => 'shuffle_answer',
+                                'checked' => old('shuffle_answer', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Tampilkan Nilai Akhir',
+                                'name' => 'show_score',
+                                'checked' => old('show_score', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Izinkan Salin Teks',
+                                'name' => 'allow_copy',
+                                'checked' => old('allow_copy', false),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Izinkan Screenshot',
+                                'name' => 'allow_screenshot',
+                                'checked' => old('allow_screenshot', false),
+                                'color' => 'blue',
+                            ])
+                        </div>
+                    </div>
+
+                    {{-- Pengaturan Keamanan Lanjutan --}}
+                    <div class="pt-6 border-t border-slate-100">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Pengaturan Keamanan
+                            Lanjutan</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @include('components.toggle-switch', [
+                                'label' => 'Wajib Kamera',
+                                'name' => 'require_camera',
+                                'checked' => old('require_camera', false),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Wajib Mikrofon',
+                                'name' => 'require_mic',
+                                'checked' => old('require_mic', false),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Aktifkan Proctoring',
+                                'name' => 'enable_proctoring',
+                                'checked' => old('enable_proctoring', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Blokir Tab Baru',
+                                'name' => 'block_new_tab',
+                                'checked' => old('block_new_tab', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Mode Layar Penuh',
+                                'name' => 'fullscreen_mode',
+                                'checked' => old('fullscreen_mode', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Auto Submit',
+                                'name' => 'auto_submit',
+                                'checked' => old('auto_submit', true),
+                                'color' => 'blue',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Cegah Copy-Paste',
+                                'name' => 'prevent_copy_paste',
+                                'checked' => old('prevent_copy_paste', true),
+                                'color' => 'blue',
+                            ])
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Batas Percobaan</label>
+                                <input type="number" name="limit_attempts" min="1" max="10"
+                                    value="{{ old('limit_attempts', 1) }}"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <p class="text-xs text-slate-500">Jumlah maksimal percobaan ujian</p>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Nilai Minimum Lulus</label>
+                                <input type="number" name="min_pass_grade" min="0" max="100"
+                                    step="0.1" value="{{ old('min_pass_grade', 0) }}"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <p class="text-xs text-slate-500">Nilai minimal untuk dinyatakan lulus (0-100)</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Tampilkan Jawaban Benar</label>
+                                <select name="show_correct_answer"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="0" {{ old('show_correct_answer') == '0' ? 'selected' : '' }}>Tidak Pernah</option>
+                                    <option value="1" {{ old('show_correct_answer') == '1' ? 'selected' : '' }}>Setelah Ujian</option>
+                                    <option value="2" {{ old('show_correct_answer') == '2' ? 'selected' : '' }}>Setelah Setiap Soal</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-sm font-semibold text-slate-700">Tampilkan Hasil</label>
+                                <select name="show_result_after"
+                                    class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="never" {{ old('show_result_after') == 'never' ? 'selected' : '' }}>Tidak Pernah</option>
+                                    <option value="immediately" {{ old('show_result_after') == 'immediately' ? 'selected' : '' }}>Sesaat Setelah Submit</option>
+                                    <option value="after_submit" {{ old('show_result_after') == 'after_submit' ? 'selected' : '' }}>Setelah Semua Submit</option>
+                                    <option value="after_exam" {{ old('show_result_after') == 'after_exam' ? 'selected' : '' }}>Setelah Ujian Berakhir</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Toggles Section -->
-                <div class="pt-6 border-t border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Pengaturan Keamanan & Hasil
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                        <!-- Toggle 1 -->
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <span class="text-slate-700 group-hover:text-blue-600 transition-colors">Izinkan
-                                Screenshot</span>
-                            <div class="relative inline-flex items-center cursor-pointer" x-data="{ checked: false }"
-                                @click="checked = !checked">
-                                <input type="hidden" name="allow_screenshot" value="0">
-                                <input type="checkbox" name="allow_screenshot" value="1" class="sr-only"
-                                    :checked="checked">
-                                <div class="w-11 h-6 rounded-full transition-colors duration-200"
-                                    :class="checked ? 'bg-blue-600' : 'bg-slate-300'"></div>
-                                <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200"
-                                    :class="checked ? 'translate-x-5' : ''"></div>
-                            </div>
-                        </label>
-                        <!-- Toggle 2 -->
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <span class="text-slate-700 group-hover:text-blue-600 transition-colors">Izinkan Salin
-                                Soal</span>
-                            <div class="relative inline-flex items-center cursor-pointer" x-data="{ checked: false }"
-                                @click="checked = !checked">
-                                <input type="hidden" name="allow_copy" value="0">
-                                <input type="checkbox" name="allow_copy" value="1" class="sr-only"
-                                    :checked="checked">
-                                <div class="w-11 h-6 rounded-full transition-colors duration-200"
-                                    :class="checked ? 'bg-blue-600' : 'bg-slate-300'"></div>
-                                <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200"
-                                    :class="checked ? 'translate-x-5' : ''"></div>
-                            </div>
-                        </label>
-                        <!-- Toggle 3 -->
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <span class="text-slate-700 group-hover:text-blue-600 transition-colors">Acak Soal</span>
-                            <div class="relative inline-flex items-center cursor-pointer" x-data="{ checked: true }"
-                                @click="checked = !checked">
-                                <input type="hidden" name="shuffle_question" value="0">
-                                <input type="checkbox" name="shuffle_question" value="1" class="sr-only"
-                                    :checked="checked">
-                                <div class="w-11 h-6 rounded-full transition-colors duration-200"
-                                    :class="checked ? 'bg-blue-600' : 'bg-slate-300'"></div>
-                                <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200"
-                                    :class="checked ? 'translate-x-5' : ''"></div>
-                            </div>
-                        </label>
-                        <!-- Toggle 4 -->
-                        <label class="flex items-center justify-between cursor-pointer group">
-                            <span class="text-slate-700 group-hover:text-blue-600 transition-colors">Tampilkan Nilai di
-                                Akhir</span>
-                            <div class="relative inline-flex items-center cursor-pointer" x-data="{ checked: true }"
-                                @click="checked = !checked">
-                                <input type="hidden" name="show_score" value="0">
-                                <input type="checkbox" name="show_score" value="1" class="sr-only"
-                                    :checked="checked">
-                                <div class="w-11 h-6 rounded-full transition-colors duration-200"
-                                    :class="checked ? 'bg-blue-600' : 'bg-slate-300'"></div>
-                                <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200"
-                                    :class="checked ? 'translate-x-5' : ''"></div>
-                            </div>
-                        </label>
+                {{-- TAMBAHKAN BAGIAN INI: Pengaturan untuk QUIZ --}}
+                <div x-show="examType === 'QUIZ'" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    class="bg-purple-50 p-6 rounded-xl border border-purple-100">
+
+                    {{-- Header Quiz --}}
+                    <div class="flex items-center space-x-2 mb-6 text-purple-800">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <h3 class="font-bold text-lg">Pengaturan Quiz Playground</h3>
+                    </div>
+
+                    {{-- Settings Grid untuk Quiz --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="space-y-1">
+                            <label class="text-sm font-semibold text-purple-900">Waktu Per Soal (Detik)</label>
+                            <select name="time_per_question" required
+                                class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                                <option value="30" {{ old('time_per_question', 60) == 30 ? 'selected' : '' }}>30 Detik (Cepat)</option>
+                                <option value="60" {{ old('time_per_question', 60) == 60 ? 'selected' : '' }}>60 Detik (Normal)</option>
+                                <option value="120" {{ old('time_per_question', 60) == 120 ? 'selected' : '' }}>2 Menit (Analisis)</option>
+                                <option value="0" {{ old('time_per_question', 60) == 0 ? 'selected' : '' }}>Tidak Ada Batas</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-semibold text-purple-900">Mode Quiz</label>
+                            <select name="quiz_mode" required
+                                class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                                <option value="live" {{ old('quiz_mode', 'live') == 'live' ? 'selected' : '' }}>Live (Guru Mengontrol)</option>
+                                <option value="homework" {{ old('quiz_mode', 'live') == 'homework' ? 'selected' : '' }}>Homework (Siswa Mandiri)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-semibold text-purple-900">Tingkat Kesulitan</label>
+                            <select name="difficulty_level"
+                                class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                                <option value="easy" {{ old('difficulty_level', 'medium') == 'easy' ? 'selected' : '' }}>Mudah</option>
+                                <option value="medium" {{ old('difficulty_level', 'medium') == 'medium' ? 'selected' : '' }}>Sedang</option>
+                                <option value="hard" {{ old('difficulty_level', 'medium') == 'hard' ? 'selected' : '' }}>Sulit</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Toggle Settings untuk Quiz --}}
+                    <div class="pt-4 border-t border-purple-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                            @include('components.toggle-switch', [
+                                'label' => 'Tampilkan Leaderboard',
+                                'name' => 'show_leaderboard',
+                                'checked' => old('show_leaderboard', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Musik Latar',
+                                'name' => 'enable_music',
+                                'checked' => old('enable_music', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Tampilkan Meme (Benar/Salah)',
+                                'name' => 'enable_memes',
+                                'checked' => old('enable_memes', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Izinkan Power-ups',
+                                'name' => 'enable_powerups',
+                                'checked' => old('enable_powerups', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Acak Urutan Soal',
+                                'name' => 'randomize_questions',
+                                'checked' => old('randomize_questions', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Feedback Instan',
+                                'name' => 'instant_feedback',
+                                'checked' => old('instant_feedback', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Bonus Streak',
+                                'name' => 'streak_bonus',
+                                'checked' => old('streak_bonus', true),
+                                'color' => 'purple',
+                            ])
+                            @include('components.toggle-switch', [
+                                'label' => 'Bonus Waktu',
+                                'name' => 'time_bonus',
+                                'checked' => old('time_bonus', true),
+                                'color' => 'purple',
+                            ])
+                        </div>
                     </div>
                 </div>
 
                 <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-4">
-                    <a href="{{ route('exams.index') }}"
+                    <a href="{{ route('guru.exams.index') }}"
                         class="px-6 py-2 text-slate-600 hover:text-slate-800 font-medium">Batal</a>
                     <button type="submit"
-                        class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-all">
-                        Lanjut Buat Soal
+                        class="px-8 py-2 text-white font-bold rounded-lg shadow-md transition-all flex items-center"
+                        :class="examType === 'QUIZ' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'">
+                        <span>Lanjut Buat Soal</span>
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const subjectSelect = document.querySelector('select[name="subject_id"]');
+            const classSelect = document.getElementById('class-select');
+
+            if (subjectSelect) {
+                subjectSelect.addEventListener('change', function() {
+                    const subjectId = this.value;
+                    console.log('Subject selected:', subjectId);
+
+                    if (!subjectId) {
+                        classSelect.innerHTML =
+                            '<option value="">-- Pilih Mapel terlebih dahulu --</option>';
+                        return;
+                    }
+
+                    // Tampilkan loading
+                    classSelect.innerHTML = '<option value="">Memuat kelas...</option>';
+                    classSelect.disabled = true;
+
+                    fetch(`/guru/exams/get-classes-by-subject/${subjectId}`)
+                        .then(response => {
+                            console.log('Response status:', response.status);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Data received:', data);
+
+                            classSelect.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+
+                            if (data.classes && data.classes.length > 0) {
+                                data.classes.forEach(cls => {
+                                    const option = document.createElement('option');
+                                    option.value = cls.id;
+                                    option.textContent = cls.name;
+                                    // Set selected jika ini old value
+                                    if (cls.id == {{ old('class_id', 0) }}) {
+                                        option.selected = true;
+                                    }
+                                    classSelect.appendChild(option);
+                                });
+                                classSelect.disabled = false;
+                            } else {
+                                classSelect.innerHTML =
+                                    '<option value="">Tidak ada kelas untuk mapel ini</option>';
+                                console.warn('No classes found for subject:', subjectId, data);
+                            }
+
+                            // Tampilkan debug info jika ada
+                            if (data.debug) {
+                                console.log('Debug info:', data.debug);
+                            }
+                            if (data.error) {
+                                console.error('Server error:', data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                            classSelect.innerHTML = '<option value="">Gagal memuat data</option>';
+                            classSelect.disabled = false;
+                        });
+                });
+            }
+
+            // Inisialisasi untuk old value
+            @if(old('subject_id'))
+                setTimeout(() => {
+                    const oldSubjectId = "{{ old('subject_id') }}";
+                    if (oldSubjectId && subjectSelect) {
+                        subjectSelect.value = oldSubjectId;
+                        subjectSelect.dispatchEvent(new Event('change'));
+
+                        // Tunggu dulu sebelum set kelas
+                        setTimeout(() => {
+                            const oldClassId = "{{ old('class_id') }}";
+                            if (oldClassId && classSelect) {
+                                classSelect.value = oldClassId;
+                            }
+                        }, 1000);
+                    }
+                }, 500);
+            @endif
+        });
+    </script>
 @endsection

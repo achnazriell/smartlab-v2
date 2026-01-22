@@ -21,16 +21,19 @@ class UpdateTaskRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {
-        return [
-            'class_id' => ['required', 'exists:classes,id'],
-            'materi_id' => ['required', 'exists:materis,id'],
-            'title_task' => ['required', 'string'],
-            'file_task' => ['mimes:png,jpg,pdf', 'max:3072'],
-            'description_task'=>['max:500'],
-            'date_collection' => ['required', 'date', 'after:now']
-        ];
-    }
+{
+    return [
+        'title_task'      => 'required|string|max:255',
+        'subject_id'      => 'required|exists:subjects,id',
+        'materi_id'       => 'required|exists:materis,id',
+        'class_id'        => 'required|array',
+        'class_id.*'      => 'exists:classes,id',
+        'date_collection' => 'required|date',
+        'description_task'=> 'nullable|string',
+        'file_task'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+    ];
+}
+
 
     public function messages()
     {

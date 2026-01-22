@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreTaskRequest;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\UpdateTaskRequest;
+use App\Models\Student;
 
 class TaskController extends Controller
 {
@@ -33,9 +34,9 @@ class TaskController extends Controller
 
         // Ambil semua tugas dengan relasi Classes, Subject, Materi
         $tasks = Task::where('user_id', auth()->id())
-            ->when($classID, function ($query) use ($classID){
-                $query->whereHas('Classes',function ($q) use ($classID) {
-                    $q->where('id',$classID);
+            ->when($classID, function ($query) use ($classID) {
+                $query->whereHas('Classes', function ($q) use ($classID) {
+                    $q->where('id', $classID);
                 });
             })
             ->where(function ($query) use ($search) {
@@ -49,7 +50,7 @@ class TaskController extends Controller
                         $q->where('title_materi', 'like', '%' . $search . '%');
                     })
                     ->orWhere('title_task', 'like', '%' . $search . '%')
-                    ->orWhere('date_collection','like','%'.$search.'%');
+                    ->orWhere('date_collection', 'like', '%' . $search . '%');
             })
             ->orderBy('created_at', 'desc')
             ->paginate(5);
@@ -58,7 +59,7 @@ class TaskController extends Controller
             ->get()
             ->groupBy('task_id');
 
-        $classes = $user->class()->get();
+        $classes = $user->classes()->get();
         $subjects = Subject::all();
 
         $materis = collect(); // Inisialisasi default
@@ -84,71 +85,84 @@ class TaskController extends Controller
             ->groupBy('task_id');
 
 
-        $kelas = $user->class;
+        $kelas = $user->classes ?? collect();
 
-        return view('Guru.Tasks.index', compact('tasks', 'classes', 'subjects', 'materis', 'collections', 'pengumpulans','kelas'));
+        return view('Guru.Tasks.index', compact('tasks', 'classes', 'subjects', 'materis', 'collections', 'pengumpulans', 'kelas'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    public function create()
+    {
+        $user = auth()->user();
+        $teacher = $user->teacher;
 
+        if (! $teacher) {
+            abort(403, 'Akun ini bukan guru');
+        }
 
+        $mapels = $teacher
+            ->teacherClasses()
+            ->with('subjects')
+            ->get()
+            ->pluck('subjects')
+            ->flatten()
+            ->unique('id')
+            ->values();
+
+        $materis = collect();
+        $classes = $teacher->teacherClasses->pluck('classes');
+
+        return view('Guru.Tasks.create', compact(
+            'mapels',
+            'materis',
+            'classes'
+        ));
+    }
 
     public function store(StoreTaskRequest $request)
     {
         $validated = $request->validated();
 
-        // Proses upload file jika ada
-        if ($request->hasFile('file_task')) {
-            $file = $request->file('file_task')->store('file_task', 'public');
-            $validated['file_task'] = $file;
-        }
-
-        // Ambil data Subject yang terkait dengan user yang sedang login
-        $task = auth()->user()->Subject;
-
-        // Simpan data tugas baru
-        $tasks = Task::create([
-            'class_id' => $validated['class_id'],
-            'materi_id' => $validated['materi_id'],
-            'title_task' => $validated['title_task'],
-            'file_task' => $validated['file_task'] ?? null,
-            'description_task' => $validated['description_task'],
-            'date_collection' => $validated['date_collection'],
-            'subject_id' => $task->id,
-            'user_id' => auth()->id(),
+        // 1️⃣ BUAT TASK SEKALI SAJA
+        $task = Task::create([
+            'title_task'       => $validated['title_task'],
+            'subject_id'       => $validated['subject_id'],
+            'materi_id'        => $validated['materi_id'],
+            'description_task' => $validated['description_task'] ?? null,
+            'date_collection'  => $validated['date_collection'],
+            'user_id'          => auth()->id(),
         ]);
 
-        $students = User::whereHas('class', function ($query) use ($tasks) {
-            $query->where('classes.id', $tasks->class_id);
-        })->get();
+        // 2️⃣ ATTACH SEMUA KELAS SEKALIGUS
+        $task->classes()->sync($validated['class_id']);
 
+        // 3️⃣ AMBIL SISWA DARI KELAS YANG DIPILIH
+        $students = Student::whereIn('class_id', $validated['class_id'])
+            ->with('user')
+            ->get();
+
+        // 4️⃣ BUAT COLLECTION UNTUK SETIAP SISWA
         foreach ($students as $student) {
-            if (!$student->hasRole('Guru')) {
-                $existingCollection = Collection::where('user_id', $student->id)
-                    ->where('task_id', $tasks->id)
-                    ->first();
-
-                if (!$existingCollection) {
-                    Collection::create([
-                        'user_id' => $student->id,
-                        'task_id' => $tasks->id,
-                        'file_collection' => null,
-                        'status' => 'Belum mengumpulkan'
-                    ]);
-                }
-            }
+            Collection::firstOrCreate([
+                'user_id' => $student->user_id,
+                'task_id' => $task->id,
+            ]);
         }
 
-        // Redirect ke halaman tugas dengan pesan sukses
-        return redirect()->route('tasks.index')->with('success', 'Data Tugas Baru Berhasil Ditambahkan');
+        return redirect()
+            ->route('tasks.index')
+            ->with('success', 'Tugas berhasil ditambahkan');
     }
 
+    public function getMateri($subjectId)
+    {
+        return Materi::where('subject_id', $subjectId)->get();
+    }
 
-    /**
-     * Display the specified resource.
-     */
+    public function getClasses($subjectId)
+    {
+        return Classes::where('subject_id', $subjectId)->get();
+    }
+
     public function show(Task $task)
     {
         //
@@ -159,7 +173,40 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        //
+        $user = auth()->user();
+        $teacher = $user->teacher;
+
+        if (! $teacher) {
+            abort(403, 'Akun ini bukan guru');
+        }
+
+        // MAPEL GURU (SAMA SEPERTI CREATE)
+        $mapels = $teacher
+            ->teacherClasses()
+            ->with('subjects')
+            ->get()
+            ->pluck('subjects')
+            ->flatten()
+            ->unique('id')
+            ->values();
+
+        // MATERI BERDASARKAN SUBJECT TASK
+        $materis = Materi::where('subject_id', $task->subject_id)->get();
+
+        // KELAS YANG SUDAH TERPILIH DI TASK
+        $classes = $teacher->teacherClasses
+            ->pluck('classes')
+            ->flatten()
+            ->unique('id')
+            ->values();
+
+
+        return view('Guru.Tasks.edit', compact(
+            'task',
+            'mapels',
+            'materis',
+            'classes'
+        ));
     }
 
     /**
@@ -181,15 +228,15 @@ class TaskController extends Controller
         $subject = auth()->user()->Subject;
 
         $task->update([
-            'class_id' => $validated['class_id'],
-            'materi_id' => $validated['materi_id'],
-            'title_task' => $validated['title_task'],
-            'file_task' => $validated['file_task'] ?? null,
-            'description_task' => $validated['description_task'],
-            'date_collection' => $validated['date_collection'],
-            'subject_id' => $subject->id,
-            'user_id' => auth()->id(),
+            'title_task'       => $validated['title_task'],
+            'subject_id'       => $validated['subject_id'] ?? $task->subject_id,
+            'materi_id'        => $validated['materi_id'],
+            'date_collection'  => $validated['date_collection'],
+            'description_task' => $validated['description_task'] ?? null,
+            'file_task'        => $validated['file_task'] ?? $task->file_task,
         ]);
+
+        $task->classes()->sync($validated['class_id']);
 
         return redirect()->route('tasks.index')->with('success', 'Tugas Yang Dipilih Berhasil Diperbarui');
     }
@@ -202,15 +249,38 @@ class TaskController extends Controller
     {
         try {
             DB::beginTransaction();
-            $task->collections()->delete();
-            $task->Assessment()->delete();
-            $filename = $task->file_task;
-            Storage::disk('public')->delete($filename);
+
+            // hapus relasi terlebih dahulu
+            if ($task->collections()->exists()) {
+                $task->collections()->delete();
+            }
+
+            if (method_exists($task, 'assessments')) {
+                $task->assessments()->delete();
+            }
+
+            // hapus file jika ada
+            if ($task->file_task) {
+                Storage::disk('public')->delete($task->file_task);
+            }
+
+            // hapus task
             $task->delete();
+
             DB::commit();
-            return redirect()->route('tasks.index')->with('success', 'Tugas dan data terkait berhasil dihapus');
+
+            return redirect()
+                ->route('tasks.index')
+                ->with('success', 'Tugas dan data terkait berhasil dihapus');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors('Tugas Tidak bisa Dihapus Karena Ada Data Pengumpulan');
+            DB::rollBack();
+
+            // DEBUG (sementara, kalau mau cek error asli)
+            // dd($e->getMessage());
+
+            return redirect()
+                ->back()
+                ->withErrors('Tugas tidak bisa dihapus karena masih memiliki data terkait');
         }
     }
 }

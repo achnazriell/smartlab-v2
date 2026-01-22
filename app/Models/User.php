@@ -11,33 +11,15 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasRoles, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $guarded = [
-        'id',
-    ];
+    protected $guarded = ['id'];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -46,36 +28,28 @@ class User extends Authenticatable
         ];
     }
 
-    public function subjects()
+    // ✅ RELASI UTAMA
+    public function classes()
     {
         return $this->belongsToMany(
-            Subject::class,
-            'teacher_subjects', // pivot table
+            Classes::class,
+            'teacher_classes',
             'teacher_id',
-            'subject_id'
+            'classes_id'
         );
     }
 
-    public function class()
+    public function teacher()
     {
-        return $this->belongsToMany(Classes::class, 'teacher_classes', 'teacher_id', 'classes_id');
+        return $this->hasOne(Teacher::class);
     }
 
-    public function classes()
+    public function student()
     {
-        return $this->belongsToMany(Classes::class, 'teacher_classes', 'teacher_id', 'classes_id');
+        return $this->hasOne(Student::class);
     }
 
-    public function collections()
-    {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function assessments()
-    {
-        return $this->hasMany(Assessment::class);
-    }
-
+    // fitur lain
     public function tasks()
     {
         return $this->hasMany(Task::class);
@@ -86,35 +60,23 @@ class User extends Authenticatable
         return $this->hasMany(Materi::class);
     }
 
-    public function student()
+    public function classroom()
     {
-        return $this->hasOne(Student::class);
+        return $this->belongsTo(Classroom::class, 'class_id');
     }
 
-    public function teacher()
+    public function collections()
     {
-        return $this->hasOne(Teacher::class);
+        return $this->hasMany(Collection::class, 'user_id');
     }
 
     protected static function boot()
     {
         parent::boot();
 
-        static::retrieved(function ($user) {
-            if ($user->created_at) {
-                $createDate = $user->created_at;
-                if ($createDate->lte(now()->subYear(1))) {
-                    $user->class()->detach();
-                }
-                if ($createDate->lte(now()->subYears(2))) {
-                    $user->class()->detach();
-                }
-            }
-        });
-
         static::updated(function ($user) {
             if ($user->isDirty('status') && $user->status === 'lulus') {
-                $user->class()->detach();
+                optional($user->teacher)->teacherClasses()->delete();
             }
         });
     }

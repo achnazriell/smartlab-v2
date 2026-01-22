@@ -22,14 +22,14 @@ class StoreCollectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'assesment_id'=>['required','exists:assesments,assesment_id'],
-            'status' =>['nullable'],
-            'task_id'=>['required','exists:tasks,task_id']
+            'assesment_id' => ['required', 'exists:assesments,assesment_id'],
+            'status' => ['nullable'],
+            'task_id' => ['required', 'exists:tasks,task_id']
         ];
     }
     public function messages()
     {
-        return[
+        return [
             'assesment_id.required' => 'Penilaian harus di-isi',
             'task_id.required' => 'Tugas harus di-isi'
         ];

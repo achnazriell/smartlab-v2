@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Classroom;
 use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
@@ -21,10 +22,17 @@ class Task extends Model
         'date_collection' => 'datetime',
     ];
 
-    public function Classes()
+    public function classes()
     {
-        return $this->belongsTo(Classes::class, 'class_id');
+        return $this->belongsToMany(
+            Classroom::class,
+            'class_task',
+            'task_id',
+            'class_id'
+        );
     }
+
+
     public function Subject()
     {
         return $this->belongsTo(Subject::class, 'subject_id');

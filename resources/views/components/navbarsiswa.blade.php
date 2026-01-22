@@ -94,7 +94,7 @@
             <span class="text-xs font-medium mt-1 {{ request()->is('pilihkelasmateri') ? 'text-blue-600' : 'text-blue-800' }}">Materi</span>
         </a>
 
-        @if (auth()->check() && !auth()->user()->class()->exists())
+        @if (auth()->check() && !auth()->user()->classes()->exists())
         <!-- Kelas -->
         <a href="/PilihKelas" class="w-full flex flex-col items-center py-3 px-2 rounded-xl transition-all {{ request()->is('PilihKelas') ? 'bg-white shadow-md border border-gray-200' : 'hover:bg-gray-100' }}">
             <svg class="w-6 h-6 {{ request()->is('PilihKelas') ? 'text-blue-600' : 'text-blue-800' }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">

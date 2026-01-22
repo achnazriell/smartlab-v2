@@ -9,18 +9,26 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    @vite(['resources/css/app.css', 'resources/css/style.css', 'resources/js/app.js'])
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <script src="https://unpkg.com/flowbite@1.3.4/dist/flowbite.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.10.5/dist/algoliasearch.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/preline@latest/dist/preline.min.css">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            /* Define custom brand colors matching SmartLab logo */
+            --brand-blue: #0095FF;
+            --brand-dark: #1E293B;
+        }
 
         * {
             font-family: 'Inter', sans-serif;
@@ -51,22 +59,16 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .card-shadow {
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        /* Updated sidebar styles for modern white aesthetic with brand accents */
+        .sidebar-item-active {
+            background-color: rgba(0, 149, 255, 0.1);
+            color: var(--brand-blue);
+            border-right: 3px solid var(--brand-blue);
         }
 
-        .card-shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        [x-cloak] {
-            display: none !important;
-        }
-
-        /* Mobile sidebar overlay styles */
-        .sidebar-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            transition: opacity 0.3s ease;
+        .sidebar-item-hover:hover {
+            background-color: #f8fafc;
+            color: var(--brand-blue);
         }
 
         /* Header scroll effect */
@@ -74,10 +76,45 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        /* Mobile sidebar slide animation */
-        @media (max-width: 767px) {
-            .sidebar-desktop-mini {
-                display: none !important;
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-wrapper table {
+            width: 100%;
+            min-width: 800px;
+            border-collapse: collapse;
+        }
+
+        .table-wrapper th,
+        .table-wrapper td {
+            white-space: nowrap;
+        }
+
+        .panel {
+            padding: 15px;
+        }
+
+        .scroll-inner {
+            &::-webkit-scrollbar {
+                width: 10px;
+            }
+
+            &::-webkit-scrollbar:horizontal {
+                height: 10px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background-color: transparentize(#ccc, 0.7);
+            }
+
+            &::-webkit-scrollbar-thumb {
+                border-radius: 15px;
+                background: transparentize(#ccc, 0.5);
+                box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.811);
             }
         }
     </style>
@@ -86,86 +123,87 @@
 </head>
 
 <body class="bg-slate-50 font-sans" x-data="{
-    sidebarOpen: window.innerWidth >= 768,
+    sidebarOpen: true,
     mobileSidebarOpen: false,
+    userMenuOpen: false,
     headerScrolled: false,
-    isMobile: window.innerWidth < 768
-}" x-init="window.addEventListener('resize', () => {
-    isMobile = window.innerWidth < 768;
-    if (!isMobile) {
-        mobileSidebarOpen = false;
+    isMobile: false
+}" x-init="const checkScreen = () => {
+    isMobile = window.innerWidth < 768
+
+    if (isMobile) {
+        sidebarOpen = false
+        mobileSidebarOpen = false
+    } else {
+        sidebarOpen = true
+        mobileSidebarOpen = false
     }
-});
-window.addEventListener('scroll', () => {
-    headerScrolled = window.scrollY > 10;
-});" x-cloak>
+}
+
+checkScreen()
+window.addEventListener('resize', checkScreen)
+window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x-cloak>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay backdrop -->
-        <div x-show="mobileSidebarOpen && isMobile" x-transition:enter="transition-opacity ease-out duration-300"
+        <div x-show="isMobile && mobileSidebarOpen" x-transition:enter="transition-opacity ease-out duration-300"
             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
             x-transition:leave="transition-opacity ease-in duration-200" x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0" @click="mobileSidebarOpen = false"
-            class="fixed inset-0 z-40 sidebar-overlay md:hidden">
+            class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden">
         </div>
 
         <!-- Sidebar -->
-        <aside
-            class="sidebar-transition bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 shadow-2xl border-r border-blue-300 fixed left-0 top-0 h-full z-50"
-            :class="{
-                'w-80': sidebarOpen && !isMobile,
-                'w-16': !sidebarOpen && !isMobile,
-                'w-80 translate-x-0': isMobile && mobileSidebarOpen,
-                '-translate-x-full': isMobile && !mobileSidebarOpen
-            }">
+        <!-- Redesigned sidebar to modern white design with brand accents, using LogoSmartlab.png -->
+        <aside class="fixed top-0 left-0 h-full bg-white border-r shadow-xl z-50 transition-all duration-300"
+            :class="isMobile
+                ?
+                (mobileSidebarOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full') :
+                (sidebarOpen ? 'w-72' : 'w-20')">
 
             <!-- Sidebar Header -->
-            <div class="flex items-center justify-between p-6 border-b border-blue-500">
-                <div class="text-center font-bold text-xl text-white" x-show="sidebarOpen || mobileSidebarOpen"
-                    x-transition>
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                            <span class="text-blue-600 font-bold text-sm">S</span>
-                        </div>
-                        <span>SmartLab Guru</span>
-                    </div>
+            <div class="h-16 flex items-center border-b border-slate-100">
+
+                <div class="flex items-center w-full transition-all duration-300"
+                    :class="(!isMobile && !sidebarOpen) ? 'justify-center' : 'justify-start'">
+
+                    <!-- Logo Mini -->
+                    <img x-show="!isMobile && !sidebarOpen" class="w-9 h-9 object-contain"
+                        src="{{ asset('image/logo.png') }}">
+
+                    <!-- Logo Full -->
+                    <img x-show="isMobile || sidebarOpen" class="w-auto h-10 object-contain ml-7"
+                        src="{{ asset('image/LogoSmartlab.png') }}">
+
                 </div>
-                <div class="flex items-center justify-center"
-                    :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'w-full'">
-                    <button @click="isMobile ? mobileSidebarOpen = false : sidebarOpen = !sidebarOpen"
-                        class="p-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors duration-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
-                </div>
+
+                <!-- Close Mobile -->
+                <button x-show="isMobile" @click="mobileSidebarOpen = false"
+                    class="mr-5 p-2 rounded-lg hover:bg-slate-100 lg:hidden">
+                    ✕
+                </button>
+
             </div>
 
-            <nav class="mt-6 px-4 overflow-y-auto h-full pb-20">
+            <nav class="mt-4 px-3 space-y-1 overflow-y-auto h-[calc(100vh-80px)] pb-10">
                 <!-- Dashboard -->
                 <a href="{{ route('homeguru') }}"
-                    class="flex items-center py-3 px-4 mb-2 text-white hover:bg-blue-500 rounded-lg transition-all duration-200 group relative {{ request()->routeIs('homeguru') ? 'bg-blue-500' : '' }}"
+                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('homeguru') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'justify-center'"
                     :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Dashboard'">
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 00-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
                     </svg>
-                    <span x-show="sidebarOpen || mobileSidebarOpen" x-transition
-                        class="whitespace-nowrap">Dashboard</span>
-                    <div x-show="!sidebarOpen && !mobileSidebarOpen && !isMobile"
-                        class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                        Dashboard
-                    </div>
+                    <span x-show="sidebarOpen || mobileSidebarOpen"
+                        class="font-medium whitespace-nowrap">Dashboard</span>
                 </a>
 
                 <!-- Materi -->
                 <a href="{{ route('materis.index') }}"
-                    class="flex items-center py-3 px-4 mb-2 text-white hover:bg-blue-500 rounded-lg transition-all duration-200 group relative {{ request()->routeIs('materis.*') ? 'bg-blue-500' : '' }}"
+                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('materis.*') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'justify-center'"
                     :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Materi'">
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
@@ -174,16 +212,12 @@ window.addEventListener('scroll', () => {
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
                         </path>
                     </svg>
-                    <span x-show="sidebarOpen || mobileSidebarOpen" x-transition class="whitespace-nowrap">Materi</span>
-                    <div x-show="!sidebarOpen && !mobileSidebarOpen && !isMobile"
-                        class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                        Materi
-                    </div>
+                    <span x-show="sidebarOpen || mobileSidebarOpen" class="font-medium whitespace-nowrap">Materi</span>
                 </a>
 
                 <!-- Tugas -->
                 <a href="{{ route('tasks.index') }}"
-                    class="flex items-center py-3 px-4 mb-2 text-white hover:bg-blue-500 rounded-lg transition-all duration-200 group relative {{ request()->routeIs('tasks.*') ? 'bg-blue-500' : '' }}"
+                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('tasks.*') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'justify-center'"
                     :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Tugas'">
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
@@ -192,54 +226,36 @@ window.addEventListener('scroll', () => {
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
                         </path>
                     </svg>
-                    <span x-show="sidebarOpen || mobileSidebarOpen" x-transition class="whitespace-nowrap">Tugas</span>
-                    <div x-show="!sidebarOpen && !mobileSidebarOpen && !isMobile"
-                        class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                        Tugas
-                    </div>
+                    <span x-show="sidebarOpen || mobileSidebarOpen" class="font-medium whitespace-nowrap">Tugas</span>
                 </a>
-                <!-- Ujian -->
-                <a href="{{ route('exams.index') }}"
-                    class="flex items-center py-3 px-4 mb-2 text-white hover:bg-blue-500 rounded-lg transition-all duration-200 group relative
-    {{ request()->routeIs('guru.ujian.*') ? 'bg-blue-500' : '' }}"
+
+                <!-- SOAL -->
+                <a href="{{ route('guru.exams.index') }}"
+                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('exams.*') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'justify-center'"
                     :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Ujian'">
-
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
-               M9 5a2 2 0 002 2h2a2 2 0 002-2
-               M9 5a2 2 0 012-2h2a2 2 0 012 2
-               m-6 9l2 2 4-4" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                     </svg>
-
-                    <span x-show="sidebarOpen || mobileSidebarOpen" x-transition class="whitespace-nowrap">
-                        Ujian
-                    </span>
-
-                    <!-- Tooltip mini sidebar -->
-                    <div x-show="!sidebarOpen && !mobileSidebarOpen && !isMobile"
-                        class="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded
-               opacity-0 group-hover:opacity-100 transition-opacity duration-200
-               pointer-events-none whitespace-nowrap z-50">
-                        Ujian
-                    </div>
+                    <span x-show="sidebarOpen || mobileSidebarOpen" class="font-medium whitespace-nowrap">Soal</span>
                 </a>
-
             </nav>
         </aside>
 
         <!-- Main content -->
-        <div class="flex-1 flex flex-col transition-all duration-300"
+        <div class="flex-1 flex flex-col transition-all duration-300 w-full overflow-x-hidden"
             :class="{
-                'md:ml-80': sidebarOpen,
-                'md:ml-16': !sidebarOpen
+                'md:ml-72': sidebarOpen && !isMobile,
+                'md:ml-20': !sidebarOpen && !isMobile,
+                'ml-0': isMobile
             }">
             <!-- Header -->
-            <header class="bg-white border-b border-slate-200 sticky top-0 z-30 transition-shadow duration-300"
-                :class="headerScrolled ? 'header-scrolled' : 'card-shadow'">
-                <div class="flex justify-between items-center px-4 md:px-6 py-3 md:py-4">
-                    <!-- Mobile hamburger button -->
+            <header
+                class="bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-md sticky top-0 z-30 transition-all duration-300">
+                <div class="flex justify-between items-center px-6 py-3">
+                    <!-- Tombol hamburger hanya muncul di mobile -->
                     <div class="flex items-center">
                         <button @click="mobileSidebarOpen = true"
                             class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 mr-2">
@@ -248,20 +264,22 @@ window.addEventListener('scroll', () => {
                                     d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
-                        <!-- Desktop logo -->
-                        <div class="hidden md:flex items-center space-x-4">
-                            <img alt="Logo" src="{{ asset('image/logo.png') }}" class="h-8 w-8" />
-                            <div>
-                                <h1 class="font-poppins font-semibold text-lg text-slate-800">SmartLab</h1>
-                                <p class="text-xs text-slate-500">Dashboard Guru</p>
-                            </div>
+                        <div class="hidden md:flex items-center "
+                            :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'w-full'">
+                            <button @click="isMobile ? mobileSidebarOpen = false : sidebarOpen = !sidebarOpen"
+                                class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="2" stroke="currentColor" class="size-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
                     <!-- Mobile centered logo -->
-                    <div class="md:hidden absolute left-1/2 transform -translate-x-1/2 flex items-center">
-                        <img alt="Logo" src="{{ asset('image/logo.png') }}" class="h-7 w-7 mr-2" />
-                        <h1 class="font-poppins font-semibold text-base text-slate-800">SmartLab</h1>
+                    <div class="md:hidden absolute left-1/2 transform -translate-x-1/2 flex items-center ml-11">
+                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.png') }}" class="h-9 w-auto " />
                     </div>
 
                     <div class="flex items-center space-x-2 md:space-x-4">
@@ -302,23 +320,16 @@ window.addEventListener('scroll', () => {
                                         {{ Auth::user()->email }}</p>
                                     <p class="text-sm text-slate-600"><span class="font-medium">Mata Pelajaran:</span>
                                         {{ Auth::user()->subject?->name_subject ?? 'Tidak ada mata pelajaran' }}</p>
-                                    <p class="text-sm text-slate-600"><span class="font-medium">Role:</span>
-                                        <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ Auth::user()->getRoleNames()->first() }}
-                                        </span>
-                                    </p>
                                 </div>
                                 <div class="px-4 py-3 border-t border-slate-200">
                                     <form action="{{ route('logout') }}" method="POST">
                                         @csrf
                                         <button type="submit"
-                                            class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors duration-200">
+                                            class="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm font-medium">
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-                                                </path>
+                                                stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6-4v8" />
                                             </svg>
                                             Keluar
                                         </button>
@@ -330,12 +341,24 @@ window.addEventListener('scroll', () => {
                 </div>
             </header>
 
-            <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto p-4 md:p-6">
+            <main class="overflow-y-auto bg-slate-50 p-6 flex-1 overflow-x-hidden">
                 @yield('content')
             </main>
         </div>
     </div>
+
+    @if (session('error'))
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Oops...',
+                text: '{{ session('error') }}',
+                background: '#f8fafc',
+                color: '#1e293b',
+                confirmButtonColor: '#3b82f6',
+            });
+        </script>
+    @endif
 </body>
 
 </html>
