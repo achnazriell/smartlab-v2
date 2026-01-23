@@ -499,7 +499,7 @@
                 <div class="flex flex-row lg:flex-col justify-center items-center gap-8 lg:gap-36">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <img src="{{ asset('image/Smart-LAB White Logo.webp') }}"
+                        <img src="{{ asset('image/Smart-LAB white logo.webp') }}"
                             class="w-0 md:w-64 lg:w-80 bounce-hover" alt="Logo Smart-LAB" />
                     </div>
 

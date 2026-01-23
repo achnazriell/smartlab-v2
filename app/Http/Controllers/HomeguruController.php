@@ -34,6 +34,10 @@ class HomeguruController extends Controller
 
         $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
 
+        $allTeacherClasses = TeacherClass::with('classes.studentList')
+            ->where('teacher_id', $teacher->id)
+            ->get();
+
         $teacherClasses = TeacherClass::with([
             'classes.studentList.user',
             'subjects'
@@ -43,7 +47,9 @@ class HomeguruController extends Controller
             ->get();
 
         $totalKelas = $teacherClasses->count();
-        $totalSiswa = 0;
+        $totalSiswa = $allTeacherClasses->sum(function ($tc) {
+            return $tc->classes ? $tc->classes->studentList->count() : 0;
+        });
         $kelasData = [];
 
         $tugasBerjalan = Task::where('user_id', $user->id)

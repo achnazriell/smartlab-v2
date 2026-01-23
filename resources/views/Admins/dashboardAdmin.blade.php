@@ -50,7 +50,7 @@
                 <div class="flex items-center justify-between">
                     <div class="space-y-1">
                         <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</p>
-                        <p class="text-3xl font-bold text-slate-900">{{ $totalSiswa ?? 0 }}</p>
+                        <p class="text-3xl font-bold text-slate-900">{{ $totalMurid ?? 0 }}</p>
                     </div>
                     <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -83,7 +83,7 @@
             <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div class="space-y-1">
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Mata Pelajaran</p>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Mapel</p>
                         <p class="text-3xl font-bold text-slate-900">{{ $totalSubjects ?? 0 }}</p>
                     </div>
                     <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">

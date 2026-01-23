@@ -175,7 +175,7 @@
                         <!-- Question Text -->
                         <div class="mb-8">
                             <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-6 leading-relaxed"
-                                x-text="currentQuestion?.question_text || 'Tidak ada soal'"></h2>
+                                x-html="currentQuestion?.question_text || 'Tidak ada soal'"></h2>
 
                             <!-- Question Image -->
                             <template x-if="currentQuestion?.question_image">
@@ -437,10 +437,9 @@
                     const minutes = Math.floor((seconds % 3600) / 60);
                     const secs = seconds % 60;
 
-                    if (hours > 0) {
-                        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                    }
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                    return `${hours.toString().padStart(2, '0')}:${minutes
+                    .toString()
+                    .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                 },
 
                 selectAnswer(answerKey) {

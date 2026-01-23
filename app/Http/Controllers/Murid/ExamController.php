@@ -413,7 +413,7 @@ class ExamController extends Controller
             $questions = $questions->shuffle();
         }
 
-        $formattedQuestions = $exam->questions->map(function ($question) use ($answers) {
+        $questions = $exam->questions->map(function ($question) use ($answers) {
             $options = [];
 
             if ($question->type === 'PG' && $question->choices->isNotEmpty()) {
@@ -425,7 +425,7 @@ class ExamController extends Controller
 
             return [
                 'id' => $question->id,
-                'question_text' => $question->question, // Perhatikan nama field ini
+                'question_text' => nl2br(e($question->question)),
                 'type' => $question->type,
                 'score' => $question->score,
                 'options' => $options,
@@ -437,7 +437,6 @@ class ExamController extends Controller
             'exam' => $exam,
             'attempt' => $attempt,
             'questions' => $questions,
-            'formattedQuestions' => $formattedQuestions,
             'answers' => $answers,
             'answeredCount' => $answeredCount,
             'timeRemaining' => $timeRemaining,
