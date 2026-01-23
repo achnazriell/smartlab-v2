@@ -7,7 +7,7 @@
     <title>Login - Smart-Lab</title>
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
+    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
     @vite([ 'resources/js/app.js'])
 
     <style>
@@ -112,7 +112,7 @@
 
 <body class="min-h-screen flex items-center justify-center p-4"
     style="
-          background-image: url('{{ asset('image/background-guest2.png') }}');
+          background-image: url('{{ asset('image/background-guest2.webp') }}');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;

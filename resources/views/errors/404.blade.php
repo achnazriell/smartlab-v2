@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        
+
         :root {
             --sl-blue: #00A3FF; /* Biru dari logo Smart-Lab */
             --sl-dark: #1A1A1A;
@@ -42,7 +42,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden relative">
-    
+
     <!-- Latar Belakang Dekoratif (Molekul/Grid) -->
     <div class="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
         <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
@@ -59,8 +59,8 @@
     <main class="z-10 text-center max-w-2xl mx-auto flex flex-col items-center">
         <!-- Logo -->
         <div class="mb-12">
-            <img src="{{ asset('image/logo.png') }}" 
-                 alt="Smart-Lab Logo" 
+            <img src="{{ asset('image/logo.webp') }}"
+                 alt="Smart-Lab Logo"
                  class="h-20 w-auto">
         </div>
 
@@ -96,11 +96,11 @@
 
         <!-- Tombol Navigasi -->
         <div class="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <a href="/" 
+            <a href="/"
                class="bg-sl-blue text-white px-8 py-4 rounded-2xl font-bold transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1 focus:ring-4 focus:ring-blue-100 text-center">
                 Kembali ke Beranda
             </a>
-            <button onclick="window.history.back()" 
+            <button onclick="window.history.back()"
                     class="bg-white border-2 border-gray-100 text-gray-600 px-8 py-4 rounded-2xl font-bold transition-all duration-300 hover:border-sl-blue hover:text-sl-blue hover:bg-blue-50 text-center">
                 Kembali Sebelumnya
             </button>
@@ -114,7 +114,7 @@
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
-        
+
         // Sedikit interaksi mouse untuk efek paralaks halus pada elemen dekoratif
         document.addEventListener('mousemove', (e) => {
             const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
