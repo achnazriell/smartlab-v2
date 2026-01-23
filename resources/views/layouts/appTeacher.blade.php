@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
+    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
     <title>SmartLab</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -154,7 +154,7 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
         </div>
 
         <!-- Sidebar -->
-        <!-- Redesigned sidebar to modern white design with brand accents, using LogoSmartlab.png -->
+        <!-- Redesigned sidebar to modern white design with brand accents, using LogoSmartlab.webp -->
         <aside class="fixed top-0 left-0 h-full bg-white border-r shadow-xl z-50 transition-all duration-300"
             :class="isMobile
                 ?
@@ -169,11 +169,11 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Logo Mini -->
                     <img x-show="!isMobile && !sidebarOpen" class="w-9 h-9 object-contain"
-                        src="{{ asset('image/logo.png') }}">
+                        src="{{ asset('image/logo.webp') }}">
 
                     <!-- Logo Full -->
                     <img x-show="isMobile || sidebarOpen" class="w-auto h-10 object-contain ml-7"
-                        src="{{ asset('image/LogoSmartlab.png') }}">
+                        src="{{ asset('image/LogoSmartlab.webp') }}">
 
                 </div>
 
@@ -231,9 +231,9 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                 <!-- SOAL -->
                 <a href="{{ route('guru.exams.index') }}"
-                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('exams.*') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
+                    class="flex items-center py-3 px-4 rounded-xl transition-all duration-200 group relative {{ request()->routeIs('guru.*') ? 'sidebar-item-active' : 'text-slate-600 sidebar-item-hover' }}"
                     :class="(sidebarOpen || mobileSidebarOpen) ? '' : 'justify-center'"
-                    :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Ujian'">
+                    :title="(sidebarOpen || mobileSidebarOpen) ? '' : 'Soal'">
                     <svg class="w-5 h-5 flex-shrink-0" :class="(sidebarOpen || mobileSidebarOpen) ? 'mr-3' : ''"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -279,7 +279,7 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Mobile centered logo -->
                     <div class="md:hidden absolute left-1/2 transform -translate-x-1/2 flex items-center ml-11">
-                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.png') }}" class="h-9 w-auto " />
+                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.webp') }}" class="h-9 w-auto " />
                     </div>
 
                     <div class="flex items-center space-x-2 md:space-x-4">

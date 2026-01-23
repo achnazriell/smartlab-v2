@@ -11,10 +11,20 @@
                 class="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-blue-400/20 rounded-full blur-2xl">
             </div>
             <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                @php
+                    $namaDepan = explode(' ', trim(Auth::user()->name))[0];
+                @endphp
+
                 <div class="max-w-2xl">
-                    <h1 class="text-3xl lg:text-4xl font-semibold mb-4 font-display tracking-tight">Selamat datang kembali,
-                        {{ Auth::user()->name }}! 👋</h1>
+                    <h1 class="text-3xl lg:text-4xl font-semibold mb-4 font-display tracking-tight">
+                        Selamat datang kembali,
+                        @if (optional(Auth::user()->teacher)->sapaan)
+                            {{ Auth::user()->teacher->sapaan }}
+                        @endif
+                        {{ $namaDepan }}! 👋
+                    </h1>
                 </div>
+
                 <div class="flex flex-shrink-0">
                     <a href="{{ route('tasks.create') }}"
                         class="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-xl">
@@ -114,10 +124,17 @@
                         <div
                             class="card-modern p-6 rounded-xl bg-white shadow-md hover:border-blue-400 transition-all group">
                             <div class="flex justify-between items-start mb-6">
+                                @php
+                                    $kelasText = is_array($kelas) ? $kelas['kelas'] ?? '' : $kelas->kelas ?? '';
+
+                                    preg_match('/^(XII|XI|X)/i', $kelasText, $match);
+                                @endphp
+
                                 <div
                                     class="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center text-white font-semibold text-xl">
-                                    {{ strtoupper(substr($kelas['kelas'], 0, 1)) }}
+                                    {{ strtoupper($match[1] ?? '-') }}
                                 </div>
+
                                 <span class="text-xs font-bold px-3 py-1 bg-white border rounded-xl">
                                     {{ $kelas['jumlah_siswa'] }} Siswa
                                 </span>
@@ -134,21 +151,6 @@
                                     </span>
                                 @endforeach
                             </p>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700">
-                                    <span>Progres Materi</span>
-                                    <span class="text-slate-400">–</span>
-                                </div>
-
-                                <div class="w-full h-2.5 bg-slate-100 rounded-full">
-                                    <div class="h-full bg-slate-300 rounded-full w-0"></div>
-                                </div>
-
-                                <p class="text-xs text-slate-400 italic mt-2">
-                                    Progres akan muncul setelah materi tersedia
-                                </p>
-                            </div>
                         </div>
                     @endforeach
                 </div>

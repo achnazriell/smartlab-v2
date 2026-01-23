@@ -225,12 +225,12 @@
                                                             <option value="" disabled
                                                                 {{ $classGrade === '' ? 'selected' : '' }}>Pilih Angkatan
                                                             </option>
-                                                            <option value="10"
-                                                                {{ $classGrade == 10 ? 'selected' : '' }}>10</option>
-                                                            <option value="11"
-                                                                {{ $classGrade == 11 ? 'selected' : '' }}>11</option>
-                                                            <option value="12"
-                                                                {{ $classGrade == 12 ? 'selected' : '' }}>12</option>
+                                                            <option value="X"
+                                                                {{ $classGrade == 'X' ? 'selected' : '' }}>X</option>
+                                                            <option value="XI"
+                                                                {{ $classGrade == 'XI' ? 'selected' : '' }}>XI</option>
+                                                            <option value="XII"
+                                                                {{ $classGrade == 'XII' ? 'selected' : '' }}>XII</option>
                                                         </select>
                                                     </div>
                                                     <div>
@@ -407,9 +407,9 @@
                                 <select name="name_class[0]" required
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                                     <option value="" disabled selected>Pilih Angkatan</option>
-                                    <option value="10" {{ old('name_class.0') == '10' ? 'selected' : '' }}>10</option>
-                                    <option value="11" {{ old('name_class.0') == '11' ? 'selected' : '' }}>11</option>
-                                    <option value="12" {{ old('name_class.0') == '12' ? 'selected' : '' }}>12</option>
+                                    <option value="X" {{ old('name_class.0') == 'X' ? 'selected' : '' }}>X</option>
+                                    <option value="XI" {{ old('name_class.0') == 'XI' ? 'selected' : '' }}>XI</option>
+                                    <option value="XII" {{ old('name_class.0') == 'XII' ? 'selected' : '' }}>XII</option>
                                 </select>
                             </div>
                             <div>

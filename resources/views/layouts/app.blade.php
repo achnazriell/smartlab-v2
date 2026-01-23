@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
+    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
     <title>SmartLab</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -171,11 +171,11 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Logo Mini -->
                     <img x-show="!isMobile && !sidebarOpen" class="w-9 h-9 object-contain"
-                        src="{{ asset('image/logo.png') }}">
+                        src="{{ asset('image/logo.webp') }}">
 
                     <!-- Logo Full -->
                     <img x-show="isMobile || sidebarOpen" class="w-auto h-10 object-contain ml-7"
-                        src="{{ asset('image/LogoSmartlab.png') }}">
+                        src="{{ asset('image/LogoSmartlab.webp') }}">
 
                 </div>
 
@@ -301,7 +301,7 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Mobile centered logo -->
                     <div class="md:hidden absolute left-1/2 transform -translate-x-1/2 flex items-center ml-11">
-                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.png') }}" class="h-9 w-auto " />
+                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.webp') }}" class="h-9 w-auto " />
                     </div>
 
                     <div class="flex items-center space-x-2 md:space-x-4">

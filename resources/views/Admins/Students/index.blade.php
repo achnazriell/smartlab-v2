@@ -134,7 +134,7 @@
                                 Email</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Password</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">nis
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">NIS
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Kelas</th>
@@ -189,7 +189,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <div class="flex items-center space-x-2">
                                         <button type="button" onclick="openEditModal({{ $student->id }})"
-                                            class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200">
+                                            class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200"
+                                            data-id="{{ $student->user->id }}" data-name="{{ $student->user->name }}"
+                                            data-email="{{ $student->user->email }}">
                                             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -236,7 +238,7 @@
                                                     </div>
                                                     <div>
                                                         <h3 class="text-lg font-semibold text-slate-900">Edit Murid</h3>
-                                                        <p class="text-sm text-slate-500">{{ $student->name }}</p>
+                                                        <p class="text-sm text-slate-500">{{ $student->user->name }}</p>
                                                     </div>
                                                 </div>
                                                 <button type="button" onclick="closeEditModal({{ $student->id }})"
@@ -255,15 +257,15 @@
                                                     <div>
                                                         <label class="block text-sm font-medium text-slate-700 mb-1">Nama
                                                             Murid</label>
-                                                        <input type="text" name="name"
-                                                            value="{{ $student->name }}" required
+                                                        <input type="text" name="name" id="editName"
+                                                            value="{{ old('name', $student->user->name) }}" required
                                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
                                                     </div>
                                                     <div>
                                                         <label
                                                             class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                                                        <input type="email" name="email"
-                                                            value="{{ $student->email }}" required
+                                                        <input type="email" name="email" id="editEmail"
+                                                            value="{{ old('email', $student->user->email) }}" required
                                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
                                                     </div>
                                                     <div>
@@ -271,15 +273,16 @@
                                                             class="block text-sm font-medium text-slate-700 mb-1">Password</label>
                                                         <input type="text" name="password"
                                                             placeholder="Kosongkan jika tidak ingin mengubah password"
-                                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
+                                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200"
+                                                            value="{{ old('password') }}">
                                                         <p class="text-xs text-slate-500 mt-1">Biarkan kosong jika tidak
                                                             ingin mengubah password</p>
                                                     </div>
                                                     <div>
                                                         <label
-                                                            class="block text-sm font-medium text-slate-700 mb-1">nis</label>
-                                                        <input type="text" name="nis" value="{{ $student->nis }}"
-                                                            required
+                                                            class="block text-sm font-medium text-slate-700 mb-1">NIS</label>
+                                                        <input type="text" name="nis"
+                                                            value="{{ old('nis', $student->nis) }}" required
                                                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200 font-mono">
                                                     </div>
                                                     <div>
@@ -291,8 +294,9 @@
                                                             id="editClassSelect{{ $student->id }}">
                                                             <option value="">-- Pilih Kelas --</option>
                                                             @php
-                                                                $selectedClass = $student->class?->id;
+                                                                $selectedClass = old('class_id', $student->class?->id);
                                                             @endphp
+
                                                             @foreach ($classes as $class)
                                                                 <option value="{{ $class->id }}"
                                                                     {{ $class->id == $selectedClass ? 'selected' : '' }}>
@@ -376,7 +380,7 @@
                                                     </div>
                                                     <p class="text-slate-600 mb-2">Anda yakin ingin menghapus murid:</p>
                                                     <p class="text-lg font-semibold text-slate-900 mb-4">
-                                                        {{ $student->name }}</p>
+                                                        {{ $student->user->name }}</p>
                                                     <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                                                         <p class="text-sm text-red-600 flex items-center justify-center">
                                                             <svg class="w-4 h-4 mr-1" fill="currentColor"
@@ -557,25 +561,29 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Murid <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" name="name" required placeholder="Masukkan nama lengkap murid"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    value="{{ old('name') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
                                         class="text-red-500">*</span></label>
                                 <input type="email" name="email" required placeholder="contoh@email.com"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    value="{{ old('email') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" name="password" required placeholder="Masukkan password"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    value="{{ old('password') }}">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">nis <span
+                                <label class="block text-sm font-medium text-slate-700 mb-1">NIS <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="nis" required placeholder="Masukkan nis"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono">
+                                <input type="text" name="nis" required placeholder="Masukkan NIS"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
+                                    value="{{ old('nis') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Kelas <span
@@ -584,7 +592,10 @@
                                 <select name="class_id" id="addClassSelect" required class="add-class-select w-full">
                                     <option value="">-- Pilih Kelas --</option>
                                     @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}">{{ $class->name_class }}</option>
+                                        <option value="{{ $class->id }}"
+                                            {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                                            {{ $class->name_class }}
+                                        </option>
                                     @endforeach
                                 </select>
                                 <p class="text-xs text-slate-500 mt-1">Pilih kelas murid</p>
@@ -608,6 +619,16 @@
     </div>
 
     <script>
+        document.querySelectorAll('.btn-edit').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('editName').value = this.dataset.name;
+                document.getElementById('editEmail').value = this.dataset.email;
+
+                document.getElementById('editForm').action =
+                    `/students/${this.dataset.id}`;
+            });
+        });
+
         function openEditModal(id) {
             document.getElementById('editModal' + id).classList.remove('hidden');
             document.body.style.overflow = 'hidden';

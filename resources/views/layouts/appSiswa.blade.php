@@ -21,7 +21,7 @@
         class="fixed top-0 left-0 right-0 h-16 bg-white shadow-md z-50 flex items-center justify-between px-4 sm:px-6 border-b border-blue-100">
         <!-- Logo Section -->
         <a href="/dashboard" class="flex items-center gap-2 flex-shrink-0">
-            <img src="{{ asset('image/logo.png') }}" alt="Smart-Lab" class="h-10 w-auto">
+            <img src="{{ asset('image/logo.webp') }}" alt="Smart-Lab" class="h-10 w-auto">
             <span class="hidden sm:block text-sm font-bold text-blue-900">Smart Lab</span>
         </a>
 
@@ -138,9 +138,7 @@
                 <svg class="w-6 h-6 {{ request()->is('soal') ? 'text-blue-600' : 'text-blue-700' }}"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
-                        d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625z" />
-                    <path
-                        d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
+                        d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
                 </svg>
                 <span
                     class="text-xs font-medium mt-1 {{ request()->is('soal') ? 'text-blue-600' : 'text-blue-700' }}">Soal</span>

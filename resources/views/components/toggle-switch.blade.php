@@ -90,7 +90,7 @@
 <style>
     /* Ukuran konsisten */
     [data-toggle-width="44px"] {
-        width: 44px;
+        width: 400px;
     }
 
     [data-toggle-height="24px"] {

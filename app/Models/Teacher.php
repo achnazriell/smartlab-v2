@@ -14,7 +14,7 @@ class Teacher extends Model
     // 🔹 RELASI KE USER
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function exams()
@@ -48,5 +48,26 @@ class Teacher extends Model
             'teacher_id',
             'subject_id'
         );
+    }
+
+    // app/Models/Teacher.php
+    public function getSapaanAttribute(): ?string
+    {
+        if (empty($this->NIP)) {
+            return null;
+        }
+
+        $nip = trim((string) $this->NIP);
+
+        // pastikan minimal digit ke-15 ada
+        if (strlen($nip) < 15) {
+            return null;
+        }
+
+        return match ($nip[14]) {
+            '1' => 'Pak',
+            '2' => 'Bu',
+            default => null,
+        };
     }
 }

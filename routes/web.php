@@ -194,13 +194,13 @@ Route::middleware('auth')->group(function () {
         // Halaman detail soal sebelum mulai
         Route::get('/{exam}/detail', [UserPageController::class, 'showSoalDetail'])->name('detail');
 
-        // TAMBAHKAN ROUTE INI: Halaman mengerjakan soal
+        // Halaman mengerjakan soal
         Route::get('/{exam}/kerjakan', [MuridExamController::class, 'attemptFromSession'])->name('kerjakan');
 
-        // TAMBAHKAN ROUTE INI: Submit jawaban
+        // Submit jawaban
         Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
 
-        // TAMBAHKAN ROUTE INI: Lihat hasil
+        // Lihat hasil
         Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
 
         // Route untuk memulai ujian

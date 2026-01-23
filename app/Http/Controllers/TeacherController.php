@@ -20,24 +20,35 @@ class TeacherController extends Controller
      */
     public function index(Request $request)
     {
-        // dd($request);
-        $search = $request->input('search_teacher', '');
-        $query = User::with(['teacher', 'teacher.teacherClasses.classes', 'teacher.teacherClasses.subjects'])
+        $search = $request->input('search_teacher');
+
+        $query = User::with([
+            'teacher',
+            'teacher.teacherClasses.classes',
+            'teacher.teacherClasses.subjects'
+        ])
             ->select('users.*')
-            ->leftJoin('teachers', 'teachers.user_id', '=', 'teachers.id') // join ke tabel teachers
+            ->leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
             ->whereHas('roles', fn($q) => $q->where('name', 'Guru'))
-            ->whereDoesntHave('roles', function ($q) {
-                $q->where('name', 'Admin');
-            })
-            ->orderByRaw('NOT EXISTS (
+            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Admin'));
+
+        // 🔍 SEARCH
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%")
+                    ->orWhere('teachers.NIP', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderByRaw('NOT EXISTS (
         SELECT 1
         FROM teacher_classes
         WHERE teacher_classes.teacher_id = teachers.id
-) DESC')
-
+    ) DESC')
             ->orderBy('users.created_at', 'desc');
 
-        $teachers = $query->paginate(5);
+        $teachers = $query->paginate(5)->withQueryString();
 
         $classes = Classes::all();
         $subjects = Subject::all();

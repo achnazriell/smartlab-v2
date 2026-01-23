@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}" />
+    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}" />
     <title>Smart-LAB</title>
 
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -387,15 +387,15 @@
                 data-carousel="slide">
                 <div class="relative overflow-hidden rounded-3xl shadow-2xl carousel-container">
                     <div class="hidden duration-700 ease-in-out" data-carousel-item="active">
-                        <img src="{{ asset('image/1.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                        <img src="{{ asset('image/1.webp') }}" class="block w-full h-full object-cover rounded-3xl"
                             alt="Slide 1" />
                     </div>
                     <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                        <img src="{{ asset('image/2.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                        <img src="{{ asset('image/2.webp') }}" class="block w-full h-full object-cover rounded-3xl"
                             alt="Slide 2" />
                     </div>
                     <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                        <img src="{{ asset('image/3.png') }}" class="block w-full h-full object-cover rounded-3xl"
+                        <img src="{{ asset('image/3.webp') }}" class="block w-full h-full object-cover rounded-3xl"
                             alt="Slide 3" />
                     </div>
                 </div>
@@ -448,7 +448,7 @@
         </div>
 
         <div class="relative z-10 text-center max-w-4xl animate-on-scroll">
-            <img src="{{ asset('image/Smart-Lab blue.png') }}" class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover"
+            <img src="{{ asset('image/Smart-Lab blue.webp') }}" class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover"
                 alt="logo" />
             <p
                 class="text-blue-800 font-semibold text-sm md:text-base lg:text-lg text-center font-poppins leading-relaxed px-4">
@@ -461,10 +461,10 @@
         </div>
 
         <!-- Decorative elements -->
-        <img src="{{ asset('image/motif mtk.png') }}"
+        <img src="{{ asset('image/motif mtk.webp') }}"
             class="absolute top-16 md:top-32 left-4 md:left-12 w-32 md:w-48 lg:w-56 opacity-80 floating"
             alt="Motif MTK" />
-        <img src="{{ asset('image/motif bangun ruang.png') }}"
+        <img src="{{ asset('image/motif bangun ruang.webp') }}"
             class="absolute bottom-16 md:bottom-24 right-4 md:right-12 w-48 md:w-64 lg:w-80 opacity-80 floating-delay"
             alt="Motif Bangun Ruang" />
 
@@ -485,7 +485,7 @@
 
     <!-- =================== CTA =================== -->
     <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-48">
-        <img src="{{ asset('image/motif bawah landing.png') }}" class="absolute inset-0 w-full h-full object-cover"
+        <img src="{{ asset('image/motif bawah landing.webp') }}" class="absolute inset-0 w-full h-full object-cover"
             alt="motif bawah" />
         <div class="relative z-10 text-center text-blue-900 px-4 animate-on-scroll mb-16">
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-poppins mb-8 md:mb-12">
@@ -499,7 +499,7 @@
                 <div class="flex flex-row lg:flex-col justify-center items-center gap-8 lg:gap-36">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <img src="{{ asset('image/Smart-LAB White Logo.png') }}"
+                        <img src="{{ asset('image/Smart-LAB White Logo.webp') }}"
                             class="w-0 md:w-64 lg:w-80 bounce-hover" alt="Logo Smart-LAB" />
                     </div>
 

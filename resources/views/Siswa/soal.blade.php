@@ -71,6 +71,17 @@
         <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
             <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
         </div>
+        @if (session('error'))
+            <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                <strong>Error:</strong> {{ session('error') }}
+            </div>
+        @endif
+
+        @if (session('success'))
+            <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                {{ session('success') }}
+            </div>
+        @endif
 
         <!-- Banner Header -->
         <div class="banner-container mb-8">
@@ -172,7 +183,9 @@
                                         <path
                                             d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                     </svg>
-                                    <span class="ml-1">{{ $exam->teacher->name ?? 'N/A' }}</span>
+                                    <span class="ml-1">
+                                        {{ $exam->teacher->user->name ?? 'N/A' }}
+                                    </span>
                                 </div>
                             </div>
 

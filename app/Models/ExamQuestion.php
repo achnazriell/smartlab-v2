@@ -98,4 +98,22 @@ class ExamQuestion extends Model
 
         return $randomAnswers;
     }
+
+    // Accessor untuk question_text (jika diperlukan)
+    public function getQuestionTextAttribute()
+    {
+        return $this->question; // 'question' adalah kolom di database
+    }
+
+    // Accessor untuk options
+    public function getOptionsAttribute()
+    {
+        if ($this->type === 'PG') {
+            return $this->choices->mapWithKeys(function ($choice) {
+                return [$choice->id => $choice->text];
+            })->toArray();
+        }
+
+        return [];
+    }
 }

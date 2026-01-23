@@ -41,7 +41,7 @@ class StudentController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'nis' => 'required|string',
+            'nis' => 'required|regex:/^[0-9]{6,10}$/',
             'class_id' => 'required|exists:classes,id',
         ]);
 

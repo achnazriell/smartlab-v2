@@ -11,7 +11,7 @@ class Exam extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'teacher_id',
+        'teacher_id', // Ini seharusnya merujuk ke id di tabel teachers
         'class_id',
         'subject_id',
         'title',
@@ -89,9 +89,16 @@ class Exam extends Model
 
     /* ================= RELATIONS ================= */
 
+    // PERBAIKAN: teacher() harus merujuk ke Teacher::class, bukan User::class
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsTo(Teacher::class, 'teacher_id');
+    }
+
+    // Untuk kompatibilitas dengan kode lama yang mungkin masih menggunakan creator()
+    public function creator()
+    {
+        return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
     public function class()

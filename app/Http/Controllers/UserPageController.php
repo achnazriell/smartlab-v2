@@ -291,47 +291,81 @@ class UserPageController extends Controller
     public function showSoal(Request $request)
     {
         try {
-            // Ambil user yang login
             $user = Auth::user();
 
-            // Cek apakah user sudah memiliki kelas
-            if (!$user->student || !$user->student->class) {
-                return redirect()->route('SelectClass')->with('error', 'Anda belum memiliki kelas');
+            // Debug untuk memastikan user adalah siswa
+            \Log::info('User Info:', [
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'roles' => $user->getRoleNames(),
+                'has_student' => $user->student ? 'Yes' : 'No'
+            ]);
+
+            // Cek jika user adalah siswa
+            if (!$user->hasRole('Murid')) {
+                return back()->with('error', 'Hanya siswa yang dapat mengakses halaman ini.');
             }
 
-            $kelasId = $user->student->class_id;
+            // Cek jika user memiliki data student
+            if (!$user->student) {
+                \Log::error('User does not have student record:', ['user_id' => $user->id]);
+                return view('Siswa.soal', [
+                    'exams' => collect(),
+                    'error' => 'Data siswa tidak ditemukan. Silakan hubungi administrator.'
+                ]);
+            }
+
+            // Cek jika student memiliki class_id
+            $student = $user->student;
+            if (!$student->class_id) {
+                \Log::warning('Student has no class:', ['student_id' => $student->id, 'user_id' => $user->id]);
+                return view('Siswa.soal', [
+                    'exams' => collect(),
+                    'error' => 'Anda belum memiliki kelas. Silakan tunggu hingga administrator menugaskan Anda ke kelas.'
+                ]);
+            }
+
+            $kelasId = $student->class_id;
             $search = $request->input('search');
             $status = $request->input('status');
 
-            // Query untuk Exam dengan relasi yang benar
-            $exams = Exam::with([
+            // Query dasar dengan relasi yang benar
+            $query = Exam::with([
                 'subject',
-                'teacher' => function ($query) {
-                    $query->select('id', 'name', 'email'); // Ambil hanya kolom yang diperlukan
-                }
+                'teacher.user' // PERBAIKAN: Ambil teacher lalu user dari teacher
             ])
                 ->where('class_id', $kelasId)
                 ->where('status', 'active')
                 ->where(function ($query) {
                     $query->whereNull('end_at')
                         ->orWhere('end_at', '>=', now());
-                })
-                ->when($search, function ($query, $search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('title', 'like', '%' . $search . '%')
-                            ->orWhereHas('subject', function ($sq) use ($search) {
-                                $sq->where('name_subject', 'like', '%' . $search . '%');
-                            })
-                            ->orWhereHas('teacher', function ($tq) use ($search) {
-                                $tq->where('name', 'like', '%' . $search . '%');
-                            });
-                    });
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(9);
+                });
 
-            // Hitung status untuk setiap exam
-            foreach ($exams as $exam) {
+            // Filter pencarian
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhereHas('subject', function ($subjectQuery) use ($search) {
+                            $subjectQuery->where('name_subject', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('teacher.user', function ($teacherQuery) use ($search) {
+                            $teacherQuery->where('name', 'like', '%' . $search . '%');
+                        });
+                });
+            }
+
+            // Debug query
+            \Log::info('Exam Query:', [
+                'kelas_id' => $kelasId,
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+
+            // Ambil semua data untuk filtering status
+            $allExams = $query->orderBy('created_at', 'desc')->get();
+
+            // Tambahkan status untuk setiap exam
+            foreach ($allExams as $exam) {
                 $attempt = ExamAttempt::where('exam_id', $exam->id)
                     ->where('student_id', $user->id)
                     ->latest()
@@ -340,24 +374,70 @@ class UserPageController extends Controller
                 $exam->status = $this->getExamStatus($exam, $attempt);
                 $exam->attempt = $attempt;
                 $exam->questions_count = $exam->questions()->count();
+
+                // Debug untuk melihat data guru
+                \Log::info('Exam Teacher Data:', [
+                    'exam_id' => $exam->id,
+                    'exam_title' => $exam->title,
+                    'teacher_id' => $exam->teacher_id,
+                    'teacher_exists' => $exam->teacher ? 'Yes' : 'No',
+                    'teacher_user_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'No user name') : 'No teacher',
+                    'teacher_user_email' => $exam->teacher ? ($exam->teacher->user->email ?? 'No email') : 'No teacher'
+                ]);
             }
 
             // Filter berdasarkan status jika ada
             if ($status) {
-                $filteredExams = $exams->filter(function ($exam) use ($status) {
-                    return $exam->status === $status;
+                $statusMap = [
+                    'belum_dikerjakan' => 'available',
+                    'sudah_dikerjakan' => 'completed',
+                    'kadaluarsa' => 'expired'
+                ];
+
+                $targetStatus = $statusMap[$status] ?? $status;
+
+                $filteredExams = $allExams->filter(function ($exam) use ($targetStatus) {
+                    return $exam->status === $targetStatus;
                 });
-                $exams = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $filteredExams->values(),
+
+                // Convert ke paginator
+                $page = $request->input('page', 1);
+                $perPage = 9;
+                $paginatedExams = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $filteredExams->forPage($page, $perPage),
                     $filteredExams->count(),
-                    9,
-                    $request->input('page', 1)
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
                 );
+
+                $exams = $paginatedExams;
+            } else {
+                // Jika tidak ada filter status, gunakan pagination biasa
+                $exams = $query->orderBy('created_at', 'desc')->paginate(9);
+
+                // Tambahkan status untuk exams yang dipaginate
+                foreach ($exams as $exam) {
+                    $attempt = ExamAttempt::where('exam_id', $exam->id)
+                        ->where('student_id', $user->id)
+                        ->latest()
+                        ->first();
+
+                    $exam->status = $this->getExamStatus($exam, $attempt);
+                    $exam->attempt = $attempt;
+                    $exam->questions_count = $exam->questions()->count();
+
+                    // Debug untuk melihat data guru
+                    \Log::info('Exam Teacher Data (Paginated):', [
+                        'exam_id' => $exam->id,
+                        'teacher_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'Unknown') : 'No teacher'
+                    ]);
+                }
             }
 
             return view('Siswa.soal', compact('exams'));
         } catch (\Exception $e) {
-            \Log::error('Error in showSoal: ' . $e->getMessage());
+            \Log::error('Error in showSoal: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -367,23 +447,37 @@ class UserPageController extends Controller
         try {
             $user = Auth::user();
 
+            // Pastikan user adalah siswa
+            if (!$user->hasRole('Murid')) {
+                abort(403, 'Hanya siswa yang dapat mengakses halaman ini.');
+            }
+
+            // Pastikan user memiliki data student
+            if (!$user->student) {
+                abort(403, 'Data siswa tidak ditemukan.');
+            }
+
+            // Pastikan student memiliki kelas
+            if (!$user->student->class_id) {
+                abort(403, 'Anda belum memiliki kelas.');
+            }
+
             // Gunakan Exam model dengan relasi yang benar
             $exam = Exam::with([
                 'subject',
-                'teacher' => function ($query) {
-                    $query->select('id', 'name', 'email');
-                },
+                'teacher.user', // PERBAIKAN: Ambil teacher lalu user dari teacher
                 'questions.choices'
             ])
                 ->where('id', $exam_id)
                 ->firstOrFail();
 
             // Debug: Cek data guru
-            \Log::info('Exam Teacher Info:', [
+            \Log::info('Exam Detail - Teacher Info:', [
                 'exam_id' => $exam->id,
+                'title' => $exam->title,
                 'teacher_id' => $exam->teacher_id,
-                'teacher_name' => $exam->teacher ? $exam->teacher->name : 'No teacher',
-                'teacher' => $exam->teacher
+                'teacher_exists' => !is_null($exam->teacher),
+                'teacher_user_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'Teacher user not found') : 'Teacher not found'
             ]);
 
             // Cek apakah exam tersedia untuk kelas siswa
