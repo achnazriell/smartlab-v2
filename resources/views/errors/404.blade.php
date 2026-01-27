@@ -96,7 +96,7 @@
 
         <!-- Tombol Navigasi -->
         <div class="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <a href="/"
+            <a href="/Beranda"
                class="bg-sl-blue text-white px-8 py-4 rounded-2xl font-bold transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1 focus:ring-4 focus:ring-blue-100 text-center">
                 Kembali ke Beranda
             </a>

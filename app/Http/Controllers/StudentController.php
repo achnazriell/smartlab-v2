@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpParser\Builder\Class_;
+use Illuminate\Validation\Rule;
+
 
 class StudentController extends Controller
 {
@@ -32,7 +34,6 @@ class StudentController extends Controller
         $classes = Classes::all();
 
         return view('Admins.Students.index', compact('students', 'classes'));
-
     }
 
     public function store(Request $request)
@@ -76,22 +77,41 @@ class StudentController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Temukan student berdasarkan ID
+        $student = Student::findOrFail($id);
+        $userId = $student->user_id;
+
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email|unique:users,email,'.$id,
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users')->ignore($userId)
+            ],
             'password' => 'nullable|min:6',
+            'nis' => 'required|regex:/^[0-9]{6,10}$/',
             'class_id' => 'required|exists:classes,id',
         ]);
 
-        $user = User::findOrFail($id);
+        // Update user
+        $user = User::findOrFail($userId);
 
-        $user->update([
+        $updateData = [
             'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password ? bcrypt($request->password) : $user->password,
-        ]);
+        ];
 
-        Student::where('user_id', $id)->update([
+        // Update password jika diisi
+        if ($request->password) {
+            $updateData['password'] = bcrypt($request->password);
+            $updateData['plain_password'] = $request->password;
+        }
+
+        $user->update($updateData);
+
+        // Update student
+        $student->update([
+            'nis' => $request->nis,
             'class_id' => $request->class_id,
         ]);
 

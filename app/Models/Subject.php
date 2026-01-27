@@ -11,6 +11,36 @@ class Subject extends Model
         'name_subject'
     ];
 
+    // Di model Subject.php
+    public function teacherClassSubjects()
+    {
+        return $this->hasMany(TeacherClassSubject::class, 'subject_id');
+    }
+
+    public function classesThroughMateri()
+    {
+        return $this->hasManyThrough(
+            Classes::class,
+            Materi::class,
+            'subject_id', // Foreign key on Materi table
+            'id', // Foreign key on Classes table
+            'id', // Local key on Subject table
+            'class_id' // Local key on Materi table
+        );
+    }
+
+    public function classesThroughTask()
+    {
+        return $this->hasManyThrough(
+            Classes::class,
+            Task::class,
+            'subject_id', // Foreign key on Task table
+            'id', // Foreign key on Classes table
+            'id', // Local key on Subject table
+            'class_id' // Local key on Task table
+        );
+    }
+    
     public function Classes()
     {
         return $this->hasMany(Classes::class);

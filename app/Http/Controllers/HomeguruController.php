@@ -34,23 +34,49 @@ class HomeguruController extends Controller
 
         $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
 
-        $allTeacherClasses = TeacherClass::with('classes.studentList')
-            ->where('teacher_id', $teacher->id)
-            ->get();
-
+        // Ambil semua kelas yang diajar oleh guru ini
         $teacherClasses = TeacherClass::with([
             'classes.studentList.user',
             'subjects'
         ])
             ->where('teacher_id', $teacher->id)
-            ->limit(3)
             ->get();
 
+        // Batasi untuk tampilan data kelas (hanya 3 kelas)
+        $limitedTeacherClasses = $teacherClasses->take(3);
+
         $totalKelas = $teacherClasses->count();
-        $totalSiswa = $allTeacherClasses->sum(function ($tc) {
-            return $tc->classes ? $tc->classes->studentList->count() : 0;
-        });
+
+        // Hitung total siswa UNIK yang diajar oleh guru ini
+        $totalSiswa = 0;
+        $studentIds = [];
+
+        foreach ($teacherClasses as $tc) {
+            if (!$tc->classes || !$tc->classes->studentList) continue;
+
+            foreach ($tc->classes->studentList as $student) {
+                // Pastikan siswa tidak dihitung dua kali
+                if (!in_array($student->id, $studentIds)) {
+                    $studentIds[] = $student->id;
+                    $totalSiswa++;
+                }
+            }
+        }
+
         $kelasData = [];
+
+        foreach ($limitedTeacherClasses as $tc) {
+            if (!$tc->classes) continue;
+
+            $class = $tc->classes;
+            $jumlahSiswa = $class->studentList->count();
+
+            $kelasData[] = [
+                'kelas' => $class->name_class,
+                'mapel' => $tc->subjects->pluck('name_subject')->toArray(),
+                'jumlah_siswa' => $jumlahSiswa,
+            ];
+        }
 
         $tugasBerjalan = Task::where('user_id', $user->id)
             ->where('date_collection', '>=', now())
@@ -66,21 +92,6 @@ class HomeguruController extends Controller
                 $q->whereNull('mark_task');
             })
             ->count();
-
-
-        foreach ($teacherClasses as $tc) {
-            if (!$tc->classes) continue;
-
-            $class = $tc->classes;
-            $jumlahSiswa = $class->studentList->count();
-            $totalSiswa += $jumlahSiswa;
-
-            $kelasData[] = [
-                'kelas' => $class->name_class,
-                'mapel' => $tc->subjects->pluck('name_subject')->toArray(),
-                'jumlah_siswa' => $jumlahSiswa,
-            ];
-        }
 
         return view('Guru.dashboardGuru', compact(
             'totalKelas',

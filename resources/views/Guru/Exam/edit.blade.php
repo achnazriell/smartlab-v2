@@ -57,11 +57,14 @@
                         <select name="type" @change="updateType"
                             class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 outline-none transition-all"
                             :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'">
-                            <option value="UH" {{ old('type', $exam->type) === 'UH' ? 'selected' : '' }}>Ulangan Harian (UH)</option>
+                            <option value="UH" {{ old('type', $exam->type) === 'UH' ? 'selected' : '' }}>Ulangan Harian
+                                (UH)</option>
                             <option value="UTS" {{ old('type', $exam->type) === 'UTS' ? 'selected' : '' }}>UTS</option>
                             <option value="UAS" {{ old('type', $exam->type) === 'UAS' ? 'selected' : '' }}>UAS</option>
-                            <option value="QUIZ" {{ old('type', $exam->type) === 'QUIZ' ? 'selected' : '' }}>Interactive Quiz (Game Mode)</option>
-                            <option value="Lainnya" {{ old('type', $exam->type) === 'Lainnya' ? 'selected' : '' }}>Lainnya...</option>
+                            <option value="QUIZ" {{ old('type', $exam->type) === 'QUIZ' ? 'selected' : '' }}>Interactive
+                                Quiz (Game Mode)</option>
+                            <option value="Lainnya" {{ old('type', $exam->type) === 'Lainnya' ? 'selected' : '' }}>
+                                Lainnya...</option>
                         </select>
 
                         <div x-show="showOtherInput" x-transition class="mt-2">
@@ -78,7 +81,9 @@
                             :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'">
                             <option value="">-- Pilih Mapel --</option>
                             @foreach ($subjects as $subject)
-                                <option value="{{ $subject->id }}" {{ old('subject_id', $exam->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->name_subject }}</option>
+                                <option value="{{ $subject->id }}"
+                                    {{ old('subject_id', $exam->subject_id) == $subject->id ? 'selected' : '' }}>
+                                    {{ $subject->name_subject }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -90,7 +95,9 @@
                             :class="examType === 'QUIZ' ? 'focus:ring-purple-500' : 'focus:ring-blue-500'">
                             <option value="">-- Pilih Kelas --</option>
                             @foreach ($classes as $class)
-                                <option value="{{ $class->id }}" {{ old('class_id', $exam->class_id) == $class->id ? 'selected' : '' }}>{{ $class->name_class }}</option>
+                                <option value="{{ $class->id }}"
+                                    {{ old('class_id', $exam->class_id) == $class->id ? 'selected' : '' }}>
+                                    {{ $class->name_class }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -114,7 +121,7 @@
                             <div class="space-y-1">
                                 <label class="text-sm font-semibold text-slate-700">Mulai</label>
                                 <input type="datetime-local" name="start_date"
-                                    value="{{ old('start_date', $exam->start_date ? $exam->start_date->format('Y-m-d\TH:i') : '') }}"
+                                    value="{{ old('start_date', $exam->start_at?->format('Y-m-d\TH:i')) }}"
                                     class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                     required>
                             </div>
@@ -236,19 +243,33 @@
                                 <label class="text-sm font-semibold text-slate-700">Tampilkan Jawaban Benar</label>
                                 <select name="show_correct_answer"
                                     class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="0" {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 0 ? 'selected' : '' }}>Tidak Pernah</option>
-                                    <option value="1" {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 1 ? 'selected' : '' }}>Setelah Ujian</option>
-                                    <option value="2" {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 2 ? 'selected' : '' }}>Setelah Setiap Soal</option>
+                                    <option value="0"
+                                        {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 0 ? 'selected' : '' }}>
+                                        Tidak Pernah</option>
+                                    <option value="1"
+                                        {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 1 ? 'selected' : '' }}>
+                                        Setelah Ujian</option>
+                                    <option value="2"
+                                        {{ old('show_correct_answer', $exam->show_correct_answer ?? 0) == 2 ? 'selected' : '' }}>
+                                        Setelah Setiap Soal</option>
                                 </select>
                             </div>
                             <div class="space-y-1">
                                 <label class="text-sm font-semibold text-slate-700">Tampilkan Hasil</label>
                                 <select name="show_result_after"
                                     class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="never" {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'never' ? 'selected' : '' }}>Tidak Pernah</option>
-                                    <option value="immediately" {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'immediately' ? 'selected' : '' }}>Sesaat Setelah Submit</option>
-                                    <option value="after_submit" {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'after_submit' ? 'selected' : '' }}>Setelah Semua Submit</option>
-                                    <option value="after_exam" {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'after_exam' ? 'selected' : '' }}>Setelah Ujian Berakhir</option>
+                                    <option value="never"
+                                        {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'never' ? 'selected' : '' }}>
+                                        Tidak Pernah</option>
+                                    <option value="immediately"
+                                        {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'immediately' ? 'selected' : '' }}>
+                                        Sesaat Setelah Submit</option>
+                                    <option value="after_submit"
+                                        {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'after_submit' ? 'selected' : '' }}>
+                                        Setelah Semua Submit</option>
+                                    <option value="after_exam"
+                                        {{ old('show_result_after', $exam->show_result_after ?? 'never') === 'after_exam' ? 'selected' : '' }}>
+                                        Setelah Ujian Berakhir</option>
                                 </select>
                             </div>
                         </div>
@@ -276,27 +297,45 @@
                             <label class="text-sm font-semibold text-purple-900">Waktu Per Soal (Detik)</label>
                             <select name="time_per_question" required
                                 class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
-                                <option value="30" {{ old('time_per_question', $exam->time_per_question ?? 60) == 30 ? 'selected' : '' }}>30 Detik (Cepat)</option>
-                                <option value="60" {{ old('time_per_question', $exam->time_per_question ?? 60) == 60 ? 'selected' : '' }}>60 Detik (Normal)</option>
-                                <option value="120" {{ old('time_per_question', $exam->time_per_question ?? 60) == 120 ? 'selected' : '' }}>2 Menit (Analisis)</option>
-                                <option value="0" {{ old('time_per_question', $exam->time_per_question ?? 60) == 0 ? 'selected' : '' }}>Tidak Ada Batas</option>
+                                <option value="30"
+                                    {{ old('time_per_question', $exam->time_per_question ?? 60) == 30 ? 'selected' : '' }}>
+                                    30 Detik (Cepat)</option>
+                                <option value="60"
+                                    {{ old('time_per_question', $exam->time_per_question ?? 60) == 60 ? 'selected' : '' }}>
+                                    60 Detik (Normal)</option>
+                                <option value="120"
+                                    {{ old('time_per_question', $exam->time_per_question ?? 60) == 120 ? 'selected' : '' }}>
+                                    2 Menit (Analisis)</option>
+                                <option value="0"
+                                    {{ old('time_per_question', $exam->time_per_question ?? 60) == 0 ? 'selected' : '' }}>
+                                    Tidak Ada Batas</option>
                             </select>
                         </div>
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-purple-900">Mode Quiz</label>
                             <select name="quiz_mode" required
                                 class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
-                                <option value="live" {{ old('quiz_mode', $exam->quiz_mode ?? 'homework') === 'live' ? 'selected' : '' }}>Live (Guru Mengontrol)</option>
-                                <option value="homework" {{ old('quiz_mode', $exam->quiz_mode ?? 'homework') === 'homework' ? 'selected' : '' }}>Homework (Siswa Mandiri)</option>
+                                <option value="live"
+                                    {{ old('quiz_mode', $exam->quiz_mode ?? 'homework') === 'live' ? 'selected' : '' }}>
+                                    Live (Guru Mengontrol)</option>
+                                <option value="homework"
+                                    {{ old('quiz_mode', $exam->quiz_mode ?? 'homework') === 'homework' ? 'selected' : '' }}>
+                                    Homework (Siswa Mandiri)</option>
                             </select>
                         </div>
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-purple-900">Tingkat Kesulitan</label>
                             <select name="difficulty_level"
                                 class="w-full px-4 py-2 rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-500 outline-none bg-white">
-                                <option value="easy" {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'easy' ? 'selected' : '' }}>Mudah</option>
-                                <option value="medium" {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'medium' ? 'selected' : '' }}>Sedang</option>
-                                <option value="hard" {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'hard' ? 'selected' : '' }}>Sulit</option>
+                                <option value="easy"
+                                    {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'easy' ? 'selected' : '' }}>
+                                    Mudah</option>
+                                <option value="medium"
+                                    {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'medium' ? 'selected' : '' }}>
+                                    Sedang</option>
+                                <option value="hard"
+                                    {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') === 'hard' ? 'selected' : '' }}>
+                                    Sulit</option>
                             </select>
                         </div>
                     </div>
@@ -364,8 +403,8 @@
                         :class="examType === 'QUIZ' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'">
                         <span>Simpan Perubahan</span>
                         <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
                         </svg>
                     </button>
                 </div>

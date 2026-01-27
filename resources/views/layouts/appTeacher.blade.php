@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
-    <title>SmartLab</title>
+    <title>@yield('title', 'Smart Lab - Guru')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
@@ -282,26 +282,47 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
                         <img alt="Logo" src="{{ asset('image/LogoSmartlab.webp') }}" class="h-9 w-auto " />
                     </div>
 
-                    <div class="flex items-center space-x-2 md:space-x-4">
+                    <div class="flex items-center space-x-2 md:space-x-3">
                         <div class="hidden md:flex flex-col text-right">
-                            <p class="font-semibold text-slate-800">{{ Auth::user()->name }}</p>
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ Auth::user()->getRoleNames()->first() }}
-                            </span>
+                            <div>
+                                <p class="font-semibold text-slate-800">{{ Auth::user()->name }}</p>
+                            </div>
+                            <div>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ Auth::user()->getRoleNames()->first() }}
+                                </span>
+                            </div>
                         </div>
 
+                        <!-- Bagian dropdown profile Guru -->
                         <div class="relative" x-data="{ profileOpen: false }">
+                            {{-- Update tombol avatar --}}
                             <button @click="profileOpen = !profileOpen"
-                                class="flex items-center p-2 text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                    class="h-5 w-5">
-                                    <path fill-rule="evenodd"
-                                        d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-                                        clip-rule="evenodd" />
-                                </svg>
+                                class="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md hover:shadow-lg overflow-hidden">
+
+                                @php
+                                    $user = Auth::user();
+                                    $photoPath = $user->profile_photo
+                                        ? 'uploads/profile-photos/' . $user->profile_photo
+                                        : null;
+                                    $photoExists = $photoPath && file_exists(public_path($photoPath));
+                                @endphp
+
+                                @if ($photoExists)
+                                    <img src="{{ asset($photoPath) }}" alt="{{ $user->name }}"
+                                        class="w-full h-full object-cover">
+                                @else
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                @endif
                             </button>
 
+                            {{-- Dropdown menu --}}
                             <div x-show="profileOpen" @click.outside="profileOpen = false"
                                 x-transition:enter="transition ease-out duration-200"
                                 x-transition:enter-start="opacity-0 scale-95"
@@ -309,24 +330,25 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
                                 x-transition:leave="transition ease-in duration-150"
                                 x-transition:leave-start="opacity-100 scale-100"
                                 x-transition:leave-end="opacity-0 scale-95"
-                                class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
-                                <div class="px-4 py-3 border-b border-slate-200">
-                                    <h3 class="font-semibold text-slate-800">Profil Pengguna</h3>
-                                </div>
-                                <div class="px-4 py-3 space-y-2">
-                                    <p class="text-sm text-slate-600"><span class="font-medium">Nama:</span>
-                                        {{ Auth::user()->name }}</p>
-                                    <p class="text-sm text-slate-600"><span class="font-medium">Email:</span>
-                                        {{ Auth::user()->email }}</p>
-                                    <p class="text-sm text-slate-600"><span class="font-medium">Mata Pelajaran:</span>
-                                        {{ Auth::user()->subject?->name_subject ?? 'Tidak ada mata pelajaran' }}</p>
-                                </div>
-                                <div class="px-4 py-3 border-t border-slate-200">
+                                class="absolute right-0 mt-5 w-64 bg-white rounded-lg shadow-lg border border-slate-200 z-50">
+                                <div class="border-t border-slate-200">
+                                    {{-- Tombol Profile --}}
+                                    <a href="{{ route('profile.index') }}"
+                                        class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                                        <svg class="w-4 h-4 mr-3 text-slate-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Lihat Profile
+                                    </a>
+
+                                    {{-- Tombol Logout --}}
                                     <form action="{{ route('logout') }}" method="POST">
                                         @csrf
                                         <button type="submit"
-                                            class="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm font-medium">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
+                                            class="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-200">
+                                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor"
                                                 stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
                                                     d="M17 16l4-4m0 0l-4-4m4 4H7m6-4v8" />

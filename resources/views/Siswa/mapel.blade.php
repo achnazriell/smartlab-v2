@@ -107,20 +107,25 @@
                                     @php
                                         $kelasId = auth()->user()->student->class_id;
 
-                                        $gurus = \App\Models\User::role('Guru')
-                                            ->whereHas('tasks', function ($q) use ($kelasId, $subject) {
-                                                $q->where('subject_id', $subject->id)->whereHas('classes', function (
-                                                    $c,
-                                                ) use ($kelasId) {
-                                                    $c->where('classes.id', $kelasId);
-                                                });
-                                            })
-                                            ->distinct()
-                                            ->get();
+                                        // Mencari guru melalui teacher_class_subjects
+                                        $teacherClassSubject = \App\Models\TeacherClassSubject::whereHas(
+                                            'teacherClass',
+                                            function ($q) use ($kelasId) {
+                                                $q->where('classes_id', $kelasId);
+                                            },
+                                        )
+                                            ->where('subject_id', $subject->id)
+                                            ->with('teacherClass.teacher.user')
+                                            ->first();
+
+                                        $gurus = collect();
+                                        if ($teacherClassSubject && $teacherClassSubject->teacherClass) {
+                                            $gurus->push($teacherClassSubject->teacherClass->teacher->user ?? null);
+                                        }
                                     @endphp
 
-                                    @if ($gurus->count())
-                                        @foreach ($gurus as $guru)
+                                    @if ($gurus->filter()->count())
+                                        @foreach ($gurus->filter() as $guru)
                                             <span class="ml-2">{{ $guru->name }}</span>
                                         @endforeach
                                     @else
@@ -187,7 +192,7 @@
                 });
             @endif
         });
-        
+
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.classList.add('hidden');

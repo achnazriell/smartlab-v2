@@ -9,11 +9,11 @@ use App\Models\Subject;
 use App\Models\Collection;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\F;
 
 class UserPageController extends Controller
 {
@@ -28,19 +28,63 @@ class UserPageController extends Controller
 
         $kelasId = $student->class_id;
 
-        $subjects = Subject::withCount([
-            'materi' => function ($query) use ($kelasId) {
-                $query->whereHas('classes', function ($q) use ($kelasId) {
-                    $q->where('classes.id', $kelasId);
-                });
-            },
-            'Task as task_count' => function ($query) use ($user) {
-                $query->whereHas('collections', function ($subQuery) use ($user) {
-                    $subQuery->where('user_id', $user->id)
-                        ->where('status', 'Belum mengumpulkan');
-                });
-            }
-        ])->paginate(6);
+        // Cari subjects melalui teacher_class_subjects
+        $subjects = Subject::whereHas('teacherClassSubjects.teacherClass', function ($query) use ($kelasId) {
+            $query->where('classes_id', $kelasId);
+        })
+            ->withCount([
+                'materi' => function ($query) use ($kelasId) {
+                    $query->whereHas('classes', function ($q) use ($kelasId) {
+                        $q->where('classes.id', $kelasId);
+                    });
+                },
+                'Task as unfinished_task_count' => function ($query) use ($user, $kelasId) {
+                    $query->whereHas('collections', function ($subQuery) use ($user) {
+                        $subQuery->where('user_id', $user->id)
+                            ->where('status', 'Belum mengumpulkan');
+                    })
+                        ->whereHas('classes', function ($q) use ($kelasId) {
+                            $q->where('classes.id', $kelasId);
+                        });
+                }
+            ])
+            ->orderBy('name_subject')
+            ->paginate(6);
+
+        // Jika tidak ada subjects melalui teacher_class_subjects, coba cara lain
+        if ($subjects->isEmpty()) {
+            // Ambil subjects dari materi yang ada di kelas
+            $subjectsFromMateri = Subject::whereHas('materi.classes', function ($query) use ($kelasId) {
+                $query->where('classes.id', $kelasId);
+            })->pluck('id');
+
+            // Ambil subjects dari tugas yang ada di kelas
+            $subjectsFromTask = Subject::whereHas('Task.classes', function ($query) use ($kelasId) {
+                $query->where('classes.id', $kelasId);
+            })->pluck('id');
+
+            $subjectIds = $subjectsFromMateri->merge($subjectsFromTask)->unique();
+
+            $subjects = Subject::whereIn('id', $subjectIds)
+                ->withCount([
+                    'materi' => function ($query) use ($kelasId) {
+                        $query->whereHas('classes', function ($q) use ($kelasId) {
+                            $q->where('classes.id', $kelasId);
+                        });
+                    },
+                    'Task as unfinished_task_count' => function ($query) use ($user, $kelasId) {
+                        $query->whereHas('collections', function ($subQuery) use ($user) {
+                            $subQuery->where('user_id', $user->id)
+                                ->where('status', 'Belum mengumpulkan');
+                        })
+                            ->whereHas('classes', function ($q) use ($kelasId) {
+                                $q->where('classes.id', $kelasId);
+                            });
+                    }
+                ])
+                ->orderBy('name_subject')
+                ->paginate(6);
+        }
 
         return view('Siswa.mapel', compact('subjects'));
     }
@@ -53,19 +97,12 @@ class UserPageController extends Controller
         $activeTab = $request->input('tab', 'materis');
         $status = $request->input('status');
         $student = $user->student;
-        if ($activeTab === 'materi') {
-            // Query untuk tab "materi"
-        } elseif ($activeTab === 'tugas') {
-            // Query untuk tab "tugas"
-        }
-        $student = $user->student;
 
         if (!$student || !$student->class_id) {
             return redirect()->back()->with('error', 'Anda belum memiliki kelas.');
         }
 
         $kelasID = [$student->class_id];
-
 
         // Query Materi
         $materis = Materi::whereHas('classes', function ($query) use ($kelasID) {
@@ -76,11 +113,6 @@ class UserPageController extends Controller
             ->where('title_materi', 'like', '%' . $search . '%')
             ->orderBy('created_at', $order)
             ->paginate(5);
-
-        // Ambil URL file dari item pertama
-        $fileUrl = $materis->first()?->file_materi
-            ? Storage::url($materis->first()->file_materi)
-            : null;
 
         // Query Task
         $tasksQuery = Task::select('tasks.*', 'collections.status as collection_status')
@@ -156,7 +188,7 @@ class UserPageController extends Controller
 
         // JIKA USER BUKAN SISWA
         if (!$student) {
-            return view('user.tugas', [
+            return view('Siswa.tugas', [
                 'tasks' => collect()
             ]);
         }
@@ -181,30 +213,30 @@ class UserPageController extends Controller
                         $q->where('name_subject', 'like', "%$search%");
                     });
             })
-            ->when($status, function ($query) use ($status) {
-                if ($status === 'Belum mengumpulkan') {
-                    $query->whereNull('collections.status');
-                } else {
-                    $query->where('collections.status', $status);
-                }
-            })
             ->orderByRaw("
-        FIELD(collections.status,
-            'Belum mengumpulkan',
-            'Sudah mengumpulkan',
-            'Tidak mengumpulkan'
-        )
-    ");
+                CASE
+                    WHEN collections.status = 'Belum mengumpulkan' THEN 1
+                    WHEN collections.status = 'Sudah mengumpulkan' THEN 2
+                    WHEN collections.status = 'Tidak mengumpulkan' THEN 3
+                    ELSE 4
+                END ASC
+            ")
+            ->orderBy('tasks.created_at', 'desc');
 
         if ($status) {
-            $tasksQuery->whereHas('collections', function ($query) use ($status) {
-                $query->where('user_id', Auth::id());
-                $query->where('status', $status);
-            });
+            if ($status === 'Belum mengumpulkan') {
+                $tasksQuery->where(function ($query) {
+                    $query->whereNull('collections.status')
+                        ->orWhere('collections.status', 'Belum mengumpulkan');
+                });
+            } else {
+                $tasksQuery->where('collections.status', $status);
+            }
         }
 
         $tasks = $tasksQuery->paginate(5);
 
+        // Update task status yang sudah lewat deadline
         $this->updateTaskStatus();
 
         return view('Siswa.tugas', compact('tasks'));
@@ -214,14 +246,28 @@ class UserPageController extends Controller
     {
         $now = now();
 
-        // Perbarui status jika sudah melewati deadline
-        $collections = Collection::whereHas('task', function ($query) use ($now) {
+        // Update collections yang sudah melewati deadline
+        Collection::whereHas('task', function ($query) use ($now) {
             $query->where('date_collection', '<', $now);
-        })->where('status', '!=', 'Tidak mengumpulkan')->get();
+        })
+            ->where('status', 'Belum mengumpulkan')
+            ->update(['status' => 'Tidak mengumpulkan']);
 
-        foreach ($collections as $collection) {
-            $collection->update(['status' => 'Tidak mengumpulkan']);
-        }
+        // Update tasks yang tidak memiliki collection tapi deadline sudah lewat
+        Task::whereDoesntHave('collections', function ($query) {
+            $query->where('user_id', Auth::id());
+        })
+            ->where('date_collection', '<', $now)
+            ->get()
+            ->each(function ($task) {
+                Collection::create([
+                    'task_id' => $task->id,
+                    'user_id' => Auth::id(),
+                    'status' => 'Tidak mengumpulkan',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            });
     }
 
     public function showAllMateri(Request $request)
@@ -273,33 +319,310 @@ class UserPageController extends Controller
         return view('Siswa.materi-detail', compact('materi'));
     }
 
-
     public function Dashboard()
     {
         $user = auth()->user();
-        if ($user && $user->class) {
-            $class = $user->class;
-        } else {
-            $class = collect();
+        $student = $user->student;
+
+        $class = $student?->class?->name_class;
+
+        // Hitung tugas
+        $countNotCollected = Collection::where('status', 'Belum mengumpulkan')
+            ->where('user_id', $user->id)
+            ->count();
+
+        $countCollected = Collection::where('status', 'Sudah mengumpulkan')
+            ->where('user_id', $user->id)
+            ->count();
+
+        // Hitung total tugas untuk progress
+        $totalTasks = $countCollected + $countNotCollected;
+        $progressPercentage = $totalTasks > 0 ? round(($countCollected / $totalTasks) * 100) : 0;
+
+        // Ambil aktivitas terakhir dari berbagai sumber
+        $recentActivities = $this->getRecentActivities($user);
+
+        return view('Siswa.dashboard', compact(
+            'class',
+            'countNotCollected',
+            'countCollected',
+            'progressPercentage',
+            'recentActivities'
+        ));
+    }
+
+    private function getRecentActivities($user)
+    {
+        $activities = [];
+
+        // 1. Tugas yang baru dikumpulkan (dari collections)
+        $recentCollections = Collection::where('user_id', $user->id)
+            ->with('task.subject')
+            ->where('status', 'Sudah mengumpulkan')
+            ->orderBy('updated_at', 'desc')
+            ->limit(3)
+            ->get();
+
+        foreach ($recentCollections as $collection) {
+            if ($collection->task) {
+                $activities[] = [
+                    'title' => 'Mengumpulkan Tugas',
+                    'subtitle' => $collection->task->title_task,
+                    'time' => $this->formatTimeAgo($collection->updated_at),
+                    'timestamp' => $collection->updated_at,
+                    'subject' => $collection->task->subject->name_subject ?? 'Umum',
+                    'type' => 'task_submission',
+                    'icon' => '📝'
+                ];
+            }
         }
 
-        $countNotCollected = Collection::where('status', 'Belum mengumpulkan')->where('user_id', $user->id)->count();
-        $countCollected = Collection::where('status', 'Sudah mengumpulkan')->where('user_id', $user->id)->count();
-        return view('Siswa.dashboard', compact('class', 'countNotCollected', 'countCollected'));
+        // 2. Ujian yang baru dikerjakan (dari exam_attempts)
+        $recentExams = ExamAttempt::where('student_id', $user->id)
+            ->with('exam.subject')
+            ->where('status', 'submitted')
+            ->orderBy('updated_at', 'desc')
+            ->limit(3 - count($activities))
+            ->get();
+
+        foreach ($recentExams as $examAttempt) {
+            if ($examAttempt->exam) {
+                $score = $examAttempt->score ? " (Nilai: {$examAttempt->score})" : "";
+                $activities[] = [
+                    'title' => 'Menyelesaikan Ujian',
+                    'subtitle' => $examAttempt->exam->title . $score,
+                    'time' => $this->formatTimeAgo($examAttempt->updated_at),
+                    'timestamp' => $examAttempt->updated_at,
+                    'subject' => $examAttempt->exam->subject->name_subject ?? 'Umum',
+                    'type' => 'exam_submission',
+                    'icon' => '📊'
+                ];
+            }
+        }
+
+        // 3. Ujian baru yang tersedia (dari exams yang belum dikerjakan)
+        if (count($activities) < 3) {
+            $student = $user->student;
+            if ($student && $student->class_id) {
+                // Cari ujian yang baru dibuat dan belum dikerjakan
+                $newExams = Exam::where('class_id', $student->class_id)
+                    ->where('status', 'active')
+                    ->where(function ($query) {
+                        $query->whereNull('start_at')
+                            ->orWhere('start_at', '<=', now());
+                    })
+                    ->where(function ($query) {
+                        $query->whereNull('end_at')
+                            ->orWhere('end_at', '>=', now());
+                    })
+                    ->whereDoesntHave('attempts', function ($query) use ($user) {
+                        $query->where('student_id', $user->id)
+                            ->where('status', 'submitted');
+                    })
+                    ->where('created_at', '>=', Carbon::now()->subDays(3)) // Hanya ambil yang dibuat 3 hari terakhir
+                    ->orderBy('created_at', 'desc')
+                    ->limit(3 - count($activities))
+                    ->get();
+
+                foreach ($newExams as $exam) {
+                    $activities[] = [
+                        'title' => 'Ujian Baru Tersedia',
+                        'subtitle' => $exam->title . " ({$exam->questions()->count()} soal)",
+                        'time' => $this->formatTimeAgo($exam->created_at),
+                        'timestamp' => $exam->created_at,
+                        'subject' => $exam->subject->name_subject ?? 'Umum',
+                        'type' => 'new_exam',
+                        'icon' => '📋'
+                    ];
+                }
+            }
+        }
+
+        // 4. Ujian yang akan segera dimulai/berakhir
+        if (count($activities) < 3) {
+            $student = $user->student;
+            if ($student && $student->class_id) {
+                $upcomingExams = Exam::where('class_id', $student->class_id)
+                    ->where('status', 'active')
+                    ->where(function ($query) {
+                        // Ujian yang akan dimulai dalam 24 jam
+                        $query->whereBetween('start_at', [now(), now()->addHours(24)])
+                            ->orWhere(function ($q) {
+                                // Atau ujian yang akan berakhir dalam 24 jam
+                                $q->whereNotNull('end_at')
+                                    ->whereBetween('end_at', [now(), now()->addHours(24)]);
+                            });
+                    })
+                    ->whereDoesntHave('attempts', function ($query) use ($user) {
+                        $query->where('student_id', $user->id)
+                            ->where('status', 'submitted');
+                    })
+                    ->orderBy('start_at', 'asc')
+                    ->limit(3 - count($activities))
+                    ->get();
+
+                foreach ($upcomingExams as $exam) {
+                    $timeLeft = '';
+
+                    if ($exam->start_at && $exam->start_at > now()) {
+                        $timeLeft = ' (Dimulai dalam ' . $this->formatTimeLeft($exam->start_at) . ')';
+                    } elseif ($exam->end_at && $exam->end_at > now()) {
+                        $timeLeft = ' (Berakhir dalam ' . $this->formatTimeLeft($exam->end_at) . ')';
+                    }
+
+                    $activities[] = [
+                        'title' => 'Ujian ' . ($exam->start_at > now() ? 'Akan Dimulai' : 'Akan Berakhir'),
+                        'subtitle' => $exam->title . $timeLeft,
+                        'time' => $this->formatTimeAgo($exam->updated_at),
+                        'timestamp' => $exam->updated_at,
+                        'subject' => $exam->subject->name_subject ?? 'Umum',
+                        'type' => 'exam_reminder',
+                        'icon' => '⏰'
+                    ];
+                }
+            }
+        }
+
+        // 5. Materi yang baru dibuka (ambil materi terbaru dari kelasnya)
+        if (count($activities) < 3) {
+            $student = $user->student;
+            if ($student && $student->class_id) {
+                $recentMateri = Materi::whereHas('classes', function ($q) use ($student) {
+                    $q->where('classes.id', $student->class_id);
+                })
+                    ->where('created_at', '>=', Carbon::now()->subDays(7)) // Hanya ambil 7 hari terakhir
+                    ->orderBy('created_at', 'desc')
+                    ->limit(3 - count($activities))
+                    ->get();
+
+                foreach ($recentMateri as $materi) {
+                    $activities[] = [
+                        'title' => 'Materi Baru Tersedia',
+                        'subtitle' => $materi->title_materi,
+                        'time' => $this->formatTimeAgo($materi->created_at),
+                        'timestamp' => $materi->created_at,
+                        'subject' => $materi->subject->name_subject ?? 'Umum',
+                        'type' => 'new_materi',
+                        'icon' => '📚'
+                    ];
+                }
+            }
+        }
+
+        // 6. Jika masih kurang dari 3, tambahkan aktivitas default
+        if (count($activities) < 3) {
+            $defaultActivities = [
+                [
+                    'title' => 'Bergabung di Kelas',
+                    'subtitle' => 'Memulai pembelajaran online',
+                    'time' => 'Awal semester',
+                    'timestamp' => Carbon::now()->subDays(30),
+                    'subject' => 'Sistem',
+                    'type' => 'system',
+                    'icon' => '👋'
+                ],
+                [
+                    'title' => 'Menyelesaikan Kuis',
+                    'subtitle' => 'Latihan soal pertama',
+                    'time' => 'Minggu lalu',
+                    'timestamp' => Carbon::now()->subDays(7),
+                    'subject' => 'Latihan',
+                    'type' => 'quiz',
+                    'icon' => '✅'
+                ],
+                [
+                    'title' => 'Membaca Materi',
+                    'subtitle' => 'Pengenalan materi baru',
+                    'time' => '2 hari yang lalu',
+                    'timestamp' => Carbon::now()->subDays(2),
+                    'subject' => 'Pembelajaran',
+                    'type' => 'study',
+                    'icon' => '📖'
+                ]
+            ];
+
+            for ($i = count($activities); $i < 3; $i++) {
+                $activities[] = $defaultActivities[$i] ?? $defaultActivities[0];
+            }
+        }
+
+        // Urutkan berdasarkan timestamp (terbaru dulu)
+        usort($activities, function ($a, $b) {
+            return $b['timestamp'] <=> $a['timestamp'];
+        });
+
+        // Hapus field tambahan sebelum dikembalikan
+        foreach ($activities as &$activity) {
+            unset($activity['timestamp'], $activity['type'], $activity['icon']);
+        }
+
+        return array_slice($activities, 0, 3);
     }
+
+    private function formatTimeAgo($timestamp)
+    {
+        if (!$timestamp) return 'Beberapa waktu lalu';
+
+        $now = Carbon::now();
+
+        $diffInSeconds = $now->diffInSeconds($timestamp);
+        $diffInMinutes = $now->diffInMinutes($timestamp);
+        $diffInHours   = $now->diffInHours($timestamp);
+        $diffInDays    = $now->diffInDays($timestamp);
+
+        // 0–59 detik
+        if ($diffInSeconds < 60) {
+            return 'Baru saja';
+        }
+
+        // 1–59 menit
+        if ($diffInMinutes < 60) {
+            return $diffInMinutes . ' menit yang lalu';
+        }
+
+        // 1–23 jam
+        if ($diffInHours < 24) {
+            return $diffInHours . ' jam yang lalu';
+        }
+
+        // 1–29 hari
+        if ($diffInDays < 30) {
+            return $diffInDays . ' hari yang lalu';
+        }
+
+        // Lebih dari 30 hari → tanggal lengkap
+        return Carbon::parse($timestamp)
+            ->locale('id')
+            ->translatedFormat('d F Y');
+    }
+
+    private function formatTimeLeft($futureTime)
+    {
+        if (!$futureTime || $futureTime <= now()) {
+            return '';
+        }
+
+        $totalMinutes = now()->diffInMinutes($futureTime);
+
+        $hours = intdiv($totalMinutes, 60);
+        $minutes = $totalMinutes % 60;
+
+        if ($hours > 0 && $minutes > 0) {
+            return "{$hours} jam {$minutes} menit";
+        }
+
+        if ($hours > 0) {
+            return "{$hours} jam";
+        }
+
+        return "{$minutes} menit";
+    }
+
 
     public function showSoal(Request $request)
     {
         try {
             $user = Auth::user();
-
-            // Debug untuk memastikan user adalah siswa
-            \Log::info('User Info:', [
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'roles' => $user->getRoleNames(),
-                'has_student' => $user->student ? 'Yes' : 'No'
-            ]);
 
             // Cek jika user adalah siswa
             if (!$user->hasRole('Murid')) {
@@ -308,7 +631,6 @@ class UserPageController extends Controller
 
             // Cek jika user memiliki data student
             if (!$user->student) {
-                \Log::error('User does not have student record:', ['user_id' => $user->id]);
                 return view('Siswa.soal', [
                     'exams' => collect(),
                     'error' => 'Data siswa tidak ditemukan. Silakan hubungi administrator.'
@@ -318,7 +640,6 @@ class UserPageController extends Controller
             // Cek jika student memiliki class_id
             $student = $user->student;
             if (!$student->class_id) {
-                \Log::warning('Student has no class:', ['student_id' => $student->id, 'user_id' => $user->id]);
                 return view('Siswa.soal', [
                     'exams' => collect(),
                     'error' => 'Anda belum memiliki kelas. Silakan tunggu hingga administrator menugaskan Anda ke kelas.'
@@ -329,10 +650,10 @@ class UserPageController extends Controller
             $search = $request->input('search');
             $status = $request->input('status');
 
-            // Query dasar dengan relasi yang benar
+            // Query dasar
             $query = Exam::with([
                 'subject',
-                'teacher.user' // PERBAIKAN: Ambil teacher lalu user dari teacher
+                'teacher.user'
             ])
                 ->where('class_id', $kelasId)
                 ->where('status', 'active')
@@ -354,13 +675,6 @@ class UserPageController extends Controller
                 });
             }
 
-            // Debug query
-            \Log::info('Exam Query:', [
-                'kelas_id' => $kelasId,
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
-            ]);
-
             // Ambil semua data untuk filtering status
             $allExams = $query->orderBy('created_at', 'desc')->get();
 
@@ -374,16 +688,6 @@ class UserPageController extends Controller
                 $exam->status = $this->getExamStatus($exam, $attempt);
                 $exam->attempt = $attempt;
                 $exam->questions_count = $exam->questions()->count();
-
-                // Debug untuk melihat data guru
-                \Log::info('Exam Teacher Data:', [
-                    'exam_id' => $exam->id,
-                    'exam_title' => $exam->title,
-                    'teacher_id' => $exam->teacher_id,
-                    'teacher_exists' => $exam->teacher ? 'Yes' : 'No',
-                    'teacher_user_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'No user name') : 'No teacher',
-                    'teacher_user_email' => $exam->teacher ? ($exam->teacher->user->email ?? 'No email') : 'No teacher'
-                ]);
             }
 
             // Filter berdasarkan status jika ada
@@ -426,12 +730,6 @@ class UserPageController extends Controller
                     $exam->status = $this->getExamStatus($exam, $attempt);
                     $exam->attempt = $attempt;
                     $exam->questions_count = $exam->questions()->count();
-
-                    // Debug untuk melihat data guru
-                    \Log::info('Exam Teacher Data (Paginated):', [
-                        'exam_id' => $exam->id,
-                        'teacher_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'Unknown') : 'No teacher'
-                    ]);
                 }
             }
 
@@ -462,23 +760,13 @@ class UserPageController extends Controller
                 abort(403, 'Anda belum memiliki kelas.');
             }
 
-            // Gunakan Exam model dengan relasi yang benar
             $exam = Exam::with([
                 'subject',
-                'teacher.user', // PERBAIKAN: Ambil teacher lalu user dari teacher
+                'teacher.user',
                 'questions.choices'
             ])
                 ->where('id', $exam_id)
                 ->firstOrFail();
-
-            // Debug: Cek data guru
-            \Log::info('Exam Detail - Teacher Info:', [
-                'exam_id' => $exam->id,
-                'title' => $exam->title,
-                'teacher_id' => $exam->teacher_id,
-                'teacher_exists' => !is_null($exam->teacher),
-                'teacher_user_name' => $exam->teacher ? ($exam->teacher->user->name ?? 'Teacher user not found') : 'Teacher not found'
-            ]);
 
             // Cek apakah exam tersedia untuk kelas siswa
             if ($exam->class_id !== $user->student->class_id) {

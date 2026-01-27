@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Smart Lab - Dashboard')</title>
+    <title>@yield('title', 'Smart Lab - Murid')</title>
+    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -37,28 +38,46 @@
 
             <!-- Profile Button with Alpine dropdown -->
             <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                {{-- Update tombol avatar --}}
                 <button @click="open = !open"
-                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md hover:shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-                            clip-rule="evenodd" />
-                    </svg>
+                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md hover:shadow-lg overflow-hidden">
+
+                    @php
+                        $user = Auth::user();
+                        $photoPath = $user->profile_photo ? 'uploads/profile-photos/' . $user->profile_photo : null;
+                        $photoExists = $photoPath && file_exists(public_path($photoPath));
+                    @endphp
+
+                    @if ($photoExists)
+                        <img src="{{ asset($photoPath) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    @endif
                 </button>
 
-                <!-- Profile Dropdown with Alpine -->
+                {{-- Di bagian dropdown profile Siswa --}}
                 <div x-show="open" x-transition
                     class="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-blue-100 overflow-hidden z-50">
-                    <div class="p-4 border-b border-blue-100 bg-blue-50">
-                        <h3 class="text-sm font-bold text-blue-900 mb-2">PROFILE</h3>
-                        <p class="text-xs text-gray-700">Nama: {{ Auth::user()->name }}</p>
-                        <p class="text-xs text-gray-700">Email: {{ Auth::user()->email }}</p>
-                    </div>
-                    <div class="p-3">
+                    <div class="p-3 space-y-2">
+                        {{-- Tombol Profile --}}
+                        <a href="{{ route('profile.index') }}"
+                            class="w-full flex items-center gap-2 px-4 py-2.5 bg-white border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Lihat Profile
+                        </a>
+
+                        {{-- Tombol Logout --}}
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
                             <button type="submit"
-                                class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors">
+                                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round"

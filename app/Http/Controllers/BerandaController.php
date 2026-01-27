@@ -8,4 +8,19 @@ class BerandaController extends Controller
     {
         return view('Users.beranda');
     }
+
+    public function features()
+    {
+        return view('Users.features');
+    }
+
+    public function about()
+    {
+        return view('Users.about');
+    }
+
+    public function contact()
+    {
+        return view('Users.contact');
+    }
 }

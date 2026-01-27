@@ -13,7 +13,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('style/beranda.css') }}" />
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
         /* ============== Animations ============== */
@@ -101,6 +101,54 @@
             90% {
                 transform: translateY(-2px)
             }
+        }
+
+        /* ============== Custom Mouse Cursor ============== */
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #3b82f6;
+            /* blue-500 */
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s ease;
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid #6f9dff;
+            /* blue-600 */
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transition: transform 0.2s ease-out, border-color 0.2s ease-out;
+
+            /* efek glow halus */
+        }
+
+        /* Hide cursor on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+
+            .cursor-dot,
+            .cursor-outline {
+                display: none;
+            }
+        }
+
+        /* Cursor effects on hover */
+        .btn-hover:hover~.cursor-dot {
+            transform: scale(1.5);
+            background-color: #1e40af;
+        }
+
+        .btn-hover:hover~.cursor-outline {
+            transform: scale(1.5);
+            border-color: #3b82f6;
+            border-width: 1px;
         }
 
         .floating {
@@ -309,6 +357,10 @@
 </head>
 
 <body class="bg-white">
+    <!-- Custom Mouse Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
     <div class="navbar-container">
         <x-navbar></x-navbar>
     </div>
@@ -448,8 +500,8 @@
         </div>
 
         <div class="relative z-10 text-center max-w-4xl animate-on-scroll">
-            <img src="{{ asset('image/Smart-Lab blue.webp') }}" class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover"
-                alt="logo" />
+            <img src="{{ asset('image/Smart-Lab blue.webp') }}"
+                class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover" alt="logo" />
             <p
                 class="text-blue-800 font-semibold text-sm md:text-base lg:text-lg text-center font-poppins leading-relaxed px-4">
                 Smart-LAB adalah platform E-learning inovatif yang dirancang untuk memberikan pengalaman belajar yang
@@ -491,6 +543,7 @@
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-poppins mb-8 md:mb-12">
                 Ayo berkembang <br />bersama Smart-LAB!
             </h1>
+        </div>
 
         <!-- =================== FOOTER =================== -->
         <footer class="w-full py-8 md:py-12 text-white relative z-10 mt-48">
@@ -549,6 +602,64 @@
     <!-- =================== SCRIPTS =================== -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js" defer></script>
     <script>
+        // --------- Custom Mouse Cursor ---------
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let outlineX = 0;
+        let outlineY = 0;
+
+        // Update cursor position
+        function updateCursor(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Immediate update for dot
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        }
+
+        // Smooth animation for outline
+        function animateOutline() {
+            outlineX += (mouseX - outlineX) * 0.1;
+            outlineY += (mouseY - outlineY) * 0.1;
+
+            cursorOutline.style.left = outlineX + 'px';
+            cursorOutline.style.top = outlineY + 'px';
+
+            requestAnimationFrame(animateOutline);
+        }
+
+        // Cursor effects on hover
+        function updateCursorOnHover(elements, scale = 1.5) {
+            elements.forEach(element => {
+                element.addEventListener('mouseenter', () => {
+                    cursorDot.style.transform = `scale(${scale})`;
+                    cursorOutline.style.transform = `scale(${scale})`;
+                    cursorOutline.style.borderColor = '#3b82f6';
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    cursorDot.style.transform = 'scale(1)';
+                    cursorOutline.style.transform = 'scale(1)';
+                    cursorOutline.style.borderColor = '#1e40af';
+                });
+            });
+        }
+
+        // Hide cursor when mouse leaves window
+        document.addEventListener('mouseleave', () => {
+            cursorDot.style.opacity = '0';
+            cursorOutline.style.opacity = '0';
+        });
+
+        document.addEventListener('mouseenter', () => {
+            cursorDot.style.opacity = '1';
+            cursorOutline.style.opacity = '1';
+        });
+
         // --------- Counter animation ---------
         function animateNumber(element, start, end, duration) {
             const range = end - start;
@@ -588,6 +699,18 @@
         }, observerOptions);
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize custom cursor
+            if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+                document.addEventListener('mousemove', updateCursor);
+                animateOutline();
+
+                // Apply cursor effects to interactive elements
+                const interactiveElements = document.querySelectorAll(
+                    'a, button, .btn-hover, .pulse-hover, .bounce-hover, input, select, textarea'
+                );
+                updateCursorOnHover(interactiveElements);
+            }
+
             // Observe all elements to animate on scroll
             document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 

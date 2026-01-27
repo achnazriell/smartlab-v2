@@ -227,7 +227,7 @@ class ExamController extends Controller
                 $examData['prevent_copy_paste'] = $request->boolean('prevent_copy_paste');
                 $examData['limit_attempts'] = $request->input('limit_attempts', 1);
                 $examData['min_pass_grade'] = $request->input('min_pass_grade', 0);
-                $examData['show_correct_answer'] = $request->boolean('show_correct_answer');
+                $examData['show_correct_answer'] = $request->input('show_correct_answer', 0);
                 $examData['show_result_after'] = $request->input('show_result_after', 'never');
             } else {
                 // Quiz game mode
@@ -457,24 +457,26 @@ class ExamController extends Controller
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->findOrFail($id);
 
-        $teacherId = Auth::id();
+        $teacher = auth()->user()->teacher;
+        abort_if(!$teacher, 403);
 
-        // Ambil data kelas dan mapel untuk dropdown
-        $teacherClasses = TeacherClass::where('teacher_id', $teacherId)
-            ->with('classes')
-            ->get();
+        $teacherId = $teacher->id;
 
-        $teacherSubjects = TeacherSubject::where('teacher_id', $teacherId)
-            ->with('subject')
-            ->get();
+        // PERBAIKAN: Ambil subjects melalui teacher_class_subjects
+        // 1. Ambil teacher_classes yang dimiliki guru ini
+        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)
+            ->pluck('id');
 
-        $classes = $teacherClasses->map(function ($teacherClass) {
-            return $teacherClass->classes;
-        })->filter();
+        // 2. Ambil subject_ids dari teacher_class_subjects
+        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
+            ->pluck('subject_id')
+            ->unique();
 
-        $subjects = $teacherSubjects->map(function ($teacherSubject) {
-            return $teacherSubject->subject;
-        })->filter();
+        // 3. Ambil subjects berdasarkan subject_ids
+        $subjects = Subject::whereIn('id', $subjectIds)->get();
+
+        // 4. Ambil classes yang diajar guru ini
+        $classes = $teacher->classes;
 
         return view('Guru.Exam.edit', compact('exam', 'classes', 'subjects'));
     }
@@ -491,7 +493,8 @@ class ExamController extends Controller
             'class_id' => 'required|exists:classes,id',
         ];
 
-        if ($exam->type !== 'QUIZ') {
+        if ($request->type !== 'QUIZ') {
+
             $rules['duration'] = 'required|integer|min:1|max:300';
             $rules['start_date'] = 'required|date';
             $rules['end_date'] = 'required|date|after:start_date';
@@ -514,7 +517,8 @@ class ExamController extends Controller
                 'type' => $type,
             ];
 
-            if ($exam->type !== 'QUIZ') {
+            if ($request->type !== 'QUIZ') {
+
                 $examData['duration'] = $request->duration;
                 $examData['start_at'] = $request->start_date;
                 $examData['end_at'] = $request->end_date;
@@ -534,7 +538,7 @@ class ExamController extends Controller
                 $examData['prevent_copy_paste'] = $request->boolean('prevent_copy_paste');
                 $examData['limit_attempts'] = $request->input('limit_attempts', 1);
                 $examData['min_pass_grade'] = $request->input('min_pass_grade', 0);
-                $examData['show_correct_answer'] = $request->boolean('show_correct_answer');
+                $examData['show_correct_answer'] = $request->input('show_correct_answer', 0);
                 $examData['show_result_after'] = $request->input('show_result_after', 'never');
             } else {
                 $examData['time_per_question'] = $request->time_per_question;
@@ -554,7 +558,7 @@ class ExamController extends Controller
 
             DB::commit();
 
-            return redirect()->route('exams.index')
+            return redirect()->route('guru.exams.index')
                 ->with('success', 'Ujian berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -715,7 +719,7 @@ class ExamController extends Controller
                 $totalTime = $totalQuestions * $exam->time_per_question;
 
                 $exam->update([
-                    'duration' => $totalTime
+                    'duration' => max($totalTime, 1)
                 ]);
             }
 

@@ -22,13 +22,37 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\SelectClassController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\Guru\ClassController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserPageController;
+use Illuminate\Http\Request;
 
 Auth::routes(['register' => false]);
 
+Route::post('/logout', function (Request $request) {
+    Auth::logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/Beranda');
+})->name('logout');
+
+
 // ==================== LANDING & AUTH ROUTES ====================
-Route::get('/', [BerandaController::class, 'index']);
+Route::get('/Beranda', [BerandaController::class, 'index']);
+Route::get('/Fitur', [BerandaController::class, 'features']);
+Route::get('/Tentang', [BerandaController::class, 'about']);
+Route::get('/Kontak', [BerandaController::class, 'contact']);
+
+// ==================== PROFILE ROUTES (UNTUK SEMUA USER) ====================
+// Profile Routes
+Route::prefix('profile')->name('profile.')->group(function () {
+    Route::get('/', [ProfileController::class, 'index'])->name('index');
+    Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
+    Route::delete('/delete-photo', [ProfileController::class, 'deletePhoto'])->name('delete-photo');
+});
 
 // ==================== ADMIN ROUTES ====================
 Route::middleware(['auth', 'role:Admin'])->group(function () {
@@ -109,6 +133,13 @@ Route::middleware(['auth', 'role:Guru|Admin'])->group(function () {
 
     Route::get('/guru/kelas', [HomeguruController::class, 'kelasSaya'])
         ->name('guru.kelas');
+
+    // Route untuk kelas
+    Route::prefix('class')->name('class.')->group(function () {
+        Route::get('/', [ClassController::class, 'index'])->name('index');
+        Route::get('/{kelas}/students', [ClassController::class, 'showStudents'])->name('students');
+        Route::get('/{kelas}/students/{siswa}', [ClassController::class, 'showStudentDetail'])->name('student-detail');
+    });
 
     // ==================== EXAM ROUTES FOR TEACHER ====================
     Route::prefix('guru')->name('guru.')->group(function () {
@@ -243,9 +274,9 @@ Route::middleware('auth')->group(function () {
             ->name('exams.violation');
     });
 
-    // Student Profile
-    Route::get('/profile', [UserPageController::class, 'profile'])->name('profile');
-    Route::put('/profile/update', [UserPageController::class, 'updateProfile'])->name('profile.update');
+    // Hapus route profile yang lama karena sudah dipindahkan ke luar
+    // Route::get('/profile', [UserPageController::class, 'profile'])->name('profile');
+    // Route::put('/profile/update', [UserPageController::class, 'updateProfile'])->name('profile.update');
 });
 
 // ==================== PUBLIC ROUTES ====================
