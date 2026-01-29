@@ -31,6 +31,10 @@ use App\Http\Controllers\UserPageController;
 use Illuminate\Http\Request;
 
 Auth::routes(['register' => false]);
+Route::get('/health', function () {
+    return response('OK', 200);
+});
+
 
 Route::post('/logout', function (Request $request) {
     Auth::logout();
