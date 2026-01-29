@@ -1,17 +1,22 @@
 [build]
 builder = "nixpacks"
+buildCommand = "npm run build"
+startCommand = "php artisan serve --host=0.0.0.0 --port=${PORT}"
 
 [build.environment]
+NODE_VERSION = "18"
 PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
-NODE_VERSION = "18"
 
 [deploy]
-startCommand = "php artisan serve --host=0.0.0.0 --port=8080"
-preDeployCommand = "php artisan migrate --force --seed"
-healthcheckPath = "/"
-healthcheckTimeout = 60
+preDeployCommand = """
+php artisan migrate --force
+php artisan db:seed --class=RoleAndPermissionSeeder --force
+php artisan db:seed --class=RoleUser --force
+"""
 numReplicas = 1
+healthcheckPath = "/health"
+healthcheckTimeout = 60
 
 [[services]]
 type = "web"
