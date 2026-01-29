@@ -216,7 +216,36 @@
                         <div class="p-4 bg-gray-50">
                             <div class="flex items-center justify-between mb-3">
                                 @php
-                                    $status = $exam->status ?? 'available';
+                                    // Ambil attempt terakhir siswa untuk exam ini
+                                    $lastAttempt = \App\Models\ExamAttempt::where('exam_id', $exam->id)
+                                        ->where('student_id', Auth::id())
+                                        ->latest()
+                                        ->first();
+
+                                    // Tentukan status
+                                    $status = 'available'; // default
+
+                                    if ($lastAttempt) {
+                                        if ($lastAttempt->status == 'in_progress') {
+                                            $status = 'ongoing';
+                                        } elseif ($lastAttempt->status == 'submitted') {
+                                            $status = 'completed';
+                                        } elseif ($lastAttempt->status == 'timeout') {
+                                            $status = 'timeout';
+                                        }
+                                    }
+
+                                    // Cek apakah exam sudah kadaluarsa
+                                    if ($exam->end_at && now()->gt($exam->end_at)) {
+                                        $status = 'expired';
+                                    }
+
+                                    // Cek apakah exam belum dimulai
+                                    if ($exam->start_at && now()->lt($exam->start_at)) {
+                                        $status = 'upcoming';
+                                    }
+
+                                    // Tentukan teks dan kelas untuk status
                                     $statusText = 'Belum Dikerjakan';
                                     $statusClass = 'status-belum';
 
@@ -232,6 +261,9 @@
                                     } elseif ($status === 'upcoming') {
                                         $statusText = 'Akan Datang';
                                         $statusClass = 'status-upcoming';
+                                    } elseif ($status === 'timeout') {
+                                        $statusText = 'Waktu Habis';
+                                        $statusClass = 'status-kadaluarsa';
                                     }
                                 @endphp
                                 <span class="status-badge {{ $statusClass }}">{{ $statusText }}</span>
@@ -240,8 +272,8 @@
                                 </span>
                             </div>
 
-                            @if ($status === 'completed' && $exam->attempt)
-                                <a href="{{ route('soal.hasil', ['exam' => $exam->id, 'attempt' => $exam->attempt->id]) }}"
+                            @if (in_array($status, ['completed', 'timeout']) && $lastAttempt)
+                                <a href="{{ route('soal.hasil', ['exam' => $exam->id, 'attempt' => $lastAttempt->id]) }}"
                                     class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
                                     Lihat Hasil
                                 </a>

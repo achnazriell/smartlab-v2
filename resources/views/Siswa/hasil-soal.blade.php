@@ -3,10 +3,11 @@
 @section('content')
     <style>
         .score-card {
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-            border-radius: 24px;
+            background: #2563eb;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 2px solid #1d4ed8;
         }
 
         .score-display {
@@ -63,7 +64,7 @@
         }
     </style>
 
-    <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div class="min-h-screen bg-white">
         <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
             <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
         </div>
@@ -131,29 +132,29 @@
 
             <!-- Statistics Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 text-center hover:shadow-xl transition-shadow">
-                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-100 mx-auto mb-3">
-                        <i class="fas fa-check text-green-600"></i>
+                <div class="bg-white rounded-lg p-6 shadow-sm border-2 border-blue-100 text-center">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mx-auto mb-3">
+                        <i class="fas fa-check text-blue-600"></i>
                     </div>
                     <p class="text-slate-600 text-sm mb-2 font-semibold uppercase tracking-wider">Benar</p>
-                    <p class="text-4xl font-bold text-green-600">{{ $correct }}</p>
+                    <p class="text-4xl font-bold text-blue-600">{{ $correct }}</p>
                 </div>
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 text-center hover:shadow-xl transition-shadow">
-                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-red-100 mx-auto mb-3">
-                        <i class="fas fa-xmark text-red-600"></i>
+                <div class="bg-white rounded-lg p-6 shadow-sm border-2 border-blue-100 text-center">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mx-auto mb-3">
+                        <i class="fas fa-xmark text-blue-600"></i>
                     </div>
                     <p class="text-slate-600 text-sm mb-2 font-semibold uppercase tracking-wider">Salah</p>
-                    <p class="text-4xl font-bold text-red-600">{{ $incorrect }}</p>
+                    <p class="text-4xl font-bold text-blue-600">{{ $incorrect }}</p>
                 </div>
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 text-center hover:shadow-xl transition-shadow">
-                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mx-auto mb-3">
-                        <i class="fas fa-dash text-gray-600"></i>
+                <div class="bg-white rounded-lg p-6 shadow-sm border-2 border-blue-100 text-center">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mx-auto mb-3">
+                        <i class="fas fa-dash text-blue-600"></i>
                     </div>
                     <p class="text-slate-600 text-sm mb-2 font-semibold uppercase tracking-wider">Terlewat</p>
-                    <p class="text-4xl font-bold text-gray-600">{{ $skipped }}</p>
+                    <p class="text-4xl font-bold text-blue-600">{{ $skipped }}</p>
                 </div>
-                <div class="bg-white rounded-2xl p-6 shadow-lg border border-slate-100 text-center hover:shadow-xl transition-shadow">
-                    <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 mx-auto mb-3">
+                <div class="bg-white rounded-lg p-6 shadow-sm border-2 border-blue-100 text-center">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mx-auto mb-3">
                         <i class="fas fa-hourglass text-blue-600"></i>
                     </div>
                     <p class="text-slate-600 text-sm mb-2 font-semibold uppercase tracking-wider">Waktu</p>
@@ -162,7 +163,7 @@
             </div>
 
             <!-- Detail Per Soal -->
-            <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-slate-100">
+            <div class="bg-white rounded-lg shadow-sm p-8 mb-8 border-2 border-blue-100">
                 <h2 class="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-3">
                     <i class="fas fa-clipboard-list text-blue-600"></i>
                     Detail Per Soal
@@ -286,21 +287,21 @@
             </div>
 
             <!-- Additional Stats (Optional) -->
-            <div class="bg-white rounded-2xl shadow-lg p-8 border border-slate-100">
-                <h3 class="text-xl font-bold text-slate-900 mb-8 flex items-center gap-3">
+            <div class="bg-white rounded-lg shadow-sm p-8 border-2 border-blue-100">
+                <h3 class="text-xl font-bold text-blue-900 mb-8 flex items-center gap-3">
                     <i class="fas fa-chart-bar text-blue-600"></i>
                     Statistik Tambahan
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                    <div class="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200">
+                    <div class="p-6 bg-white rounded-lg border-2 border-blue-100">
                         <p class="text-slate-600 text-sm mb-3 font-semibold uppercase tracking-wider">Rata-rata Waktu per Soal</p>
                         <p class="text-3xl font-bold text-blue-600">
                             {{ $timeSpent ? round($timeSpent / count($answers), 0) : 'N/A' }} <span class="text-lg">detik</span>
                         </p>
                     </div>
-                    <div class="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200">
+                    <div class="p-6 bg-white rounded-lg border-2 border-blue-100">
                         <p class="text-slate-600 text-sm mb-3 font-semibold uppercase tracking-wider">Tingkat Akurasi</p>
-                        <p class="text-3xl font-bold text-green-600">{{ round(($correct / count($answers)) * 100, 1) }}<span class="text-lg">%</span></p>
+                        <p class="text-3xl font-bold text-blue-600">{{ round(($correct / count($answers)) * 100, 1) }}<span class="text-lg">%</span></p>
                     </div>
                 </div>
             </div>

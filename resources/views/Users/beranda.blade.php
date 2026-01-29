@@ -9,7 +9,7 @@
 
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('style/beranda.css') }}" />
     <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />

@@ -7,6 +7,8 @@
     <title>@yield('title', 'Smart Lab - Murid')</title>
     <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <!-- Di dalam head tag layout.blade.php -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     {{-- CSS sidebar --}}
@@ -71,6 +73,15 @@
                                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             Lihat Profile
+                        </a>
+                        {{-- Tombol Feedback --}}
+                        <a href="{{ route('feedbacks.index') }}"
+                            class="w-full flex items-center gap-2 px-4 py-2.5 bg-white border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            Feedback & Laporan
                         </a>
 
                         {{-- Tombol Logout --}}

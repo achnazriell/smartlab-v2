@@ -133,136 +133,69 @@ class ExamController extends Controller
 
     public function store(Request $request)
     {
-        $rules = [
+        $request->validate([
             'title' => 'required|string|max:255',
-            'type' => 'required|in:UH,UTS,UAS,QUIZ,Lainnya',
+            'type' => 'required|in:UH,UTS,UAS,QUIZ,LAINNYA',
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
-        ];
+            'duration' => 'required|integer|min:1|max:300',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after:start_date',
+        ]);
 
-        // Validasi khusus untuk ujian formal
-        if ($request->type !== 'QUIZ') {
-            $rules['duration'] = 'required|integer|min:1|max:300';
-            $rules['start_date'] = 'required|date|after_or_equal:now';
-            $rules['end_date'] = 'required|date|after:start_date';
-        } else {
-            // Untuk QUIZ, gunakan waktu per soal
-            $rules['time_per_question'] = 'required|integer|min:0|max:300';
-            $rules['quiz_mode'] = 'required|in:live,homework';
-        }
+        $teacher = auth()->user()->teacher;
+        abort_if(!$teacher, 403);
 
-        $request->validate($rules);
-
-        // Validasi akses guru ke kelas dan mapel (SAMA seperti di MateriController)
-        $user = auth()->user();
-        $teacher = $user->teacher;
-
-        if (!$teacher) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Akun ini bukan guru.');
-        }
-
-        // Cek apakah guru mengajar kelas ini
-        $teacherClass = TeacherClass::where('teacher_id', $teacher->id)
-            ->where('classes_id', $request->class_id)
-            ->first();
-
-        if (!$teacherClass) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Guru tidak mengajar kelas ini.');
-        }
-
-        // Cek apakah mapel tersedia di kelas ini (menggunakan TeacherClassSubject)
-        $teacherClassSubject = TeacherClassSubject::where('teacher_class_id', $teacherClass->id)
-            ->where('subject_id', $request->subject_id)
-            ->first();
-
-        if (!$teacherClassSubject) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Mapel tidak tersedia di kelas ini.');
-        }
-
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
-            // Tentukan jenis soal
-            $type = $request->type;
-            if ($type === 'Lainnya' && $request->filled('custom_type')) {
-                $type = $request->custom_type;
-            }
-
-            // Persiapkan data untuk ujian
-            $examData = [
+            $exam = Exam::create([
                 'teacher_id' => $teacher->id,
                 'subject_id' => $request->subject_id,
                 'class_id' => $request->class_id,
                 'title' => $request->title,
-                'type' => $type,
+                'type' => $request->type,
+                'duration' => $request->duration,
+                'start_at' => $request->start_date,
+                'end_at' => $request->end_date,
+
+                // FLOW
+                'shuffle_question' => $request->boolean('shuffle_question'),
+                'shuffle_answer' => $request->boolean('shuffle_answer'),
+
+                // SECURITY
+                'fullscreen_mode' => $request->boolean('fullscreen_mode'),
+                'block_new_tab' => $request->boolean('block_new_tab'),
+                'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
+                'allow_copy' => $request->boolean('allow_copy'),
+                'allow_screenshot' => $request->boolean('allow_screenshot'),
+                'auto_submit' => $request->boolean('auto_submit'),
+
+                // PROCTORING
+                'enable_proctoring' => $request->boolean('enable_proctoring'),
+                'require_camera' => $request->boolean('require_camera'),
+                'require_mic' => $request->boolean('require_mic'),
+                'violation_limit' => $request->input('violation_limit', 3),
+
+                // RESULT
+                'show_score' => $request->boolean('show_score'),
+                'show_correct_answer' => $request->boolean('show_correct_answer'),
+                'show_result_after' => $request->input('show_result_after', 'never'),
+
+                'limit_attempts' => $request->input('limit_attempts', 1),
                 'status' => 'draft',
-            ];
-
-            if ($request->type !== 'QUIZ') {
-                // Ujian formal (UH, UTS, UAS)
-                $examData['duration'] = $request->duration;
-                $examData['start_at'] = $request->start_date;
-                $examData['end_at'] = $request->end_date;
-
-                // Pengaturan dasar
-                $examData['shuffle_question'] = $request->boolean('shuffle_question');
-                $examData['shuffle_answer'] = $request->boolean('shuffle_answer');
-                $examData['show_score'] = $request->boolean('show_score');
-                $examData['allow_copy'] = $request->boolean('allow_copy');
-                $examData['allow_screenshot'] = $request->boolean('allow_screenshot');
-
-                // Pengaturan keamanan
-                $examData['require_camera'] = $request->boolean('require_camera');
-                $examData['require_mic'] = $request->boolean('require_mic');
-                $examData['enable_proctoring'] = $request->boolean('enable_proctoring');
-                $examData['block_new_tab'] = $request->boolean('block_new_tab');
-                $examData['fullscreen_mode'] = $request->boolean('fullscreen_mode');
-                $examData['auto_submit'] = $request->boolean('auto_submit');
-                $examData['prevent_copy_paste'] = $request->boolean('prevent_copy_paste');
-                $examData['limit_attempts'] = $request->input('limit_attempts', 1);
-                $examData['min_pass_grade'] = $request->input('min_pass_grade', 0);
-                $examData['show_correct_answer'] = $request->input('show_correct_answer', 0);
-                $examData['show_result_after'] = $request->input('show_result_after', 'never');
-            } else {
-                // Quiz game mode
-                $examData['time_per_question'] = $request->time_per_question;
-                $examData['quiz_mode'] = $request->quiz_mode;
-                $examData['show_leaderboard'] = $request->boolean('show_leaderboard');
-                $examData['enable_music'] = $request->boolean('enable_music');
-                $examData['enable_memes'] = $request->boolean('enable_memes');
-                $examData['enable_powerups'] = $request->boolean('enable_powerups');
-                $examData['randomize_questions'] = $request->boolean('randomize_questions');
-                $examData['instant_feedback'] = $request->boolean('instant_feedback');
-                $examData['streak_bonus'] = $request->boolean('streak_bonus');
-                $examData['time_bonus'] = $request->boolean('time_bonus');
-                $examData['difficulty_level'] = $request->input('difficulty_level', 'medium');
-                $examData['duration'] = 0; // Quiz tidak punya durasi global
-
-                // Default settings untuk quiz
-                $examData['shuffle_question'] = true;
-                $examData['show_score'] = true;
-            }
-
-            $exam = Exam::create($examData);
+            ]);
 
             DB::commit();
 
-            return redirect()->route('guru.exams.soal', ['exam' => $exam->id])
-                ->with('success', 'Ujian berhasil dibuat! Sekarang tambahkan soal.');
+            return redirect()
+                ->route('guru.exams.soal', $exam->id)
+                ->with('success', 'Ujian berhasil dibuat, silakan tambahkan soal.');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
+
 
     public function soal($id)
     {
@@ -486,88 +419,57 @@ class ExamController extends Controller
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->findOrFail($id);
 
-        $rules = [
+        $request->validate([
             'title' => 'required|string|max:255',
-            'type' => 'required|in:UH,UTS,UAS,QUIZ,Lainnya',
+            'type' => 'required|in:UH,UTS,UAS,QUIZ,LAINNYA',
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
-        ];
+            'duration' => 'required|integer|min:1|max:300',
+        ]);
 
-        if ($request->type !== 'QUIZ') {
-
-            $rules['duration'] = 'required|integer|min:1|max:300';
-            $rules['start_date'] = 'required|date';
-            $rules['end_date'] = 'required|date|after:start_date';
-        }
-
-        $request->validate($rules);
-
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
-            $type = $request->type;
-            if ($type === 'Lainnya' && $request->filled('custom_type')) {
-                $type = $request->custom_type;
-            }
-
-            $examData = [
+            $exam->update([
+                'title' => $request->title,
+                'type' => $request->type,
                 'subject_id' => $request->subject_id,
                 'class_id' => $request->class_id,
-                'title' => $request->title,
-                'type' => $type,
-            ];
+                'duration' => $request->duration,
+                'start_at' => $request->start_date,
+                'end_at' => $request->end_date,
 
-            if ($request->type !== 'QUIZ') {
+                'shuffle_question' => $request->boolean('shuffle_question'),
+                'shuffle_answer' => $request->boolean('shuffle_answer'),
 
-                $examData['duration'] = $request->duration;
-                $examData['start_at'] = $request->start_date;
-                $examData['end_at'] = $request->end_date;
+                'fullscreen_mode' => $request->boolean('fullscreen_mode'),
+                'block_new_tab' => $request->boolean('block_new_tab'),
+                'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
+                'allow_copy' => $request->boolean('allow_copy'),
+                'allow_screenshot' => $request->boolean('allow_screenshot'),
+                'auto_submit' => $request->boolean('auto_submit'),
 
-                // Update pengaturan keamanan
-                $examData['shuffle_question'] = $request->boolean('shuffle_question');
-                $examData['shuffle_answer'] = $request->boolean('shuffle_answer');
-                $examData['show_score'] = $request->boolean('show_score');
-                $examData['allow_copy'] = $request->boolean('allow_copy');
-                $examData['allow_screenshot'] = $request->boolean('allow_screenshot');
-                $examData['require_camera'] = $request->boolean('require_camera');
-                $examData['require_mic'] = $request->boolean('require_mic');
-                $examData['enable_proctoring'] = $request->boolean('enable_proctoring');
-                $examData['block_new_tab'] = $request->boolean('block_new_tab');
-                $examData['fullscreen_mode'] = $request->boolean('fullscreen_mode');
-                $examData['auto_submit'] = $request->boolean('auto_submit');
-                $examData['prevent_copy_paste'] = $request->boolean('prevent_copy_paste');
-                $examData['limit_attempts'] = $request->input('limit_attempts', 1);
-                $examData['min_pass_grade'] = $request->input('min_pass_grade', 0);
-                $examData['show_correct_answer'] = $request->input('show_correct_answer', 0);
-                $examData['show_result_after'] = $request->input('show_result_after', 'never');
-            } else {
-                $examData['time_per_question'] = $request->time_per_question;
-                $examData['quiz_mode'] = $request->quiz_mode;
-                $examData['show_leaderboard'] = $request->boolean('show_leaderboard');
-                $examData['enable_music'] = $request->boolean('enable_music');
-                $examData['enable_memes'] = $request->boolean('enable_memes');
-                $examData['enable_powerups'] = $request->boolean('enable_powerups');
-                $examData['randomize_questions'] = $request->boolean('randomize_questions');
-                $examData['instant_feedback'] = $request->boolean('instant_feedback');
-                $examData['streak_bonus'] = $request->boolean('streak_bonus');
-                $examData['time_bonus'] = $request->boolean('time_bonus');
-                $examData['difficulty_level'] = $request->input('difficulty_level', 'medium');
-            }
+                'enable_proctoring' => $request->boolean('enable_proctoring'),
+                'require_camera' => $request->boolean('require_camera'),
+                'require_mic' => $request->boolean('require_mic'),
+                'violation_limit' => $request->input('violation_limit', 3),
 
-            $exam->update($examData);
+                'show_score' => $request->boolean('show_score'),
+                'show_correct_answer' => $request->boolean('show_correct_answer'),
+                'show_result_after' => $request->input('show_result_after', 'never'),
+                'limit_attempts' => $request->input('limit_attempts', 1),
+            ]);
 
             DB::commit();
 
-            return redirect()->route('guru.exams.index')
-                ->with('success', 'Ujian berhasil diperbarui!');
+            return redirect()
+                ->route('guru.exams.index')
+                ->with('success', 'Ujian berhasil diperbarui');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
+
 
     public function destroy($id)
     {

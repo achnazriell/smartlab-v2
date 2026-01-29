@@ -176,22 +176,43 @@ class Exam extends Model
         return $this->questions()->sum('score');
     }
 
-    public function getSecuritySettings()
+    public function getAllSettings()
     {
         return [
-            'require_camera' => $this->require_camera ?? false,
-            'require_mic' => $this->require_mic ?? false,
-            'enable_proctoring' => $this->enable_proctoring ?? false,
-            'block_new_tab' => $this->block_new_tab ?? true,
-            'fullscreen_mode' => $this->fullscreen_mode ?? true,
-            'prevent_copy_paste' => $this->prevent_copy_paste ?? true,
-            'allow_screenshot' => $this->allow_screenshot ?? false,
-            'allow_copy' => $this->allow_copy ?? false,
-            'shuffle_question' => $this->shuffle_question ?? false,
-            'shuffle_answer' => $this->shuffle_answer ?? false,
-            'limit_attempts' => $this->limit_attempts ?? 1,
+            // Security settings
+            'require_camera' => (bool) $this->require_camera,
+            'require_mic' => (bool) $this->require_mic,
+            'enable_proctoring' => (bool) $this->enable_proctoring,
+            'block_new_tab' => (bool) $this->block_new_tab,
+            'fullscreen_mode' => (bool) $this->fullscreen_mode,
+            'prevent_copy_paste' => (bool) $this->prevent_copy_paste,
+            'allow_screenshot' => (bool) $this->allow_screenshot,
+            'allow_copy' => (bool) $this->allow_copy,
+            'shuffle_question' => (bool) $this->shuffle_question,
+            'shuffle_answer' => (bool) $this->shuffle_answer,
+            'limit_attempts' => (int) $this->limit_attempts,
+            'violation_limit' => (int) ($this->violation_limit ?? 3),
+
+            // Basic settings
+            'show_score' => (bool) $this->show_score,
+            'show_correct_answer' => (bool) $this->show_correct_answer,
+            'show_result_after' => $this->show_result_after,
+            'auto_submit' => (bool) $this->auto_submit,
+            'min_pass_grade' => (float) $this->min_pass_grade,
+
+            // Timing settings
+            'duration' => (int) $this->duration,
+            'start_at' => $this->start_at,
+            'end_at' => $this->end_at,
+
+            // Exam info
+            'exam_title' => $this->title,
+            'exam_type' => $this->type,
+            'subject_name' => optional($this->subject)->name_subject ?? '',
+            'class_name' => optional($this->class)->name_class ?? '',
         ];
     }
+
 
     public function getQuizSettings()
     {

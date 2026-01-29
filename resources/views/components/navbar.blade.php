@@ -195,11 +195,7 @@
                         <div class="px-4 py-3 border-b border-gray-200">
                             <p class="text-sm font-semibold text-gray-900">{{ auth()->user()->name }}</p>
                             <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
-                        </div>
-                        <a href="{{ route('profile.edit') }}"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            Profil Saya
-                        </a>
+                        </div>  
                         <div class="border-t border-gray-200">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -288,14 +284,6 @@
                                 <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
                             </div>
                         </div>
-                        <a href="{{ route('profile.edit') }}" @click="closeMenu()"
-                            class="flex items-center space-x-2 w-full py-2 px-4 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-300">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span class="text-sm font-medium">Profil Saya</span>
-                        </a>
                     </div>
                 </div>
 

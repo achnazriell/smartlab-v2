@@ -17,6 +17,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('subjects', function (Blueprint $table) {
+            $table->id();
+            $table->string('name_subject');
+            $table->timestamps();
+        });
     }
 
     /**
@@ -24,6 +30,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('subjects');
         Schema::dropIfExists('classes');
     }
 };

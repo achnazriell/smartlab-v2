@@ -69,6 +69,14 @@ class QuestionController extends Controller
                 'type' => $request->type,
                 'question' => trim($request->question),
                 'score' => (int) $request->score,
+                // TAMBAHKAN SETTING INI:
+                'enable_skip' => $request->boolean('enable_skip', true),
+                'enable_mark_review' => $request->boolean('enable_mark_review', true),
+                'randomize_choices' => $request->boolean('randomize_choices', false),
+                'show_explanation' => $request->boolean('show_explanation', false),
+                'enable_timer' => $request->boolean('enable_timer', false),
+                'time_limit' => $request->time_limit ?? null,
+                'require_all_options' => $request->boolean('require_all_options', false),
             ];
 
             // Handle IS (Isian Singkat)

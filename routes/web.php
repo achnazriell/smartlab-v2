@@ -22,6 +22,8 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\SelectClassController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Guru\ClassController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ProfileController;
@@ -41,6 +43,10 @@ Route::post('/logout', function (Request $request) {
 
 
 // ==================== LANDING & AUTH ROUTES ====================
+Route::get('/', function () {
+    return redirect('/Beranda');
+});
+
 Route::get('/Beranda', [BerandaController::class, 'index']);
 Route::get('/Fitur', [BerandaController::class, 'features']);
 Route::get('/Tentang', [BerandaController::class, 'about']);
@@ -52,6 +58,13 @@ Route::prefix('profile')->name('profile.')->group(function () {
     Route::get('/', [ProfileController::class, 'index'])->name('index');
     Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
     Route::delete('/delete-photo', [ProfileController::class, 'deletePhoto'])->name('delete-photo');
+});
+Route::middleware(['auth'])->group(function () {
+    // Feedback routes
+    Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedbacks.index');
+    Route::get('/feedback/create', [FeedbackController::class, 'create'])->name('feedbacks.create');
+    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedbacks.store');
+    Route::delete('/feedback/{feedback}', [FeedbackController::class, 'destroy'])->name('feedbacks.destroy');
 });
 
 // ==================== ADMIN ROUTES ====================
@@ -77,6 +90,13 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::post('/approve', [StudentController::class, 'store'])->name('class.approval.store');
     Route::put('/class-approvals/{id}/approve', [StudentController::class, 'approve'])->name('class-approvals.approve');
     Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])->name('class.approval.reject');
+
+    // Feedback routes
+    Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('feedback.index');
+    Route::get('/admin/feedback/{feedback}', [AdminFeedbackController::class, 'show'])->name('feedback.show');
+    Route::put('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('feedback.update-status');
+    Route::delete('/admin/feedback/{feedback}', [AdminFeedbackController::class, 'destroy'])->name('feedback.destroy');
+    Route::post('/admin/feedback/mark-all-read', [AdminFeedbackController::class, 'markAllAsRead'])->name('feedback.mark-all-read');
 
     // Student Assignment
     Route::put('/student/{student}', [StudentController::class, 'assign'])->name('murid.assignMurid');
@@ -230,9 +250,13 @@ Route::middleware('auth')->group(function () {
 
         // Submit jawaban
         Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
-
+        // Tambahkan route khusus untuk violation submit
+        Route::post('/exams/{exam}/violation-submit', [ExamController::class, 'handleViolationSubmit'])
+            ->name('violation-submit');
         // Lihat hasil
         Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
+        Route::post('/{exam}/enable-fullscreen', [MuridExamController::class, 'enableFullscreen'])
+            ->name('enable-fullscreen');
 
         // Route untuk memulai ujian
         Route::post('/{exam}/start', [MuridExamController::class, 'start'])->name('start');
@@ -243,7 +267,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/exams/upcoming', [MuridExamController::class, 'upcoming'])->name('exams.upcoming');
         Route::get('/exams/completed', [MuridExamController::class, 'completed'])->name('exams.completed');
         Route::get('/exams/{exam}', [MuridExamController::class, 'show'])->name('exams.show');
-
+        // Route untuk direct attempt
+        Route::get('/soal/{id}/direct', [MuridExamController::class, 'directAttempt'])
+            ->name('direct');
         // Exam Attempt Management
         Route::post('/exams/{exam}/start', [MuridExamController::class, 'start'])->name('exams.start');
         Route::post('/exams/{exam}/continue', [MuridExamController::class, 'continueAttempt'])
@@ -271,7 +297,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/exams/{exam}/heartbeat', [MuridExamController::class, 'heartbeat'])
             ->name('exams.heartbeat');
         Route::post('/exams/{exam}/violation', [MuridExamController::class, 'logViolation'])
-            ->name('exams.violation');
+            ->name('violation');
     });
 
     // Hapus route profile yang lama karena sudah dipindahkan ke luar

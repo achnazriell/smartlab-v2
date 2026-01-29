@@ -1,6 +1,119 @@
 @extends('layouts.appTeacher')
 
 @section('content')
+<style>
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e0e7ff;
+    }
+
+    .modal-icon {
+        width: 48px;
+        height: 48px;
+        background: #fee2e2;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin: 0;
+    }
+
+    .modal-body {
+        color: #475569;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .modal-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-btn-cancel {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .modal-btn-cancel:hover {
+        background: #d1d5db;
+    }
+
+    .modal-btn-danger {
+        background: #dc2626;
+        color: white;
+    }
+
+    .modal-btn-danger:hover {
+        background: #b91c1c;
+    }
+</style>
+
 <div class="max-w-6xl mx-auto space-y-6">
     <!-- Header -->
     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -268,11 +381,10 @@
                             </a>
                             @endif
 
-                            <form action="{{ route('guru.exams.destroy', $exam->id) }}" method="POST"
-                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus ujian ini?')">
+                            <form action="{{ route('guru.exams.destroy', $exam->id) }}" method="POST" id="deleteExamForm">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit"
+                                <button type="button" onclick="openDeleteModal()"
                                         class="block w-full text-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
                                     Hapus Ujian
                                 </button>
@@ -371,6 +483,51 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-icon">⚠️</div>
+            <div>
+                <h2 class="modal-title">Hapus Ujian</h2>
+            </div>
+        </div>
+        <div class="modal-body">
+            <p><strong>Ujian:</strong> {{ $exam->title }}</p>
+            <p class="mt-3" style="color: #dc2626; font-weight: 600;">Apakah Anda yakin ingin menghapus ujian ini? Tindakan ini tidak dapat dibatalkan dan semua data terkait ujian akan dihapus.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">
+                Batal
+            </button>
+            <button type="button" class="modal-btn modal-btn-danger" onclick="submitDeleteForm()">
+                Ya, Hapus Ujian
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDeleteModal() {
+        document.getElementById('deleteModal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('active');
+    }
+
+    function submitDeleteForm() {
+        document.getElementById('deleteExamForm').submit();
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeleteModal();
+        }
+    });
+</script>
 @endsection
 
 @push('styles')

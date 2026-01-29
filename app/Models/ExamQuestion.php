@@ -15,12 +15,47 @@ class ExamQuestion extends Model
         'question',
         'score',
         'explanation',
-        'short_answers'
+        'short_answers',
+        'enable_timer',
+        'time_limit',
+        'enable_skip',
+        'show_explanation',
+        'enable_mark_review',
+        'randomize_choices',
+        'require_all_options',
     ];
 
     protected $casts = [
         'short_answers' => 'array',
     ];
+
+    public function getQuestionSettingsForStudent()
+    {
+        return [
+            'enable_timer' => $this->enable_timer ?? false,
+            'time_limit' => $this->time_limit,
+            'enable_skip' => $this->enable_skip ?? true,
+            'show_explanation' => $this->show_explanation ?? false,
+            'enable_mark_review' => $this->enable_mark_review ?? true,
+            'randomize_choices' => $this->randomize_choices ?? false,
+            'require_all_options' => $this->require_all_options ?? false,
+        ];
+    }
+
+    public function shouldRandomizeChoices()
+    {
+        return $this->randomize_choices ?? false;
+    }
+
+    public function canSkip()
+    {
+        return $this->enable_skip ?? true;
+    }
+
+    public function showExplanation()
+    {
+        return $this->show_explanation ?? false;
+    }
 
     public function exam()
     {

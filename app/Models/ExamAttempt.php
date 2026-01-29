@@ -20,16 +20,18 @@ class ExamAttempt extends Model
         'score',
         'final_score',
         'is_cheating_detected',
+        'exam_settings',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
-        'violation_log' => 'array',
-        'violation_count' => 'integer',
+        'exam_settings' => 'array', // ← INI PENTING
         'score' => 'decimal:2',
         'final_score' => 'decimal:2',
         'is_cheating_detected' => 'boolean',
+        'remaining_time' => 'integer',
+        'violation_log' => 'array', // ← INI HARUS ADA
     ];
 
     public function exam()

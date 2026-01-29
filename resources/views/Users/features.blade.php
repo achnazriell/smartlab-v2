@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fitur - Smart-LAB</title>
     <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
-
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <!-- Tailwind CSS -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
