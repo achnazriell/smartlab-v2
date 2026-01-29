@@ -109,6 +109,11 @@ class ExamQuestion extends Model
         }
     }
 
+    public function answers()
+    {
+        return $this->hasMany(ExamAnswer::class, 'question_id');
+    }
+
     public function getRandomShortAnswers($count = 3)
     {
         if ($this->type !== 'IS' || empty($this->short_answers)) {

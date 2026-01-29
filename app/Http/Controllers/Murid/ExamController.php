@@ -961,7 +961,7 @@ class ExamController extends Controller
             $attempt->save();
 
             // Jika pelanggaran mencapai batas
-            if ($request->count >= 3) {
+            if ($request->count >= 10) {
                 // Lakukan submit di background
                 $this->forceSubmitDueToViolation($attempt);
 

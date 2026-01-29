@@ -215,12 +215,16 @@ Route::middleware(['auth', 'role:Guru|Admin'])->group(function () {
             ->name('exams.unpublish');
 
         // Exam Results Management
+        // Exam Results Management - TARUH SETELAH resource('exams')
         Route::prefix('exams/{exam}/results')->name('exams.results.')->group(function () {
             Route::get('/', [ExamResultController::class, 'index'])->name('index');
             Route::get('/{attempt}', [ExamResultController::class, 'show'])->name('show');
-            Route::put('/{attempt}/score', [ExamResultController::class, 'updateScore'])->name('update-score');
+            Route::get('/student/{student}', [ExamResultController::class, 'byStudent'])->name('by-student');
+            Route::post('/{attempt}/score', [ExamResultController::class, 'updateScore'])->name('update-score');
             Route::post('/{attempt}/regrade', [ExamResultController::class, 'regrade'])->name('regrade');
             Route::post('/{attempt}/reset', [ExamResultController::class, 'resetAttempt'])->name('reset-attempt');
+            Route::get('/export/{format?}', [ExamResultController::class, 'export'])->name('export');
+            Route::get('/question-analysis', [ExamResultController::class, 'questionAnalysis'])->name('question-analysis');
         });
     });
 });
