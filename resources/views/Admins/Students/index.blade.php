@@ -748,11 +748,132 @@
                 }
             });
 
-            document.addEventListener('DOMContentLoaded', function() {
+            // Import modal
+            const importModal = document.getElementById('importMuridModal');
+            const btnImport = document.getElementById('btnImportMurid');
+            const closeImportModal = document.getElementById('closeImportMuridModal');
+            const cancelImportBtn = document.getElementById('cancelImportMuridBtn');
+            const importBackdrop = document.getElementById('importMuridBackdrop');
+
+            function openImportModal() {
+                importModal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeImportModalFn() {
+                importModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+
+            btnImport.addEventListener('click', openImportModal);
+            closeImportModal.addEventListener('click', closeImportModalFn);
+            cancelImportBtn.addEventListener('click', closeImportModalFn);
+            importBackdrop.addEventListener('click', closeImportModalFn);
+
+            // Escape key
+            function openImportModal() {
+                document.getElementById('importMuridModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            // Fungsi untuk menutup modal import
+            function closeImportModal() {
+                document.getElementById('importMuridModal').classList.add('hidden');
+                document.body.style.overflow = '';
+                resetImportForm();
+            }
+
+            // Event listener untuk tombol import
+            document.getElementById('btnImportMurid').addEventListener('click', function() {
+                openImportModal();
+            });
+
+            // Event listener untuk tombol close modal import
+            document.getElementById('closeImportMuridModal').addEventListener('click', closeImportModal);
+
+            // Event listener untuk tombol batal modal import
+            document.getElementById('cancelImportMuridBtn').addEventListener('click', closeImportModal);
+
+            // Event listener untuk backdrop modal import
+            document.getElementById('importMuridBackdrop').addEventListener('click', closeImportModal);
+
+            $(document).ready(function() {
+                // Search functionality
+                const searchToggle = document.getElementById('searchToggle');
+                const searchInput = document.getElementById('searchInput');
+                const searchForm = document.getElementById('searchForm');
+                let isSearchOpen = {{ request('search_student') ? 'true' : 'false' }};
+
+                function setSearchOpenStyle() {
+                    if (window.matchMedia('(min-width: 1024px)').matches) {
+                        searchInput.style.width = '200px';
+                    } else {
+                        searchInput.style.width = '100px';
+                    }
+                    searchInput.style.paddingLeft = '12px';
+                    searchInput.style.paddingRight = '12px';
+                    searchInput.style.border = '1px solid #cbd5e1';
+                    searchInput.style.borderRadius = '9999px';
+                    searchInput.style.marginRight = '8px';
+                }
+
+                function setSearchClosedStyle() {
+                    searchInput.style.width = '0';
+                    searchInput.style.paddingLeft = '0';
+                    searchInput.style.paddingRight = '0';
+                    searchInput.style.border = '0';
+                    searchInput.style.marginRight = '0';
+                }
+
+                function toggleSearch() {
+                    isSearchOpen = !isSearchOpen;
+                    if (isSearchOpen) {
+                        setSearchOpenStyle();
+                        searchInput.focus();
+                    } else {
+                        setSearchClosedStyle();
+                    }
+                }
+
+                if (isSearchOpen) {
+                    setSearchOpenStyle();
+                }
+
+                searchToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isSearchOpen && searchInput.value.trim() !== '') {
+                        searchForm.submit();
+                    } else if (!isSearchOpen) {
+                        toggleSearch();
+                    } else {
+                        searchForm.submit();
+                    }
+                });
+
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchForm.submit();
+                    }
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!searchForm.contains(e.target) && isSearchOpen && searchInput.value
+                    .trim() === '') {
+                        toggleSearch();
+                    }
+                });
+
+                // Drag and drop functionality
                 const dropzoneMurid = document.getElementById('dropzoneMurid');
                 const fileInputMurid = document.getElementById('file-upload-murid');
 
+                // Inisialisasi drag and drop hanya jika element ada
                 if (dropzoneMurid && fileInputMurid) {
+                    initializeDragAndDrop();
+                }
+
+                function initializeDragAndDrop() {
                     // Prevent default drag behaviors
                     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                         dropzoneMurid.addEventListener(eventName, preventDefaults, false);
@@ -857,69 +978,78 @@
                 `;
 
                         // Tambahkan kembali event listener untuk klik
+                        const newFileInput = dropzoneMurid.parentElement.querySelector(
+                        '#file-upload-murid');
                         dropzoneMurid.addEventListener('click', function(e) {
-                            fileInputMurid.click();
-                        });
-                    }
-                }
-            });
-
-            // Reset form saat modal ditutup
-            document.getElementById('closeImportMuridModal')?.addEventListener('click', function() {
-                resetImportForm();
-            });
-
-            document.getElementById('cancelImportMuridBtn')?.addEventListener('click', function() {
-                resetImportForm();
-            });
-
-            document.getElementById('importMuridBackdrop')?.addEventListener('click', function() {
-                resetImportForm();
-            });
-
-            function resetImportForm() {
-                const dropzoneMurid = document.getElementById('dropzoneMurid');
-                const fileInputMurid = document.getElementById('file-upload-murid');
-
-                // Reset input file
-                if (fileInputMurid) {
-                    fileInputMurid.value = '';
-                }
-
-                // Reset tampilan dropzone
-                if (dropzoneMurid) {
-                    dropzoneMurid.innerHTML = `
-                <div class="space-y-2 text-center">
-                    <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <div class="flex text-sm text-slate-600 justify-center">
-                        <label for="file-upload-murid" class="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none">
-                            <span>Pilih file</span>
-                            <input id="file-upload-murid" name="file" type="file" accept=".xlsx,.xls,.csv" required class="sr-only">
-                        </label>
-                        <p class="pl-1">atau drag and drop</p>
-                    </div>
-                    <p class="text-xs text-slate-500">Excel (.xlsx, .xls, .csv)</p>
-                </div>
-            `;
-
-                    // Re-initialize event listeners
-                    const newFileInput = dropzoneMurid.querySelector('#file-upload-murid');
-                    if (newFileInput) {
-                        newFileInput.addEventListener('change', function(e) {
-                            handleFiles(this.files);
-                        });
-
-                        dropzoneMurid.addEventListener('click', function(e) {
-                            if (e.target !== newFileInput) {
+                            if (newFileInput) {
                                 newFileInput.click();
                             }
                         });
                     }
                 }
-            }
 
+                function resetImportForm() {
+                    // Reset input file
+                    if (fileInputMurid) {
+                        fileInputMurid.value = '';
+                    }
+
+                    // Reset tampilan dropzone
+                    if (dropzoneMurid) {
+                        dropzoneMurid.innerHTML = `
+                    <div class="space-y-2 text-center">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-slate-600 justify-center">
+                            <label for="file-upload-murid" class="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none">
+                                <span>Pilih file</span>
+                                <input id="file-upload-murid" name="file" type="file" accept=".xlsx,.xls,.csv" required class="sr-only">
+                            </label>
+                            <p class="pl-1">atau drag and drop</p>
+                        </div>
+                        <p class="text-xs text-slate-500">Excel (.xlsx, .xls, .csv)</p>
+                    </div>
+                `;
+
+                        // Re-initialize event listeners
+                        initializeDragAndDrop();
+                    }
+                }
+
+                // Escape key untuk menutup semua modal
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        // Tutup modal import jika terbuka
+                        const importModal = document.getElementById('importMuridModal');
+                        if (!importModal.classList.contains('hidden')) {
+                            closeImportModal();
+                        }
+
+                        // Tutup modal edit jika ada yang terbuka
+                        document.querySelectorAll('[id^="editModal"]').forEach(function(modal) {
+                            if (!modal.classList.contains('hidden')) {
+                                const modalId = modal.id.replace('editModal', '');
+                                closeEditModal(modalId);
+                            }
+                        });
+
+                        // Tutup modal delete jika ada yang terbuka
+                        document.querySelectorAll('[id^="deleteModal"]').forEach(function(modal) {
+                            if (!modal.classList.contains('hidden')) {
+                                const modalId = modal.id.replace('deleteModal', '');
+                                closeDeleteModal(modalId);
+                            }
+                        });
+
+                        // Tutup modal tambah jika terbuka
+                        const addModal = document.getElementById('addModal');
+                        if (!addModal.classList.contains('hidden')) {
+                            closeAddModal();
+                        }
+                    }
+                });
+            });
         });
     </script>
 @endsection
