@@ -621,7 +621,7 @@
                 </button>
                 <form action="{{ route('soal.start', $exam->id) }}" method="POST" id="startExamForm">
                     @csrf
-                    <button type="button" class="modal-btn modal-btn-confirm" onclick="startExamWithFullscreen()">
+                    <button type="button" class="modal-btn modal-btn-confirm">
                         <i class="fas fa-play mr-2"></i>
                         Mulai Ujian
                     </button>
@@ -661,35 +661,5 @@
                 closeExamModal();
             }
         });
-
-        function startExamWithFullscreen() {
-            const requireFullscreen = {{ $exam->fullscreen_mode ? 'true' : 'false' }};
-
-            const submitForm = () => {
-                document.getElementById('startExamForm').submit();
-            };
-
-            if (!requireFullscreen) {
-                submitForm();
-                return;
-            }
-
-            const elem = document.documentElement;
-
-            if (!document.fullscreenElement) {
-                elem.requestFullscreen()
-                    .then(() => {
-                        submitForm();
-                    })
-                    .catch(() => {
-                        alert(
-                            'Ujian ini mewajibkan mode fullscreen.\n' +
-                            'Silakan izinkan fullscreen untuk melanjutkan.'
-                        );
-                    });
-            } else {
-                submitForm();
-            }
-        }
     </script>
 @endsection
