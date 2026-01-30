@@ -173,7 +173,7 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Logo Full -->
                     <img x-show="isMobile || sidebarOpen" class="w-auto h-10 object-contain ml-7"
-                        src="{{ asset('image/LogoSmartlab.webp') }}">
+                        src="{{ asset('image/LogoSmartLab.webp') }}">
 
                 </div>
 
@@ -282,7 +282,7 @@ window.addEventListener('scroll', () => headerScrolled = window.scrollY > 10)" x
 
                     <!-- Mobile centered logo -->
                     <div class="md:hidden absolute left-1/2 transform -translate-x-1/2 flex items-center ml-11">
-                        <img alt="Logo" src="{{ asset('image/LogoSmartlab.webp') }}" class="h-9 w-auto " />
+                        <img alt="Logo" src="{{ asset('image/LogoSmartLab.webp') }}" class="h-9 w-auto " />
                     </div>
 
                     <div class="flex items-center space-x-2 md:space-x-3">

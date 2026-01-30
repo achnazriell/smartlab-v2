@@ -11,11 +11,12 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
         overflow: hidden;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
     }
 
     .stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
     }
 
     .stat-icon {
@@ -38,12 +39,13 @@
         font-weight: bold;
         font-size: 1.2rem;
         color: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .accuracy-bar {
         height: 24px;
         border-radius: 12px;
-        background: #f0f0f0;
+        background: #e8f0f8;
         position: relative;
         overflow: hidden;
     }
@@ -51,7 +53,8 @@
     .accuracy-fill {
         height: 100%;
         border-radius: 12px;
-        transition: width 0.6s ease;
+        transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .student-avatar {
@@ -59,6 +62,7 @@
         height: 40px;
         border-radius: 10px;
         object-fit: cover;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     .status-dot {
@@ -72,7 +76,7 @@
     .empty-state {
         padding: 4rem 2rem;
         text-align: center;
-        background: #f8f9fa;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         border-radius: 12px;
         border: 2px dashed #dee2e6;
     }
@@ -84,10 +88,11 @@
     }
 
     .question-type-badge {
-        padding: 4px 12px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     }
 
     .table-hover tbody tr {
@@ -97,6 +102,7 @@
     .table-hover tbody tr:hover {
         background-color: rgba(13, 110, 253, 0.05);
         transform: translateX(5px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .action-btn {
@@ -137,11 +143,46 @@
         color: white;
         font-weight: bold;
         font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Modal Styles */
+    .modal-dialog {
+        border-radius: 12px;
+    }
+
+    .modal-content {
+        border: none;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        border: none;
+    }
+
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .stat-card { margin-bottom: 1rem; }
     }
 </style>
 @endsection
 
 @section('content')
+<!-- SweetAlert2 Library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <div class="container-fluid px-4">
     <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5">
@@ -170,18 +211,18 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2">
-            <button onclick="window.print()" class="btn btn-outline-primary d-flex align-items-center">
+            <button onclick="confirmPrint()" class="btn btn-outline-primary d-flex align-items-center" style="border-radius: 8px;">
                 <i class="fas fa-print me-2"></i> Cetak
             </button>
-            <a href="{{ route('guru.exams.results.export', ['exam' => $exam->id, 'format' => 'pdf']) }}"
-               class="btn btn-danger d-flex align-items-center">
+            <button onclick="confirmExportPDF('{{ route('guru.exams.results.export', ['exam' => $exam->id, 'format' => 'pdf']) }}')"
+                    class="btn btn-danger d-flex align-items-center" style="border-radius: 8px;">
                 <i class="fas fa-file-pdf me-2"></i> Export PDF
-            </a>
+            </button>
             <a href="{{ route('guru.exams.results.question-analysis', $exam->id) }}"
-               class="btn btn-info d-flex align-items-center">
+               class="btn btn-info d-flex align-items-center" style="border-radius: 8px;">
                 <i class="fas fa-chart-bar me-2"></i> Analisis Soal
             </a>
-            <a href="{{ route('guru.exams.index') }}" class="btn btn-secondary d-flex align-items-center">
+            <a href="{{ route('guru.exams.index') }}" class="btn btn-secondary d-flex align-items-center" style="border-radius: 8px;">
                 <i class="fas fa-arrow-left me-2"></i> Kembali
             </a>
         </div>
@@ -781,6 +822,47 @@
             btn.disabled = false;
         });
     });
+
+    // Modal Confirmation Functions
+    function confirmPrint() {
+        Swal.fire({
+            title: 'Cetak Hasil Ujian?',
+            text: 'Anda akan mencetak hasil ujian ini',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Cetak',
+            cancelButtonText: 'Batal',
+            didOpen: (modal) => {
+                modal.classList.add('swal2-modern');
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.print();
+            }
+        });
+    }
+
+    function confirmExportPDF(url) {
+        Swal.fire({
+            title: 'Export ke PDF?',
+            text: 'File PDF akan diunduh ke komputer Anda',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Export',
+            cancelButtonText: 'Batal',
+            didOpen: (modal) => {
+                modal.classList.add('swal2-modern');
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    }
 
     // Fungsi untuk menampilkan notifikasi
     function showNotification(type, title, message) {

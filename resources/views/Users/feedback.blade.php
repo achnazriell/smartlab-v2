@@ -3,6 +3,9 @@
 @section('title', 'Feedback & Laporan')
 
 @section('content')
+<!-- SweetAlert2 Library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="min-h-screen p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
@@ -272,14 +275,9 @@
                                 </span>
                             </td>
                             <td class="py-3 px-4">
-                                <form action="{{ route('feedbacks.destroy', $feedback) }}" method="POST"
-                                      onsubmit="return confirm('Hapus feedback ini?')" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-800 text-sm">
-                                        Hapus
-                                    </button>
-                                </form>
+                                <button type="button" onclick="confirmDeleteFeedback('{{ route('feedbacks.destroy', $feedback) }}')" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                    Hapus
+                                </button>
                             </td>
                         </tr>
                         @empty
@@ -364,6 +362,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Confirmation Delete Function
+    function confirmDeleteFeedback(url) {
+        Swal.fire({
+            title: 'Hapus Feedback?',
+            text: 'Feedback yang dihapus tidak dapat dikembalikan',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Create and submit hidden form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.innerHTML = '@csrf @method("DELETE")';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
 });
 </script>
 @endsection

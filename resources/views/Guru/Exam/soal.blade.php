@@ -1,6 +1,10 @@
 @extends('layouts.appTeacher')
 
 @section('content')
+    <!-- SweetAlert2 Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         /* Tambahkan di section <style> */
         #confirm-modal {
@@ -920,10 +924,24 @@
             async function deleteQuestion(questionId) {
                 console.log('deleteQuestion called:', questionId);
 
-                if (!confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
-                    return;
-                }
+                // Show SweetAlert confirmation
+                Swal.fire({
+                    title: 'Hapus Soal?',
+                    text: 'Soal yang dihapus tidak dapat dikembalikan',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Hapus',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        performDeleteQuestion(questionId);
+                    }
+                });
+            }
 
+            async function performDeleteQuestion(questionId) {
                 showLoading('Menghapus soal...');
 
                 try {

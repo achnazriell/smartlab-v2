@@ -375,7 +375,7 @@
         }
 
         .fullscreen-content {
-            display: none;
+            display: block; /* Changed: show by default */
         }
 
         .fullscreen-active .fullscreen-content {
@@ -383,7 +383,12 @@
         }
 
         .fullscreen-inactive {
-            display: none;
+            display: block; /* Changed: show even when not fullscreen */
+        }
+
+        /* Only hide modal, not the exam content */
+        #fullscreenModal {
+            display: none !important;
         }
 
         .attempt-warning {
@@ -607,8 +612,8 @@
     <div x-data="quizApp()" x-init="init()"
         :class="{ 'fullscreen-active': isFullscreen || !requireFullscreen }" class="min-h-screen bg-white">
 
-        <!-- Hidden when fullscreen required but not active -->
-        <div class="fullscreen-content" :class="{ 'fullscreen-inactive': !isFullscreen && requireFullscreen }">
+        <!-- Show exam content regardless of fullscreen status -->
+        <div class="fullscreen-content" :class="{ 'fullscreen-inactive': false }">
             <div class="exam-container" :class="{ 'active': examLoaded }">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
                     <!-- Header -->

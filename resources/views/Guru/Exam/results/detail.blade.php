@@ -1,6 +1,9 @@
 @extends('layouts.appGuru')
 
 @section('content')
+<!-- SweetAlert2 Library -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <div class="container-fluid py-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-6">
@@ -15,13 +18,13 @@
             </nav>
         </div>
         <div class="d-flex gap-3">
-            <button onclick="window.print()" class="btn btn-secondary">
+            <button onclick="confirmPrintDetail()" class="btn btn-secondary" style="border-radius: 8px;">
                 <i class="fas fa-print mr-2"></i> Cetak
             </button>
-            <button onclick="regradeAttempt()" class="btn btn-warning">
+            <button onclick="confirmRegradeAttempt()" class="btn btn-warning" style="border-radius: 8px;">
                 <i class="fas fa-redo mr-2"></i> Koreksi Ulang
             </button>
-            <a href="{{ route('guru.exams.results.index', $exam->id) }}" class="btn btn-primary">
+            <a href="{{ route('guru.exams.results.index', $exam->id) }}" class="btn btn-primary" style="border-radius: 8px;">
                 <i class="fas fa-arrow-left mr-2"></i> Kembali
             </a>
         </div>
@@ -353,6 +356,41 @@
 </style>
 
 <script>
+    // Confirmation Functions
+    function confirmPrintDetail() {
+        Swal.fire({
+            title: 'Cetak Detail Hasil?',
+            text: 'File akan dicetak dengan semua detail jawaban siswa',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Cetak',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.print();
+            }
+        });
+    }
+
+    function confirmRegradeAttempt() {
+        Swal.fire({
+            title: 'Koreksi Ulang Otomatis?',
+            text: 'Sistem akan mengoreksi ulang semua jawaban siswa secara otomatis',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Lanjutkan',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                regradeAttempt();
+            }
+        });
+    }
+
     // Form update score untuk essay
     document.querySelectorAll('.update-score-form').forEach(form => {
         form.addEventListener('submit', function(e) {
@@ -376,14 +414,27 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Nilai berhasil diperbarui!');
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Nilai berhasil diperbarui!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
                 } else {
-                    alert('Gagal memperbarui nilai: ' + data.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Gagal memperbarui nilai: ' + data.message
+                    });
                 }
             })
             .catch(error => {
-                alert('Terjadi kesalahan: ' + error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan',
+                    text: 'Terjadi kesalahan: ' + error
+                });
             })
             .finally(() => {
                 btn.innerHTML = originalText;
@@ -394,8 +445,6 @@
 
     // Fungsi koreksi ulang
     function regradeAttempt() {
-        if (!confirm('Apakah Anda yakin ingin melakukan koreksi ulang otomatis?')) return;
-
         fetch(`/guru/exams/{{ $exam->id }}/results/{{ $attempt->id }}/regrade`, {
             method: 'POST',
             headers: {
@@ -406,14 +455,27 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Koreksi ulang berhasil! Nilai baru: ' + data.final_score);
-                location.reload();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Koreksi ulang berhasil! Nilai baru: ' + data.final_score,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => location.reload());
             } else {
-                alert('Gagal melakukan koreksi ulang: ' + data.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Gagal melakukan koreksi ulang: ' + data.message
+                });
             }
         })
         .catch(error => {
-            alert('Terjadi kesalahan: ' + error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Kesalahan',
+                text: 'Terjadi kesalahan: ' + error
+            });
         });
     }
 </script>

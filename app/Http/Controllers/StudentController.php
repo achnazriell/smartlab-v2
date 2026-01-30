@@ -30,7 +30,7 @@ class StudentController extends Controller
                     });
             })
             ->latest()
-            ->paginate(5);
+            ->paginate(10);
         $classes = Classes::all();
 
         return view('Admins.Students.index', compact('students', 'classes'));
