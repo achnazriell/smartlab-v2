@@ -42,8 +42,15 @@ class StudentController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'nis' => 'required|regex:/^[0-9]{6,10}$/',
+            'nis' => [
+                'required',
+                'regex:/^[0-9]{6,10}$/',
+                'unique:students,nis'
+            ],
             'class_id' => 'required|exists:classes,id',
+        ], [
+            'nis.regex' => 'NIS harus terdiri dari 6-10 digit angka',
+            'nis.unique' => 'NIS sudah terdaftar',
         ]);
 
         // 1. User
@@ -71,16 +78,62 @@ class StudentController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120'
         ]);
 
         try {
-            Excel::import(new StudentImport, $request->file('file'));
-            return back()->with('success', 'Import murid berhasil!');
+            $import = new StudentImport;
+
+            // Import data
+            Excel::import($import, $request->file('file'));
+
+            // Get import statistics
+            $stats = $import->getImportStats();
+
+            // Untuk debugging, lihat apa yang ada di failures
+            $failures = $import->failures();
+
+            // Prepare response message dengan HTML yang benar
+            $message = "Import selesai!<br>";
+            $message .= "• Berhasil diimport: {$stats['imported']} murid<br>";
+
+            if ($stats['skipped'] > 0) {
+                $message .= "• Dilewati: {$stats['skipped']} data<br>";
+            }
+
+            // Jika ada failures dari validation
+            if (!empty($failures)) {
+                $message .= "• Validasi gagal:<br>";
+                foreach ($failures as $failure) {
+                    $row = $failure->row();
+                    $errors = implode(', ', $failure->errors());
+                    $message .= "&nbsp;&nbsp;- Baris {$row}: {$errors}<br>";
+                }
+            }
+
+            // Jika ada import errors
+            if (!empty($stats['errors'])) {
+                $message .= "• Error yang ditemukan:<br>";
+                foreach ($stats['errors'] as $error) {
+                    $message .= "&nbsp;&nbsp;- {$error}<br>";
+                }
+            }
+
+            // Tentukan jenis pesan
+            if ($stats['imported'] > 0) {
+                return back()->with('success', $message);
+            } elseif (!empty($stats['errors']) || !empty($failures)) {
+                return back()->with('error', $message);
+            } else {
+                return back()->with('warning', $message);
+            }
         } catch (\Exception $e) {
+            \Log::error('Import error: ' . $e->getMessage());
+            \Log::error('File: ' . $request->file('file')->getClientOriginalName());
             return back()->with('error', 'Terjadi kesalahan saat mengimpor: ' . $e->getMessage());
         }
     }
+
 
     public function update(Request $request, $id)
     {
@@ -96,9 +149,17 @@ class StudentController extends Controller
                 Rule::unique('users')->ignore($userId)
             ],
             'password' => 'nullable|min:6',
-            'nis' => 'required|regex:/^[0-9]{6,10}$/',
+            'nis' => [
+                'required',
+                'regex:/^[0-9]{6,10}$/',
+                Rule::unique('students')->ignore($student->id)
+            ],
             'class_id' => 'required|exists:classes,id',
+        ], [
+            'nis.regex' => 'NIS harus terdiri dari 6-10 digit angka',
+            'nis.unique' => 'NIS sudah terdaftar',
         ]);
+
 
         // Update user
         $user = User::findOrFail($userId);

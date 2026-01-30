@@ -479,6 +479,28 @@
                         <div class="p-6 space-y-5">
                             <div class="space-y-2">
                                 <label class="block text-sm font-medium text-slate-700">Upload File Excel</label>
+
+                                <!-- Informasi template -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5" fill="currentColor"
+                                            viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        <div>
+                                            <p class="text-sm text-blue-800 font-medium">Format yang didukung:</p>
+                                            <ul class="text-xs text-blue-700 mt-1 space-y-1">
+                                                <li>• Kolom wajib: <strong>nama, email, nis</strong></li>
+                                                <li>• Kolom opsional: password, kelas</li>
+                                                <li>• Password akan digenerate otomatis jika kosong</li>
+                                                <li>• Murid tetap dibuat meski kelas tidak ditemukan</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg hover:border-green-400 transition-colors duration-200 cursor-pointer"
                                     id="dropzoneMurid">
                                     <div class="space-y-2 text-center">
@@ -497,11 +519,15 @@
                                             </label>
                                             <p class="pl-1">atau drag and drop</p>
                                         </div>
-                                        <p class="text-xs text-slate-500">Excel (.xlsx, .xls)</p>
                                     </div>
                                 </div>
+
+                                <!-- Preview file name -->
+                                <div id="fileNamePreview" class="text-sm text-slate-600 mt-2 hidden"></div>
                             </div>
                         </div>
+
+
                         <div
                             class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end items-center">
                             <div class="flex space-x-3">
@@ -523,271 +549,311 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    {{-- Modal Tambah Murid --}}
-    <div id="addModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-                    <div
-                        class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-slate-900">Tambah Murid Baru</h3>
-                                <p class="text-sm text-slate-500">Isi data murid secara manual</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="closeAddModal()"
-                            class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <form action="{{ route('students.store') }}" method="POST">
-                        @csrf
-                        <div class="p-6 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Murid <span
-                                        class="text-red-500">*</span></label>
-                                <input type="text" name="name" required placeholder="Masukkan nama lengkap murid"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('name') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
-                                        class="text-red-500">*</span></label>
-                                <input type="email" name="email" required placeholder="contoh@email.com"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('email') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
-                                        class="text-red-500">*</span></label>
-                                <input type="text" name="password" required placeholder="Masukkan password"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('password') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">NIS <span
-                                        class="text-red-500">*</span></label>
-                                <input type="text" name="nis" required placeholder="Masukkan NIS"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
-                                    value="{{ old('nis') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Kelas <span
-                                        class="text-red-500">*</span></label>
-                                {{-- Updated select name and class to be consistent with single selection logic --}}
-                                <select name="class_id" id="addClassSelect" required class="add-class-select w-full">
-                                    <option value="">-- Pilih Kelas --</option>
-                                    @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}"
-                                            {{ old('class_id') == $class->id ? 'selected' : '' }}>
-                                            {{ $class->name_class }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="text-xs text-slate-500 mt-1">Pilih kelas murid</p>
-                            </div>
-                        </div>
+
+        {{-- Modal Tambah Murid --}}
+        <div id="addModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
+            <div class="fixed inset-0 z-10 overflow-y-auto">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
                         <div
-                            class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3 rounded-b-xl">
+                            class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Tambah Murid Baru</h3>
+                                    <p class="text-sm text-slate-500">Isi data murid secara manual</p>
+                                </div>
+                            </div>
                             <button type="button" onclick="closeAddModal()"
-                                class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors duration-200">
-                                Batal
-                            </button>
-                            <button type="submit"
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                Simpan Murid
+                                class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
                             </button>
                         </div>
-                    </form>
+                        <form action="{{ route('students.store') }}" method="POST">
+                            @csrf
+                            <div class="p-6 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Murid <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="name" required
+                                        placeholder="Masukkan nama lengkap murid"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('name') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="email" name="email" required placeholder="contoh@email.com"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('email') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="password" required placeholder="Masukkan password"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('password') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">NIS <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="nis" required placeholder="Masukkan NIS"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
+                                        value="{{ old('nis') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Kelas <span
+                                            class="text-red-500">*</span></label>
+                                    {{-- Updated select name and class to be consistent with single selection logic --}}
+                                    <select name="class_id" id="addClassSelect" required class="add-class-select w-full">
+                                        <option value="">-- Pilih Kelas --</option>
+                                        @foreach ($classes as $class)
+                                            <option value="{{ $class->id }}"
+                                                {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                                                {{ $class->name_class }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="text-xs text-slate-500 mt-1">Pilih kelas murid</p>
+                                </div>
+                            </div>
+                            <div
+                                class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3 rounded-b-xl">
+                                <button type="button" onclick="closeAddModal()"
+                                    class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors duration-200">
+                                    Batal
+                                </button>
+                                <button type="submit"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                    Simpan Murid
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        document.querySelectorAll('.btn-edit').forEach(button => {
-            button.addEventListener('click', function() {
-                document.getElementById('editName').value = this.dataset.name;
-                document.getElementById('editEmail').value = this.dataset.email;
+        <script>
+            document.querySelectorAll('.btn-edit').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.getElementById('editName').value = this.dataset.name;
+                    document.getElementById('editEmail').value = this.dataset.email;
 
-                document.getElementById('editForm').action =
-                    `/students/${this.dataset.id}`;
-            });
-        });
-
-        function openEditModal(id) {
-            document.getElementById('editModal' + id).classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            setTimeout(function() {
-                $('#editClassSelect' + id).select2({
-                    placeholder: '-- Pilih Kelas --',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#editModal' + id)
+                    document.getElementById('editForm').action =
+                        `/students/${this.dataset.id}`;
                 });
-            }, 100);
-        }
-
-        function closeEditModal(id) {
-            document.getElementById('editModal' + id).classList.add('hidden');
-            document.body.style.overflow = '';
-            if ($('#editClassSelect' + id).hasClass('select2-hidden-accessible')) {
-                $('#editClassSelect' + id).select2('destroy');
-            }
-        }
-
-        function openDeleteModal(id) {
-            document.getElementById('deleteModal' + id).classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeDeleteModal(id) {
-            document.getElementById('deleteModal' + id).classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        function openAddModal() {
-            document.getElementById('addModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            setTimeout(function() {
-                $('#addClassSelect').select2({
-                    placeholder: '-- Pilih Kelas --',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#addModal')
-                });
-            }, 100);
-        }
-
-        function closeAddModal() {
-            document.getElementById('addModal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-            if ($('#addClassSelect').hasClass('select2-hidden-accessible')) {
-                $('#addClassSelect').val(null).trigger('change');
-                $('#addClassSelect').select2('destroy');
-            }
-        }
-
-        $(document).ready(function() {
-            // Search functionality
-            const searchToggle = document.getElementById('searchToggle');
-            const searchInput = document.getElementById('searchInput');
-            const searchForm = document.getElementById('searchForm');
-            let isSearchOpen = {{ request('search_student') ? 'true' : 'false' }};
-
-            function setSearchOpenStyle() {
-                if (window.matchMedia('(min-width: 1024px)').matches) {
-                    searchInput.style.width = '200px';
-                } else {
-                    searchInput.style.width = '100px';
-                }
-                searchInput.style.paddingLeft = '12px';
-                searchInput.style.paddingRight = '12px';
-                searchInput.style.border = '1px solid #cbd5e1';
-                searchInput.style.borderRadius = '9999px';
-                searchInput.style.marginRight = '8px';
-            }
-
-            function setSearchClosedStyle() {
-                searchInput.style.width = '0';
-                searchInput.style.paddingLeft = '0';
-                searchInput.style.paddingRight = '0';
-                searchInput.style.border = '0';
-                searchInput.style.marginRight = '0';
-            }
-
-            function toggleSearch() {
-                isSearchOpen = !isSearchOpen;
-                if (isSearchOpen) {
-                    setSearchOpenStyle();
-                    searchInput.focus();
-                } else {
-                    setSearchClosedStyle();
-                }
-            }
-
-            if (isSearchOpen) {
-                setSearchOpenStyle();
-            }
-
-            searchToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (isSearchOpen && searchInput.value.trim() !== '') {
-                    searchForm.submit();
-                } else if (!isSearchOpen) {
-                    toggleSearch();
-                } else {
-                    searchForm.submit();
-                }
             });
 
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    searchForm.submit();
+            function openEditModal(id) {
+                document.getElementById('editModal' + id).classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                setTimeout(function() {
+                    $('#editClassSelect' + id).select2({
+                        placeholder: '-- Pilih Kelas --',
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#editModal' + id)
+                    });
+                }, 100);
+            }
+
+            function closeEditModal(id) {
+                document.getElementById('editModal' + id).classList.add('hidden');
+                document.body.style.overflow = '';
+                if ($('#editClassSelect' + id).hasClass('select2-hidden-accessible')) {
+                    $('#editClassSelect' + id).select2('destroy');
                 }
-            });
+            }
 
-            document.addEventListener('click', function(e) {
-                if (!searchForm.contains(e.target) && isSearchOpen && searchInput.value.trim() === '') {
-                    toggleSearch();
-                }
-            });
-
-            // Import modal
-            const importModal = document.getElementById('importMuridModal');
-            const btnImport = document.getElementById('btnImportMurid');
-            const closeImportModal = document.getElementById('closeImportMuridModal');
-            const cancelImportBtn = document.getElementById('cancelImportMuridBtn');
-            const importBackdrop = document.getElementById('importMuridBackdrop');
-
-            function openImportModal() {
-                importModal.classList.remove('hidden');
+            function openDeleteModal(id) {
+                document.getElementById('deleteModal' + id).classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
             }
 
-            function closeImportModalFn() {
-                importModal.classList.add('hidden');
+            function closeDeleteModal(id) {
+                document.getElementById('deleteModal' + id).classList.add('hidden');
                 document.body.style.overflow = '';
             }
 
-            btnImport.addEventListener('click', openImportModal);
-            closeImportModal.addEventListener('click', closeImportModalFn);
-            cancelImportBtn.addEventListener('click', closeImportModalFn);
-            importBackdrop.addEventListener('click', closeImportModalFn);
-
-            // Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    if (!importModal.classList.contains('hidden')) {
-                        closeImportModalFn();
-                    }
-                    document.querySelectorAll('[id^="editModal"], [id^="deleteModal"]').forEach(function(
-                        modal) {
-                        if (!modal.classList.contains('hidden')) {
-                            modal.classList.add('hidden');
-                            document.body.style.overflow = '';
-                        }
+            function openAddModal() {
+                document.getElementById('addModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                setTimeout(function() {
+                    $('#addClassSelect').select2({
+                        placeholder: '-- Pilih Kelas --',
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#addModal')
                     });
-                    if (!document.getElementById('addModal').classList.contains('hidden')) {
-                        closeAddModal();
+                }, 100);
+            }
+
+            function closeAddModal() {
+                document.getElementById('addModal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                if ($('#addClassSelect').hasClass('select2-hidden-accessible')) {
+                    $('#addClassSelect').val(null).trigger('change');
+                    $('#addClassSelect').select2('destroy');
+                }
+            }
+
+            $(document).ready(function() {
+                // Search functionality
+                const searchToggle = document.getElementById('searchToggle');
+                const searchInput = document.getElementById('searchInput');
+                const searchForm = document.getElementById('searchForm');
+                let isSearchOpen = {{ request('search_student') ? 'true' : 'false' }};
+
+                function setSearchOpenStyle() {
+                    if (window.matchMedia('(min-width: 1024px)').matches) {
+                        searchInput.style.width = '200px';
+                    } else {
+                        searchInput.style.width = '100px';
+                    }
+                    searchInput.style.paddingLeft = '12px';
+                    searchInput.style.paddingRight = '12px';
+                    searchInput.style.border = '1px solid #cbd5e1';
+                    searchInput.style.borderRadius = '9999px';
+                    searchInput.style.marginRight = '8px';
+                }
+
+                function setSearchClosedStyle() {
+                    searchInput.style.width = '0';
+                    searchInput.style.paddingLeft = '0';
+                    searchInput.style.paddingRight = '0';
+                    searchInput.style.border = '0';
+                    searchInput.style.marginRight = '0';
+                }
+
+                function toggleSearch() {
+                    isSearchOpen = !isSearchOpen;
+                    if (isSearchOpen) {
+                        setSearchOpenStyle();
+                        searchInput.focus();
+                    } else {
+                        setSearchClosedStyle();
                     }
                 }
+
+                if (isSearchOpen) {
+                    setSearchOpenStyle();
+                }
+
+                searchToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isSearchOpen && searchInput.value.trim() !== '') {
+                        searchForm.submit();
+                    } else if (!isSearchOpen) {
+                        toggleSearch();
+                    } else {
+                        searchForm.submit();
+                    }
+                });
+
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchForm.submit();
+                    }
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!searchForm.contains(e.target) && isSearchOpen && searchInput.value.trim() === '') {
+                        toggleSearch();
+                    }
+                });
+
+                const fileUploadMurid = document.getElementById('file-upload-murid');
+                const fileNamePreview = document.getElementById('fileNamePreview');
+
+                fileUploadMurid.addEventListener('change', function(e) {
+                    if (this.files.length > 0) {
+                        const fileName = this.files[0].name;
+                        fileNamePreview.textContent = `File: ${fileName}`;
+                        fileNamePreview.classList.remove('hidden');
+                    } else {
+                        fileNamePreview.classList.add('hidden');
+                    }
+                });
+
+                // Dropzone functionality
+                const dropzoneMurid = document.getElementById('dropzoneMurid');
+                dropzoneMurid.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('border-green-400', 'bg-green-50');
+                });
+
+                dropzoneMurid.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('border-green-400', 'bg-green-50');
+                });
+
+                dropzoneMurid.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('border-green-400', 'bg-green-50');
+
+                    if (e.dataTransfer.files.length > 0) {
+                        fileUploadMurid.files = e.dataTransfer.files;
+
+                        // Trigger change event
+                        const event = new Event('change');
+                        fileUploadMurid.dispatchEvent(event);
+                    }
+                });
+
+
+                // Import modal
+                const importModal = document.getElementById('importMuridModal');
+                const btnImport = document.getElementById('btnImportMurid');
+                const closeImportModal = document.getElementById('closeImportMuridModal');
+                const cancelImportBtn = document.getElementById('cancelImportMuridBtn');
+                const importBackdrop = document.getElementById('importMuridBackdrop');
+
+                function openImportModal() {
+                    importModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeImportModalFn() {
+                    importModal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+
+                btnImport.addEventListener('click', openImportModal);
+                closeImportModal.addEventListener('click', closeImportModalFn);
+                cancelImportBtn.addEventListener('click', closeImportModalFn);
+                importBackdrop.addEventListener('click', closeImportModalFn);
+
+                // Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        if (!importModal.classList.contains('hidden')) {
+                            closeImportModalFn();
+                        }
+                        document.querySelectorAll('[id^="editModal"], [id^="deleteModal"]').forEach(function(
+                            modal) {
+                            if (!modal.classList.contains('hidden')) {
+                                modal.classList.add('hidden');
+                                document.body.style.overflow = '';
+                            }
+                        });
+                        if (!document.getElementById('addModal').classList.contains('hidden')) {
+                            closeAddModal();
+                        }
+                    }
+                });
             });
-        });
-    </script>
-@endsection
+        </script>
+    @endsection
