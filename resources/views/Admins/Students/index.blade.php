@@ -748,46 +748,178 @@
                 }
             });
 
-            // Import modal
-            const importModal = document.getElementById('importMuridModal');
-            const btnImport = document.getElementById('btnImportMurid');
-            const closeImportModal = document.getElementById('closeImportMuridModal');
-            const cancelImportBtn = document.getElementById('cancelImportMuridBtn');
-            const importBackdrop = document.getElementById('importMuridBackdrop');
+            document.addEventListener('DOMContentLoaded', function() {
+                const dropzoneMurid = document.getElementById('dropzoneMurid');
+                const fileInputMurid = document.getElementById('file-upload-murid');
 
-            function openImportModal() {
-                importModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
+                if (dropzoneMurid && fileInputMurid) {
+                    // Prevent default drag behaviors
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                        dropzoneMurid.addEventListener(eventName, preventDefaults, false);
+                        document.body.addEventListener(eventName, preventDefaults, false);
+                    });
 
-            function closeImportModalFn() {
-                importModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
+                    // Highlight drop zone when item is dragged over it
+                    ['dragenter', 'dragover'].forEach(eventName => {
+                        dropzoneMurid.addEventListener(eventName, highlight, false);
+                    });
 
-            btnImport.addEventListener('click', openImportModal);
-            closeImportModal.addEventListener('click', closeImportModalFn);
-            cancelImportBtn.addEventListener('click', closeImportModalFn);
-            importBackdrop.addEventListener('click', closeImportModalFn);
+                    ['dragleave', 'drop'].forEach(eventName => {
+                        dropzoneMurid.addEventListener(eventName, unhighlight, false);
+                    });
 
-            // Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    if (!importModal.classList.contains('hidden')) {
-                        closeImportModalFn();
-                    }
-                    document.querySelectorAll('[id^="editModal"], [id^="deleteModal"]').forEach(function(
-                        modal) {
-                        if (!modal.classList.contains('hidden')) {
-                            modal.classList.add('hidden');
-                            document.body.style.overflow = '';
+                    // Handle dropped files
+                    dropzoneMurid.addEventListener('drop', handleDrop, false);
+
+                    // Click to select file
+                    dropzoneMurid.addEventListener('click', function(e) {
+                        if (e.target !== fileInputMurid) {
+                            fileInputMurid.click();
                         }
                     });
-                    if (!document.getElementById('addModal').classList.contains('hidden')) {
-                        closeAddModal();
+
+                    // Handle file selection via input
+                    fileInputMurid.addEventListener('change', function(e) {
+                        handleFiles(this.files);
+                    });
+                }
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                function highlight(e) {
+                    dropzoneMurid.classList.add('border-green-500', 'bg-green-50');
+                    dropzoneMurid.classList.remove('border-slate-300');
+                }
+
+                function unhighlight(e) {
+                    dropzoneMurid.classList.remove('border-green-500', 'bg-green-50');
+                    dropzoneMurid.classList.add('border-slate-300');
+                }
+
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    handleFiles(files);
+                }
+
+                function handleFiles(files) {
+                    if (files.length > 0) {
+                        const file = files[0];
+
+                        // Validasi tipe file
+                        const validTypes = ['application/vnd.ms-excel',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'text/csv'
+                        ];
+                        const validExtensions = ['.xlsx', '.xls', '.csv'];
+
+                        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+                        if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+                            alert('File harus berupa Excel (.xlsx, .xls) atau CSV');
+                            return;
+                        }
+
+                        // Validasi ukuran file (max 2MB)
+                        if (file.size > 2 * 1024 * 1024) {
+                            alert('Ukuran file maksimal 2MB');
+                            return;
+                        }
+
+                        // Set file ke input
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInputMurid.files = dataTransfer.files;
+
+                        // Tampilkan nama file
+                        const fileNameDisplay = dropzoneMurid.querySelector('p.text-xs');
+                        if (fileNameDisplay) {
+                            fileNameDisplay.textContent =
+                                `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                            fileNameDisplay.classList.remove('text-slate-500');
+                            fileNameDisplay.classList.add('text-green-600', 'font-medium');
+                        }
+
+                        // Ubah tampilan dropzone
+                        dropzoneMurid.innerHTML = `
+                    <div class="space-y-2 text-center">
+                        <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="text-sm">
+                            <p class="text-green-600 font-medium">${file.name}</p>
+                            <p class="text-slate-500 mt-1">Klik untuk mengganti file</p>
+                        </div>
+                    </div>
+                `;
+
+                        // Tambahkan kembali event listener untuk klik
+                        dropzoneMurid.addEventListener('click', function(e) {
+                            fileInputMurid.click();
+                        });
                     }
                 }
             });
+
+            // Reset form saat modal ditutup
+            document.getElementById('closeImportMuridModal')?.addEventListener('click', function() {
+                resetImportForm();
+            });
+
+            document.getElementById('cancelImportMuridBtn')?.addEventListener('click', function() {
+                resetImportForm();
+            });
+
+            document.getElementById('importMuridBackdrop')?.addEventListener('click', function() {
+                resetImportForm();
+            });
+
+            function resetImportForm() {
+                const dropzoneMurid = document.getElementById('dropzoneMurid');
+                const fileInputMurid = document.getElementById('file-upload-murid');
+
+                // Reset input file
+                if (fileInputMurid) {
+                    fileInputMurid.value = '';
+                }
+
+                // Reset tampilan dropzone
+                if (dropzoneMurid) {
+                    dropzoneMurid.innerHTML = `
+                <div class="space-y-2 text-center">
+                    <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-slate-600 justify-center">
+                        <label for="file-upload-murid" class="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none">
+                            <span>Pilih file</span>
+                            <input id="file-upload-murid" name="file" type="file" accept=".xlsx,.xls,.csv" required class="sr-only">
+                        </label>
+                        <p class="pl-1">atau drag and drop</p>
+                    </div>
+                    <p class="text-xs text-slate-500">Excel (.xlsx, .xls, .csv)</p>
+                </div>
+            `;
+
+                    // Re-initialize event listeners
+                    const newFileInput = dropzoneMurid.querySelector('#file-upload-murid');
+                    if (newFileInput) {
+                        newFileInput.addEventListener('change', function(e) {
+                            handleFiles(this.files);
+                        });
+
+                        dropzoneMurid.addEventListener('click', function(e) {
+                            if (e.target !== newFileInput) {
+                                newFileInput.click();
+                            }
+                        });
+                    }
+                }
+            }
+
         });
     </script>
 @endsection

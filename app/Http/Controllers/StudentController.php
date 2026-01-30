@@ -70,9 +70,16 @@ class StudentController extends Controller
 
     public function import(Request $request)
     {
-        Excel::import(new StudentImport, $request->file('file'));
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+        ]);
 
-        return back()->with('success', 'Import murid berhasil!');
+        try {
+            Excel::import(new StudentImport, $request->file('file'));
+            return back()->with('success', 'Import murid berhasil!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengimpor: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, $id)
