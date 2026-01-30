@@ -9,11 +9,8 @@ PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
 
 [deploy]
-preDeployCommand = """
-php artisan migrate --force
-php artisan db:seed --class=RoleAndPermissionSeeder --force
-php artisan db:seed --class=RoleUser --force
-"""
+preDeployCommand = "php artisan migrate --force"
+
 numReplicas = 1
 healthcheckPath = "/health"
 healthcheckTimeout = 60

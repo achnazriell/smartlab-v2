@@ -176,7 +176,7 @@
                                             class="font-mono text-slate-400">{{ $teacher->plain_password ?? '••••••••' }}</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
-                                        {{ $teacher->teacher->NIP ?? '-' }}</td>
+                                        {{ $teacher->teacher->nip ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <div class="flex items-center space-x-2">
                                             <!-- Perbaiki tombol Detail dengan styling yang lebih baik -->
@@ -266,7 +266,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                {{-- Modal Edit dengan Select2 untuk pilih kelas --}}
+
+                                {{-- Modal Edit - PERBAIKAN UTAMA DI SINI --}}
                                 <div id="editModal{{ $teacher->id }}" class="fixed inset-0 z-50 hidden"
                                     aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
                                     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -340,55 +341,26 @@
                                                         <div>
                                                             <label
                                                                 class="block text-sm font-medium text-slate-700 mb-1">NIP</label>
-                                                            <input type="text" name="NIP"
-                                                                value="{{ $teacher->teacher->NIP ?? '' }}" required
+                                                            <input type="text" name="nip"
+                                                                value="{{ $teacher->teacher->nip ?? '' }}"
                                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200 font-mono">
                                                         </div>
 
-                                                        <div>
-                                                            <label
-                                                                class="block text-sm font-medium text-slate-700 mb-1">Mata
-                                                                Pelajaran</label>
-                                                            {{-- Mengubah Mapel menjadi multiple select pada modal edit --}}
-                                                            <select name="subject_id[]"
-                                                                id="editSubjectSelect{{ $teacher->id }}" multiple
-                                                                required
-                                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors duration-200">
-                                                                @foreach ($subjects as $subject)
-                                                                    @php
-                                                                        $selectedSubjects = isset(
-                                                                            $teacher->teacher->subjects,
-                                                                        )
-                                                                            ? $teacher->teacher->subjects
-                                                                                ->pluck('id')
-                                                                                ->toArray()
-                                                                            : (isset($teacher->teacher->subject_id)
-                                                                                ? [$teacher->teacher->subject_id]
-                                                                                : []);
-                                                                    @endphp
-                                                                    <option value="{{ $subject->id }}"
-                                                                        {{ in_array($subject->id, $selectedSubjects) ? 'selected' : '' }}>
-                                                                        {{ $subject->name_subject }}
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-
-                                                        {{-- Kelas dengan Select2 dan pre-selected values --}}
+                                                        {{-- Kelas dengan Select2 (SAMA SEPERTI CREATE) --}}
                                                         <div>
                                                             <label
                                                                 class="block text-sm font-medium text-slate-700 mb-1">Kelas</label>
-                                                            {{-- Mengembalikan ke multiple select untuk Kelas pada modal edit --}}
-                                                            <select name="classes_id[]"
+                                                            <select name="class_id[]"
                                                                 id="editClassSelect{{ $teacher->id }}" multiple required
                                                                 class="edit-class-select-{{ $teacher->id }} w-full">
                                                                 @php
-                                                                    $selectedClasses =
-                                                                        $teacher->teacher && $teacher->teacher->classes
-                                                                            ? $teacher->teacher->classes
-                                                                                ->pluck('id')
-                                                                                ->toArray()
-                                                                            : [];
+                                                                    // Ambil data kelas yang sudah diajar oleh guru ini
+                                                                    $selectedClasses = [];
+                                                                    if ($teacher->teacher && $teacher->teacher->teacherClasses) {
+                                                                        foreach ($teacher->teacher->teacherClasses as $tc) {
+                                                                            $selectedClasses[] = $tc->classes_id;
+                                                                        }
+                                                                    }
                                                                 @endphp
                                                                 @foreach ($classes as $class)
                                                                     <option value="{{ $class->id }}"
@@ -401,6 +373,44 @@
                                                                 (bisa
                                                                 lebih dari satu)
                                                             </p>
+                                                        </div>
+
+                                                        {{-- Container untuk mata pelajaran per kelas --}}
+                                                        <div id="editSubjectPerClass{{ $teacher->id }}"
+                                                            class="space-y-4 mt-4">
+                                                            @php
+                                                                // Siapkan data mata pelajaran per kelas yang sudah ada
+                                                                $existingSubjects = [];
+                                                                if ($teacher->teacher && $teacher->teacher->teacherClasses) {
+                                                                    foreach ($teacher->teacher->teacherClasses as $tc) {
+                                                                        $existingSubjects[$tc->classes_id] = $tc->subjects->pluck('id')->toArray();
+                                                                    }
+                                                                }
+                                                            @endphp
+
+                                                            @if (!empty($existingSubjects))
+                                                                @foreach ($existingSubjects as $classId => $subjectIds)
+                                                                    @php
+                                                                        $class = $classes->find($classId);
+                                                                    @endphp
+                                                                    @if ($class)
+                                                                        <div class="subject-class-wrapper" data-class-id="{{ $classId }}">
+                                                                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                                                                Mata Pelajaran Kelas {{ $class->name_class }}
+                                                                            </label>
+                                                                            <select name="subjects[{{ $classId }}][]"
+                                                                                class="edit-subject-select edit-subject-{{ $teacher->id }} w-full" multiple required>
+                                                                                @foreach ($subjects as $subject)
+                                                                                    <option value="{{ $subject->id }}"
+                                                                                        {{ in_array($subject->id, $subjectIds) ? 'selected' : '' }}>
+                                                                                        {{ $subject->name_subject }}
+                                                                                    </option>
+                                                                                @endforeach
+                                                                            </select>
+                                                                        </div>
+                                                                    @endif
+                                                                @endforeach
+                                                            @endif
                                                         </div>
                                                     </div>
 
@@ -711,7 +721,7 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">NIP <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="NIP" required placeholder="Masukkan NIP"
+                                <input type="text" name="nip" required placeholder="Masukkan NIP"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono">
                             </div>
                             {{-- Mengubah Kelas menjadi Multiple Select --}}
@@ -744,8 +754,11 @@
         </div>
     </div>
 
-    {{-- Script dengan Select2 untuk modal edit kelas --}}
+    {{-- Script dengan Select2 --}}
     <script>
+        const subjects = @json($subjects);
+        const classes = @json($classes);
+
         function openDetailModal(id) {
             const modal = document.getElementById('detailModal' + id);
             modal.classList.remove('hidden');
@@ -761,33 +774,92 @@
         }
 
         function openEditModal(id) {
-            document.getElementById('editModal' + id).classList.remove('hidden');
+            const modal = document.getElementById('editModal' + id);
+            modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+
+            // Inisialisasi Select2 untuk kelas
             setTimeout(function() {
-                $('#editSubjectSelect' + id).select2({
-                    placeholder: '-- Pilih Mapel --',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $('#editModal' + id)
-                });
-                $('#editClassSelect' + id).select2({
+                $(`#editClassSelect${id}`).select2({
                     placeholder: '-- Pilih Kelas --',
                     allowClear: true,
                     width: '100%',
-                    dropdownParent: $('#editModal' + id)
+                    dropdownParent: $(`#editModal${id}`)
                 });
+
+                // Inisialisasi Select2 untuk mata pelajaran per kelas
+                $(`.edit-subject-${id}`).each(function() {
+                    $(this).select2({
+                        placeholder: '-- Pilih Mata Pelajaran --',
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $(`#editModal${id}`)
+                    });
+                });
+
+                // Event handler untuk perubahan pilihan kelas
+                $(`#editClassSelect${id}`).on('change', function() {
+                    updateEditSubjects(id);
+                });
+
+                // Jalankan sekali saat modal terbuka
+                updateEditSubjects(id);
             }, 100);
         }
 
+        function updateEditSubjects(teacherId) {
+            const container = $(`#editSubjectPerClass${teacherId}`);
+            const selectedClasses = $(`#editClassSelect${teacherId}`).select2('data');
+
+            // Hapus semua wrapper subject yang ada
+            container.find('.subject-class-wrapper').remove();
+
+            // Tambahkan select mata pelajaran untuk setiap kelas yang dipilih
+            selectedClasses.forEach(cls => {
+                const classId = cls.id;
+                const className = cls.text;
+
+                const wrapper = $(`
+                    <div class="subject-class-wrapper" data-class-id="${classId}">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Mata Pelajaran Kelas ${className}
+                        </label>
+                        <select name="subjects[${classId}][]"
+                            class="edit-subject-select edit-subject-${teacherId} w-full" multiple required>
+                            ${subjects.map(s =>
+                                `<option value="${s.id}">${s.name_subject}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                `);
+
+                container.append(wrapper);
+
+                // Inisialisasi Select2 untuk select baru
+                setTimeout(() => {
+                    wrapper.find(`.edit-subject-${teacherId}`).select2({
+                        placeholder: '-- Pilih Mata Pelajaran --',
+                        width: '100%',
+                        dropdownParent: $(`#editModal${teacherId}`)
+                    });
+                }, 50);
+            });
+        }
+
         function closeEditModal(id) {
-            document.getElementById('editModal' + id).classList.add('hidden');
+            const modal = document.getElementById('editModal' + id);
+            modal.classList.add('hidden');
             document.body.style.overflow = '';
-            if ($('#editSubjectSelect' + id).hasClass('select2-hidden-accessible')) {
-                $('#editSubjectSelect' + id).select2('destroy');
+
+            // Hancurkan instance Select2
+            if ($(`#editClassSelect${id}`).hasClass('select2-hidden-accessible')) {
+                $(`#editClassSelect${id}`).select2('destroy');
             }
-            if ($('#editClassSelect' + id).hasClass('select2-hidden-accessible')) {
-                $('#editClassSelect' + id).select2('destroy');
-            }
+            $(`.edit-subject-${id}`).each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2('destroy');
+                }
+            });
         }
 
         function openDeleteModal(id) {
@@ -822,6 +894,51 @@
             $('#addClassSelect').select2('destroy');
 
             document.getElementById('subject-per-class').innerHTML = '';
+        }
+
+        function initClassSelect() {
+            $('#addClassSelect').select2({
+                placeholder: '-- Pilih Kelas --',
+                width: '100%',
+                dropdownParent: $('#addModal')
+            });
+
+            $('#addClassSelect').on('change', function() {
+                const container = document.getElementById('subject-per-class');
+                container.innerHTML = '';
+
+                const selectedClasses = $(this).select2('data');
+
+                selectedClasses.forEach(cls => {
+                    const classId = cls.id;
+                    const className = cls.text;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = `
+                    <div class="subject-class-wrapper" data-class-id="${classId}">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Mata Pelajaran Kelas ${className}
+                        </label>
+                        <select name="subjects[${classId}][]"
+                            class="subject-select w-full" multiple required>
+                            ${subjects.map(s =>
+                                `<option value="${s.id}">${s.name_subject}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                `;
+
+                    container.appendChild(wrapper);
+                });
+
+                setTimeout(() => {
+                    $('.subject-select').select2({
+                        placeholder: '-- Pilih Mata Pelajaran --',
+                        width: '100%',
+                        dropdownParent: $('#addModal')
+                    });
+                }, 50);
+            });
         }
 
         $(document).ready(function() {
@@ -992,51 +1109,5 @@
                 }
             });
         });
-    </script>
-    <script>
-        const subjects = @json($subjects);
-
-        function initClassSelect() {
-            $('#addClassSelect').select2({
-                placeholder: '-- Pilih Kelas --',
-                width: '100%',
-                dropdownParent: $('#addModal')
-            });
-
-            $('#addClassSelect').on('change', function() {
-                const container = document.getElementById('subject-per-class');
-                container.innerHTML = '';
-
-                const selectedClasses = $(this).select2('data');
-
-                selectedClasses.forEach(cls => {
-                    const classId = cls.id;
-                    const className = cls.text;
-
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = `
-                    <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Mata Pelajaran Kelas ${className}
-                    </label>
-                    <select name="subjects[${classId}][]"
-                        class="subject-select w-full" multiple required>
-                        ${subjects.map(s =>
-                            `<option value="${s.id}">${s.name_subject}</option>`
-                        ).join('')}
-                    </select>
-                `;
-
-                    container.appendChild(wrapper);
-                });
-
-                setTimeout(() => {
-                    $('.subject-select').select2({
-                        placeholder: '-- Pilih Mata Pelajaran --',
-                        width: '100%',
-                        dropdownParent: $('#addModal')
-                    });
-                }, 50);
-            });
-        }
     </script>
 @endsection

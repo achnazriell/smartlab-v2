@@ -37,7 +37,7 @@ class TeacherController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%{$search}%")
                     ->orWhere('users.email', 'like', "%{$search}%")
-                    ->orWhere('teachers.NIP', 'like', "%{$search}%");
+                    ->orWhere('teachers.nip', 'like', "%{$search}%");
             });
         }
 
@@ -62,11 +62,11 @@ class TeacherController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|regex:/^\S*$/',
-            'NIP' => [
+            'nip' => [
                 'nullable',
                 'string',
                 new ValidNIPGuru,
-                'unique:teachers,NIP',
+                'unique:teachers,nip',
             ],
 
             'class_id' => 'required|array',
@@ -78,7 +78,7 @@ class TeacherController extends Controller
         ], [
             'class_id.required' => 'Minimal pilih satu kelas',
             'subjects.required' => 'Mapel per kelas wajib diisi',
-            'NIP.unique' => 'NIP sudah digunakan',
+            'nip.unique' => 'nip sudah digunakan',
             'password.regex' => 'Password tidak boleh mengandung spasi',
         ]);
 
@@ -96,7 +96,7 @@ class TeacherController extends Controller
         // 2️⃣ BUAT TEACHER (TANPA subject_id)
         $teacher = Teacher::create([
             'user_id' => $user->id,
-            'NIP' => $request->NIP,
+            'nip' => $request->nip,
         ]);
 
         foreach ($request->class_id as $classId) {
@@ -195,11 +195,11 @@ class TeacherController extends Controller
         $rules = [
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email,' . $id,
-            'NIP' => [
+            'nip' => [
                 'nullable',
                 'string',
                 new ValidNIPGuru,
-                Rule::unique('teachers', 'NIP')->ignore($user->teacher->id ?? null),
+                Rule::unique('teachers', 'nip')->ignore($user->teacher->id ?? null),
             ],
         ];
 
@@ -224,7 +224,7 @@ class TeacherController extends Controller
 
         // Update teacher
         $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
-        $teacher->NIP = $request->NIP;
+        $teacher->nip = $request->nip;
         $teacher->save();
 
         $teacher->subjects()->sync($request->subject_id);
