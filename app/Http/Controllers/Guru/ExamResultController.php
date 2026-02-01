@@ -30,11 +30,20 @@ class ExamResultController extends Controller
         $totalStudents = $exam->class->students()->count();
         $attempts = ExamAttempt::where('exam_id', $examId)
             ->whereIn('status', ['submitted', 'timeout'])
-            ->with('student')
             ->get();
+
+        // Load relasi secara manual
+        $studentIds = $attempts->pluck('student_id')->unique()->toArray();
+        $students = Student::with('user')->whereIn('id', $studentIds)->get()->keyBy('id');
+
+        // Attach students to attempts
+        $attempts->each(function ($attempt) use ($students) {
+            $attempt->student = $students->get($attempt->student_id);
+        });
 
         $totalAttempts = $attempts->count();
         $avgScore = $attempts->avg('final_score') ?? 0;
+
 
         // Distribusi nilai
         $scoreDistribution = [
@@ -47,12 +56,12 @@ class ExamResultController extends Controller
 
         // Analisis per soal
         $questions = ExamQuestion::where('exam_id', $examId)
-            ->withCount(['answers as correct_answers_count' => function($query) {
+            ->withCount(['answers as correct_answers_count' => function ($query) {
                 $query->where('is_correct', true);
             }])
             ->withCount('answers')
             ->get()
-            ->map(function($question) {
+            ->map(function ($question) {
                 $question->accuracy = $question->answers_count > 0
                     ? round(($question->correct_answers_count / $question->answers_count) * 100, 1)
                     : 0;
@@ -185,7 +194,6 @@ class ExamResultController extends Controller
                 'total_score' => $totalScore,
                 'final_score' => round($finalScore, 2)
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -247,7 +255,6 @@ class ExamResultController extends Controller
                 'total_score' => $totalScore,
                 'final_score' => round($finalScore, 2)
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -288,7 +295,6 @@ class ExamResultController extends Controller
                 'success' => true,
                 'message' => 'Attempt berhasil direset, siswa dapat mengulang ujian'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -348,20 +354,20 @@ class ExamResultController extends Controller
             ->firstOrFail();
 
         $questions = ExamQuestion::where('exam_id', $examId)
-            ->with(['choices' => function($query) {
+            ->with(['choices' => function ($query) {
                 $query->orderBy('order');
             }])
-            ->withCount(['answers as correct_answers_count' => function($query) {
+            ->withCount(['answers as correct_answers_count' => function ($query) {
                 $query->where('is_correct', true);
             }])
             ->withCount('answers')
-            ->withCount(['answers as choice_selections' => function($query) use ($examId) {
+            ->withCount(['answers as choice_selections' => function ($query) use ($examId) {
                 $query->select(DB::raw('choice_id, COUNT(*) as count'))
                     ->whereNotNull('choice_id')
                     ->groupBy('choice_id');
             }])
             ->get()
-            ->map(function($question) use ($examId) {
+            ->map(function ($question) use ($examId) {
                 // Hitung akurasi
                 $question->accuracy = $question->answers_count > 0
                     ? round(($question->correct_answers_count / $question->answers_count) * 100, 1)

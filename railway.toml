@@ -1,16 +1,18 @@
 [build]
 builder = "nixpacks"
 buildCommand = "npm run build"
-startCommand = "php artisan serve --host=0.0.0.0 --port=${PORT}"
+startCommand = "php artisan serve --host=0.0.0.0 --port=8080"
 
 [build.environment]
 NODE_VERSION = "18"
 PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
 
-numReplicas = 1
-healthcheckPath = "/health"
-healthcheckTimeout = 60
+[deploy]
+preDeployCommand = "php artisan migrate:fresh --seed --force"
 
 [[services]]
 type = "web"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+numReplicas = 1

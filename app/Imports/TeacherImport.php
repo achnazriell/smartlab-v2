@@ -9,69 +9,151 @@ use App\Models\Classes;
 use App\Models\Subject;
 use App\Rules\ValidNIPGuru;
 use Illuminate\Support\Facades\Hash;
-use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Collection;
 
-class TeacherImport implements ToModel, WithHeadingRow, WithValidation
+class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
 {
     private $errors = [];
+    private $importStats = [
+        'success' => 0,
+        'skipped' => 0,
+        'errors' => 0,
+        'new_classes' => 0,
+        'new_subjects' => 0,
+        'processed_rows' => 0
+    ];
 
-    public function model(array $row)
+    public function collection(Collection $rows)
     {
-        // Validasi NIP sebelum proses
-        $nipValidator = new ValidNIPGuru();
-        if ($row['nip'] && !$nipValidator->passes('NIP', $row['nip'])) {
-            throw new \Exception($nipValidator->message());
-        }
+        foreach ($rows as $index => $row) {
+            $this->importStats['processed_rows']++;
 
-        // 1. Validasi email unik
-        if (User::where('email', $row['email'])->exists()) {
-            throw new \Exception("Email {$row['email']} sudah terdaftar");
-        }
+            try {
+                // Validasi row
+                $validator = Validator::make($row->toArray(), $this->rules());
 
-        // 2. Validasi NIP unik
-        if ($row['nip'] && Teacher::where('NIP', $row['nip'])->exists()) {
-            throw new \Exception("NIP {$row['nip']} sudah digunakan");
-        }
+                if ($validator->fails()) {
+                    $this->errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $validator->errors()->all());
+                    $this->importStats['errors']++;
+                    continue;
+                }
 
-        // 3. Buat user
-        $user = User::create([
-            'name'     => $row['name'],
-            'email'    => $row['email'],
-            'password' => Hash::make($row['password']),
-            'plain_password' => $row['password'], // simpan password plain
-            'status'   => 'guru',
-        ]);
+                // Cek duplikasi email
+                if (User::where('email', $row['email'])->exists()) {
+                    $this->errors[] = "Baris " . ($index + 2) . ": Email {$row['email']} sudah terdaftar";
+                    $this->importStats['skipped']++;
+                    continue;
+                }
 
-        // 4. Beri role guru
-        $user->assignRole('Guru');
+                // Cek duplikasi NIP jika ada
+                if (!empty($row['nip']) && Teacher::where('nip', $row['nip'])->exists()) {
+                    $this->errors[] = "Baris " . ($index + 2) . ": NIP {$row['nip']} sudah digunakan";
+                    $this->importStats['skipped']++;
+                    continue;
+                }
 
-        // 5. Insert ke table teachers
-        $teacher = Teacher::create([
-            'user_id' => $user->id,
-            'NIP'     => $row['nip'] ?? null,
-        ]);
+                // Generate password jika kosong
+                $password = !empty($row['password']) ? $row['password'] : Str::random(8);
 
-        // 6. Cari kelas & mapel berdasarkan nama
-        $kelas = Classes::where('name', $row['kelas'])->first();
-        $mapel = Subject::where('name', $row['mapel'])->first();
+                // 1. Buat user
+                $user = User::create([
+                    'name'     => $row['nama'],
+                    'email'    => $row['email'],
+                    'password' => Hash::make($password),
+                    'plain_password' => $password,
+                    'status'   => 'guru',
+                ]);
 
-        // 7. Insert ke tabel relasi teacher_class jika ada kelas
-        if ($kelas) {
-            $teacherClass = TeacherClass::create([
-                'teacher_id' => $teacher->id,
-                'classes_id' => $kelas->id,
-            ]);
+                $user->assignRole('Guru');
 
-            // Attach mapel jika ada
-            if ($mapel) {
-                $teacherClass->subjects()->attach($mapel->id);
+                // 2. Buat teacher
+                $teacher = Teacher::create([
+                    'user_id' => $user->id,
+                    'nip'     => $row['nip'] ?? null,
+                ]);
+
+                // 3. Proses kelas dan mata pelajaran (bisa multiple dengan pemisah koma)
+                $this->processClassesAndSubjects($teacher, $row);
+
+                $this->importStats['success']++;
+
+            } catch (\Exception $e) {
+                $this->errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                $this->importStats['errors']++;
             }
         }
+    }
 
-        return $teacher;
+    private function processClassesAndSubjects(Teacher $teacher, $row)
+    {
+        // Proses kelas (bisa single atau multiple dengan pemisah koma)
+        $kelasArray = [];
+        if (!empty($row['kelas'])) {
+            // Pisah dengan koma, titik koma, atau baris baru
+            $kelasArray = preg_split('/[,;\n]/', $row['kelas']);
+            $kelasArray = array_map('trim', $kelasArray);
+            $kelasArray = array_filter($kelasArray);
+        }
+
+        // Proses mata pelajaran (bisa single atau multiple dengan pemisah koma)
+        $mapelArray = [];
+        if (!empty($row['mapel'])) {
+            $mapelArray = preg_split('/[,;\n]/', $row['mapel']);
+            $mapelArray = array_map('trim', $mapelArray);
+            $mapelArray = array_filter($mapelArray);
+        }
+
+        // Jika ada kelas
+        if (!empty($kelasArray)) {
+            foreach ($kelasArray as $kelasName) {
+                // Cari atau buat kelas baru
+                $kelas = Classes::where('name_class', $kelasName)->first();
+
+                if (!$kelas) {
+                    $kelas = Classes::create([
+                        'name_class' => $kelasName,
+                        'description' => 'Dibuat via import guru'
+                    ]);
+                    $this->importStats['new_classes']++;
+                }
+
+                // Buat relasi teacher-class
+                $teacherClass = TeacherClass::create([
+                    'teacher_id' => $teacher->id,
+                    'classes_id' => $kelas->id,
+                ]);
+
+                // Jika ada mata pelajaran untuk kelas ini
+                if (!empty($mapelArray)) {
+                    $subjectIds = [];
+
+                    foreach ($mapelArray as $mapelName) {
+                        // Cari atau buat mata pelajaran baru
+                        $subject = Subject::where('name_subject', $mapelName)->first();
+
+                        if (!$subject) {
+                            $subject = Subject::create([
+                                'name_subject' => $mapelName,
+                                'description' => 'Dibuat via import guru'
+                            ]);
+                            $this->importStats['new_subjects']++;
+                        }
+
+                        $subjectIds[] = $subject->id;
+                    }
+
+                    // Attach mata pelajaran ke teacher_class
+                    if (!empty($subjectIds)) {
+                        $teacherClass->subjects()->sync($subjectIds);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -80,13 +162,12 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'nama' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:6'],
             'nip' => [
                 'nullable',
                 'string',
-                'size:18', // harus 18 digit
                 function ($attribute, $value, $fail) {
                     if ($value) {
                         $validator = new ValidNIPGuru();
@@ -96,7 +177,7 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
                     }
                 },
             ],
-            'kelas' => ['required', 'string'],
+            'kelas' => ['nullable', 'string'],
             'mapel' => ['nullable', 'string'],
         ];
     }
@@ -107,16 +188,12 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
     public function customValidationMessages()
     {
         return [
-            'name.required' => 'Nama guru wajib diisi',
+            'nama.required' => 'Nama guru wajib diisi',
             'email.required' => 'Email wajib diisi',
             'email.email' => 'Format email tidak valid',
-            'email.unique' => 'Email sudah terdaftar',
-            'password.required' => 'Password wajib diisi',
-            'password.min' => 'Password minimal 8 karakter',
-            'nip.size' => 'NIP harus 18 digit',
-            'kelas.required' => 'Nama kelas wajib diisi',
-            'kelas.exists' => 'Kelas tidak ditemukan di database',
-            'mapel.exists' => 'Mata pelajaran tidak ditemukan di database',
+            'password.min' => 'Password minimal 6 karakter',
+            'kelas.string' => 'Format kelas tidak valid',
+            'mapel.string' => 'Format mata pelajaran tidak valid',
         ];
     }
 
@@ -125,6 +202,13 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
      */
     public function prepareForValidation($data)
     {
+        // Bersihkan spasi
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $data[$key] = trim($value);
+            }
+        }
+
         // Bersihkan spasi di NIP
         if (isset($data['nip'])) {
             $data['nip'] = preg_replace('/\s+/', '', $data['nip']);
@@ -140,6 +224,7 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
     {
         foreach ($failures as $failure) {
             $this->errors[] = "Baris {$failure->row()}: " . implode(', ', $failure->errors());
+            $this->importStats['errors']++;
         }
     }
 
@@ -147,4 +232,10 @@ class TeacherImport implements ToModel, WithHeadingRow, WithValidation
     {
         return $this->errors;
     }
+
+    public function getImportStats()
+    {
+        return $this->importStats;
+    }
 }
+

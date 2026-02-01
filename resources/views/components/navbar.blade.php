@@ -141,7 +141,7 @@
     <div class="container mx-auto flex items-center justify-between h-full">
         <!-- Logo -->
         <div class="flex items-center">
-            <img src="{{ asset('image/LogoSmartLab.webp') }}" alt="Logo SmartLab" class="h-8 sm:h-10 w-auto">
+            <img src="{{ asset('image/logosl.webp') }}" alt="Logo SmartLab" class="h-8 sm:h-10 w-auto">
         </div>
 
         <!-- Menu untuk Desktop -->
@@ -195,7 +195,7 @@
                         <div class="px-4 py-3 border-b border-gray-200">
                             <p class="text-sm font-semibold text-gray-900">{{ auth()->user()->name }}</p>
                             <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
-                        </div>  
+                        </div>
                         <div class="border-t border-gray-200">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

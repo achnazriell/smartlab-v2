@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Smart-Lab</title>
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <link rel="icon" type="image/webp" href="{{ asset('image/logo.webp') }}">
-    @vite([ 'resources/js/app.js'])
+
+    <link rel="icon" type="image/webp" href="{{ asset(path: 'image/logo.webp') }}">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         /* Added centered card design animations */

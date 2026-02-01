@@ -78,11 +78,24 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     // Resources
     Route::resource('subject', SubjectController::class);
-    Route::resource('classes', ClassesController::class);
-    Route::resource('comments', CommentController::class);
-    Route::resource('teachers', TeacherController::class);
-    Route::resource('students', StudentController::class);
+    Route::post('/subject/import', [SubjectController::class, 'import'])->name('subject.import');
 
+    Route::resource('classes', ClassesController::class);
+    Route::post('/classes/import', [ClassesController::class, 'import'])->name('classes.import');
+    Route::resource('comments', CommentController::class);
+    // Teacher Routes
+    Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
+    Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
+    Route::put('/teachers/{id}', [TeacherController::class, 'update'])->name('teachers.update');
+    Route::delete('/teachers/{id}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
+    Route::post('/teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
+    Route::get('/teachers/{teacher}/detail', [TeacherController::class, 'detail'])->name('teachers.detail');
+    Route::get('/teachers/download-template', [TeacherController::class, 'downloadTemplate'])->name('teachers.download-template');
+    Route::get('/teachers/export', [TeacherController::class, 'exportFiltered'])->name('teachers.export');
+    // Student Routes
+    Route::resource('students', StudentController::class);
+    Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
+    Route::get('/students/export-template', [StudentController::class, 'exportTemplate'])->name('students.export-template');
     // Custom Routes
     Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/Students', [StudentController::class, 'index'])->name('Students');
