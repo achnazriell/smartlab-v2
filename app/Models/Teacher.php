@@ -43,12 +43,13 @@ class Teacher extends Model
     public function subjects()
     {
         return $this->belongsToMany(
-            Subject::class,
+            \App\Models\Subject::class,
             'teacher_subjects',
             'teacher_id',
             'subject_id'
         );
     }
+
 
     // app/Models/Teacher.php
     public function getSapaanAttribute(): ?string

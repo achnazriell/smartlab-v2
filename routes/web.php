@@ -1,80 +1,94 @@
 <?php
 
-use App\Http\Controllers\Guru\ExamController as GuruExamController;
-use App\Http\Controllers\Guru\QuestionController as GuruQuestionController;
-use App\Http\Controllers\Murid\ExamController as MuridExamController;
-use App\Http\Controllers\Guru\ExamResultController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CariController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\MateriController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ClassesController;
-use App\Http\Controllers\CommentController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\SubjectController;
-use App\Http\Controllers\TeacherController;
-use App\Http\Controllers\HomeguruController;
-use App\Http\Controllers\AssessmentController;
-use App\Http\Controllers\CollectionController;
-use App\Http\Controllers\SelectClassController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\BerandaController;
-use App\Http\Controllers\FeedbackController;
-use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
-use App\Http\Controllers\Guru\ClassController;
-use App\Http\Controllers\LandingController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\UserPageController;
 use Illuminate\Http\Request;
 
+// ==================== CONTROLLER IMPORTS ====================
+use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HomeguruController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserPageController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\CariController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\MateriController;
+use App\Http\Controllers\ClassesController;
+use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\CommentController;
+
+// Guru Controllers
+use App\Http\Controllers\Guru\ExamController as GuruExamController;
+use App\Http\Controllers\Guru\QuestionController as GuruQuestionController;
+use App\Http\Controllers\Guru\ClassController as GuruClassController;
+use App\Http\Controllers\Guru\ExamResultController;
+
+// Murid Controllers
+use App\Http\Controllers\Murid\ExamController as MuridExamController;
+
+// Admin Controllers
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+
+// ==================== AUTHENTICATION ROUTES ====================
 Auth::routes(['register' => false]);
+
+// Custom logout
+Route::post('/logout', function (Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return redirect('/Beranda');
+})->name('logout');
+
+// Health check
 Route::get('/health', function () {
     return response('OK', 200);
 });
 
-
-Route::post('/logout', function (Request $request) {
-    Auth::logout();
-
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-
-    return redirect('/Beranda');
-})->name('logout');
-
-
-// ==================== LANDING & AUTH ROUTES ====================
+// ==================== LANDING & PUBLIC ROUTES ====================
 Route::get('/', function () {
     return redirect('/Beranda');
 });
 
-Route::get('/Beranda', [BerandaController::class, 'index']);
-Route::get('/Fitur', [BerandaController::class, 'features']);
-Route::get('/Tentang', [BerandaController::class, 'about']);
-Route::get('/Kontak', [BerandaController::class, 'contact']);
-
-// ==================== PROFILE ROUTES (UNTUK SEMUA USER) ====================
-// Profile Routes
-Route::prefix('profile')->name('profile.')->group(function () {
-    Route::get('/', [ProfileController::class, 'index'])->name('index');
-    Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
-    Route::delete('/delete-photo', [ProfileController::class, 'deletePhoto'])->name('delete-photo');
+Route::controller(BerandaController::class)->group(function () {
+    Route::get('/Beranda', 'index')->name('beranda');
+    Route::get('/Fitur', 'features')->name('features');
+    Route::get('/Tentang', 'about')->name('about');
+    Route::get('/Kontak', 'contact')->name('contact');
 });
+
+// ==================== SHARED AUTHENTICATED ROUTES ====================
 Route::middleware(['auth'])->group(function () {
-    // Feedback routes
-    Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedbacks.index');
-    Route::get('/feedback/create', [FeedbackController::class, 'create'])->name('feedbacks.create');
-    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedbacks.store');
-    Route::delete('/feedback/{feedback}', [FeedbackController::class, 'destroy'])->name('feedbacks.destroy');
+    // Profile Routes
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'index'])->name('index');
+        Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('update-photo');
+        Route::delete('/delete-photo', [ProfileController::class, 'deletePhoto'])->name('delete-photo');
+    });
+
+    // Feedback Routes
+    Route::prefix('feedback')->name('feedbacks.')->group(function () {
+        Route::get('/', [FeedbackController::class, 'index'])->name('index');
+        Route::get('/create', [FeedbackController::class, 'create'])->name('create');
+        Route::post('/', [FeedbackController::class, 'store'])->name('store');
+        Route::delete('/{feedback}', [FeedbackController::class, 'destroy'])->name('destroy');
+    });
+
+    // Search (Available for all authenticated users)
+    Route::get('/search', [SearchController::class, 'index'])->name('search');
 });
 
 // ==================== ADMIN ROUTES ====================
+// PERBAIKAN: Gunakan 'role:Admin' bukan 'role:Admin'
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     // Dashboard
-    Route::get('/admin/dashboard', [HomeController::class, 'index'])->name('home');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // Resources
     Route::resource('subject', SubjectController::class);
@@ -82,153 +96,136 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     Route::resource('classes', ClassesController::class);
     Route::post('/classes/import', [ClassesController::class, 'import'])->name('classes.import');
+
     Route::resource('comments', CommentController::class);
-    // Teacher Routes
-    Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
-    Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
-    Route::put('/teachers/{id}', [TeacherController::class, 'update'])->name('teachers.update');
-    Route::delete('/teachers/{id}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
-    Route::post('/teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
-    Route::get('/teachers/{teacher}/detail', [TeacherController::class, 'detail'])->name('teachers.detail');
-    Route::get('/teachers/download-template', [TeacherController::class, 'downloadTemplate'])->name('teachers.download-template');
-    Route::get('/teachers/export', [TeacherController::class, 'exportFiltered'])->name('teachers.export');
-    // Student Routes
+
+    // Teacher Management
+    Route::prefix('teachers')->name('teachers.')->group(function () {
+        Route::get('/', [TeacherController::class, 'index'])->name('index');
+        Route::post('/', [TeacherController::class, 'store'])->name('store');
+        Route::put('/{id}', [TeacherController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TeacherController::class, 'destroy'])->name('destroy');
+        Route::post('/import', [TeacherController::class, 'import'])->name('import');
+        Route::get('/{teacher}/detail', [TeacherController::class, 'detail'])->name('detail');
+        Route::get('/download-template', [TeacherController::class, 'downloadTemplate'])->name('download-template');
+        Route::get('/export', [TeacherController::class, 'exportFiltered'])->name('export');
+        Route::put('/update/{teacher}', [TeacherController::class, 'updateAssign'])->name('updateAssign');
+    });
+
+    // Student Management
     Route::resource('students', StudentController::class);
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
     Route::get('/students/export-template', [StudentController::class, 'exportTemplate'])->name('students.export-template');
-    // Custom Routes
-    Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/Students', [StudentController::class, 'index'])->name('Students');
-    Route::post('/teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
-    Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
-    Route::get('/teachers/{teacher}/detail', [TeacherController::class, 'detail']);
+    Route::put('/student/{student}', [StudentController::class, 'assign'])->name('murid.assignMurid');
 
     // Class Approval
     Route::post('/approve', [StudentController::class, 'store'])->name('class.approval.store');
     Route::put('/class-approvals/{id}/approve', [StudentController::class, 'approve'])->name('class-approvals.approve');
     Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])->name('class.approval.reject');
 
-    // Feedback routes
-    Route::get('/admin/feedback', [AdminFeedbackController::class, 'index'])->name('feedback.index');
-    Route::get('/admin/feedback/{feedback}', [AdminFeedbackController::class, 'show'])->name('feedback.show');
-    Route::put('/admin/feedback/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('feedback.update-status');
-    Route::delete('/admin/feedback/{feedback}', [AdminFeedbackController::class, 'destroy'])->name('feedback.destroy');
-    Route::post('/admin/feedback/mark-all-read', [AdminFeedbackController::class, 'markAllAsRead'])->name('feedback.mark-all-read');
-
-    // Student Assignment
-    Route::put('/student/{student}', [StudentController::class, 'assign'])->name('murid.assignMurid');
-    Route::put('/update/{teacher}', [TeacherController::class, 'updateAssign'])->name('teacher.updateAssign');
+    // Admin Feedback Management
+    Route::prefix('admin/feedback')->name('feedback.')->group(function () {
+        Route::get('/', [AdminFeedbackController::class, 'index'])->name('index');
+        Route::get('/{feedback}', [AdminFeedbackController::class, 'show'])->name('show');
+        Route::put('/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('update-status');
+        Route::delete('/{feedback}', [AdminFeedbackController::class, 'destroy'])->name('destroy');
+        Route::post('/mark-all-read', [AdminFeedbackController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
 });
 
 // ==================== GURU ROUTES ====================
-Route::middleware(['auth', 'role:Guru|Admin'])->group(function () {
-    // Dashboard
+// PERBAIKAN: Pisahkan route Guru dan Admin jika ada konflik
+Route::middleware(['auth', 'role:Guru'])->group(function () {
+    // Dashboard Guru
     Route::get('/teacher/dashboard', [HomeguruController::class, 'index'])->name('homeguru');
     Route::get('/teacher/dashboard/class-details/{classId}', [HomeguruController::class, 'getClassDetails']);
 
     // Resources
     Route::resource('materis', MateriController::class);
     Route::resource('tasks', TaskController::class);
-    Route::get('/cari', [CariController::class, 'index'])->name('cari');
 
     // Collections & Assessments
     Route::get('/assessment/{task}', [AssessmentController::class, 'index'])->name('assesments');
-    Route::get('/collections/task/{task}', [CollectionController::class, 'byTask'])
-        ->name('collections.byTask');
+    Route::get('/collections/task/{task}', [CollectionController::class, 'byTask'])->name('collections.byTask');
     Route::post('/assessments/store/{task}', [AssessmentController::class, 'store'])->name('assessments.store');
 
-    // AJAX Routes
-    Route::get('/guru/subjects/{subject}/materi', function ($subjectId) {
-        return \App\Models\Materi::where('subject_id', $subjectId)
-            ->where('user_id', auth()->id())
-            ->get();
+    // Search for Guru
+    Route::get('/cari', [CariController::class, 'index'])->name('cari');
+
+    // AJAX Helper Routes
+    Route::prefix('guru')->group(function () {
+        Route::get('/subjects/{subject}/materi', function ($subjectId) {
+            return \App\Models\Materi::where('subject_id', $subjectId)
+                ->where('user_id', auth()->id())
+                ->get();
+        });
+
+        Route::get('/subjects/{subject}/classes', function ($subjectId) {
+            $teacher = auth()->user()->teacher;
+            return $teacher->teacherClasses()
+                ->whereHas('subjects', function ($q) use ($subjectId) {
+                    $q->where('subjects.id', $subjectId);
+                })
+                ->with('classes')
+                ->get()
+                ->pluck('classes')
+                ->unique('id')
+                ->values();
+        });
+
+        Route::get('/materi/{materi}/kelas', function ($materiId) {
+            return \App\Models\Materi::where('id', $materiId)
+                ->with('classes:id,name_class')
+                ->firstOrFail()
+                ->classes
+                ->unique('id')
+                ->values();
+        });
     });
 
-    Route::get('/guru/subjects/{subject}/classes', function ($subjectId) {
-        $teacher = auth()->user()->teacher;
-
-        return $teacher
-            ->teacherClasses()
-            ->whereHas('subjects', function ($q) use ($subjectId) {
-                $q->where('subjects.id', $subjectId);
-            })
-            ->with('classes')
-            ->get()
-            ->pluck('classes')
-            ->unique('id')
-            ->values();
-    });
-
-    Route::get('/guru/materi/{materi}/kelas', function ($materiId) {
-        return \App\Models\Materi::where('id', $materiId)
-            ->with('classes:id,name_class')
-            ->firstOrFail()
-            ->classes
-            ->unique('id')
-            ->values();
-    });
-
-    Route::get('/guru/kelas', [HomeguruController::class, 'kelasSaya'])
-        ->name('guru.kelas');
-
-    // Route untuk kelas
+    // Kelas Routes
     Route::prefix('class')->name('class.')->group(function () {
-        Route::get('/', [ClassController::class, 'index'])->name('index');
-        Route::get('/{kelas}/students', [ClassController::class, 'showStudents'])->name('students');
-        Route::get('/{kelas}/students/{siswa}', [ClassController::class, 'showStudentDetail'])->name('student-detail');
+        Route::get('/', [GuruClassController::class, 'index'])->name('index');
+        Route::get('/{kelas}/students', [GuruClassController::class, 'showStudents'])->name('students');
+        Route::get('/{kelas}/students/{siswa}', [GuruClassController::class, 'showStudentDetail'])->name('student-detail');
     });
 
-    // ==================== EXAM ROUTES FOR TEACHER ====================
+    Route::get('/guru/kelas', [HomeguruController::class, 'kelasSaya'])->name('guru.kelas');
+
+    // ==================== GURU EXAM ROUTES ====================
     Route::prefix('guru')->name('guru.')->group(function () {
         // Exams Resource
         Route::resource('exams', GuruExamController::class);
 
-        Route::get('exams/{exam}/soal', [GuruExamController::class, 'soal'])
-            ->name('exams.soal');
-        Route::post('exams/{exam}/soal', [GuruExamController::class, 'storeQuestion'])
-            ->name('exams.store-question');
+        // Exam Specific Routes
+        Route::get('exams/{exam}/soal', [GuruExamController::class, 'soal'])->name('exams.soal');
+        Route::post('exams/{exam}/soal', [GuruExamController::class, 'storeQuestion'])->name('exams.store-question');
+        Route::get('exams/get-classes-by-subject/{subjectId}', [GuruExamController::class, 'getClassesBySubject'])->name('exams.get-classes-by-subject');
+        Route::put('exams/{exam}/update-status', [GuruExamController::class, 'updateStatus'])->name('exams.update-status');
+        Route::post('exams/{exam}/finalize', [GuruExamController::class, 'finalize'])->name('exams.finalize');
+        Route::post('exams/{exam}/toggle-status', [GuruExamController::class, 'toggleStatus'])->name('exams.toggle-status');
+        Route::post('exams/{exam}/duplicate', [GuruExamController::class, 'duplicate'])->name('exams.duplicate');
+        Route::get('exams/{exam}/results', [GuruExamController::class, 'results'])->name('exams.results');
+        Route::get('exams/{exam}/results/export', [GuruExamController::class, 'exportResults'])->name('exams.results.export');
+        Route::get('exams/{exam}/preview', [GuruExamController::class, 'preview'])->name('exams.preview');
+        Route::post('exams/{exam}/publish', [GuruExamController::class, 'publish'])->name('exams.publish');
+        Route::post('exams/{exam}/unpublish', [GuruExamController::class, 'unpublish'])->name('exams.unpublish');
+        Route::get('/exams/{id}/edit', [GuruExamController::class, 'edit'])->name('exams.edit');
+        Route::put('/exams/{id}', [GuruExamController::class, 'update'])->name('exams.update');
 
-        // Route untuk AJAX get classes by subject
-        Route::get('exams/get-classes-by-subject/{subjectId}', [GuruExamController::class, 'getClassesBySubject'])
-            ->name('exams.get-classes-by-subject');
-        Route::put('exams/{exam}/update-status', [GuruExamController::class, 'updateStatus'])
-            ->name('exams.update-status');
 
         // Questions Routes
         Route::prefix('exams/{exam}')->group(function () {
-            Route::get('/questions/create', [GuruQuestionController::class, 'create'])
-                ->name('exams.questions.create');
-            Route::post('/questions', [GuruQuestionController::class, 'store'])
-                ->name('exams.questions.store');
-            Route::get('/questions/{question}', [GuruQuestionController::class, 'show'])
-                ->name('exams.questions.show');
-            Route::get('/questions/{question}/edit', [GuruQuestionController::class, 'edit'])
-                ->name('exams.questions.edit');
-            Route::put('/questions/{question}', [GuruQuestionController::class, 'update'])
-                ->name('exams.questions.update');
-            Route::delete('/questions/{question}', [GuruQuestionController::class, 'destroy'])
-                ->name('exams.questions.destroy');
-            Route::post('/finalize', [GuruExamController::class, 'finalize'])->name('exams.finalize');
+            Route::get('/questions/create', [GuruQuestionController::class, 'create'])->name('exams.questions.create');
+            Route::post('/questions', [GuruQuestionController::class, 'store'])->name('exams.questions.store');
+            Route::get('/questions/{question}', [GuruQuestionController::class, 'show'])->name('exams.questions.show');
+            Route::get('/questions/{question}/edit', [GuruQuestionController::class, 'edit'])->name('exams.questions.edit');
+            Route::put('/questions/{question}', [GuruQuestionController::class, 'update'])->name('exams.questions.update');
+            Route::delete('/questions/{question}', [GuruQuestionController::class, 'destroy'])->name('exams.questions.destroy');
         });
 
-        // Additional Exam Routes
-        Route::post('exams/{exam}/toggle-status', [GuruExamController::class, 'toggleStatus'])
-            ->name('exams.toggle-status');
-        Route::post('exams/{exam}/duplicate', [GuruExamController::class, 'duplicate'])
-            ->name('exams.duplicate');
-        Route::get('exams/{exam}/results', [GuruExamController::class, 'results'])
-            ->name('exams.results');
-        Route::get('exams/{exam}/results/export', [GuruExamController::class, 'exportResults'])
-            ->name('exams.results.export');
-        Route::get('exams/{exam}/preview', [GuruExamController::class, 'preview'])
-            ->name('exams.preview');
-        Route::post('exams/{exam}/publish', [GuruExamController::class, 'publish'])
-            ->name('exams.publish');
-        Route::post('exams/{exam}/unpublish', [GuruExamController::class, 'unpublish'])
-            ->name('exams.unpublish');
-
         // Exam Results Management
-        // Exam Results Management - TARUH SETELAH resource('exams')
         Route::prefix('exams/{exam}/results')->name('exams.results.')->group(function () {
             Route::get('/', [ExamResultController::class, 'index'])->name('index');
             Route::get('/{attempt}', [ExamResultController::class, 'show'])->name('show');
@@ -242,91 +239,110 @@ Route::middleware(['auth', 'role:Guru|Admin'])->group(function () {
     });
 });
 
-// ==================== MURID ROUTES ====================
-Route::middleware('auth')->group(function () {
-    // Dashboard & Subjects
-    Route::get('/dashboard', [UserPageController::class, 'Dashboard'])->name('dashboard');
-    Route::get('/mapel', [UserPageController::class, 'showSubject'])->name('mapel');
+// ==================== ADMIN ACCESS TO GURU ROUTES ====================
+// Route khusus untuk Admin yang ingin mengakses fitur Guru
+Route::middleware(['auth', 'role:Admin'])->group(function () {
+    // Admin bisa mengakses dashboard guru dengan route yang berbeda
+    Route::get('/admin/teacher/dashboard', [HomeguruController::class, 'index'])->name('admin.homeguru');
 
-    // Materi
-    Route::get('/materi/{materi_id}', [UserPageController::class, 'showMateriBySubject'])->name('Materi');
+    // Admin bisa melihat materi
+    Route::get('/admin/materis', [MateriController::class, 'index'])->name('admin.materis.index');
+
+    // Tambahkan route lain yang perlu diakses Admin sebagai Guru
+});
+
+// ==================== MURID ROUTES ====================
+Route::middleware(['auth', 'role:Murid'])->group(function () {
+    // Dashboard & Main Pages
+    Route::get('/student/dashboard', [UserPageController::class, 'Dashboard'])->name('dashboard');
+    Route::get('/mapel', [UserPageController::class, 'showSubject'])->name('mapel');
+    Route::get('/tugas', [UserPageController::class, 'showTask'])->name('Tugas');
+
+    // Materi Routes
     Route::get('/semuamateri', [UserPageController::class, 'showAllMateri'])->name('semuamateri');
+    Route::get('/materi/{materi_id}', [UserPageController::class, 'showMateriBySubject'])->name('Materi');
     Route::get('/siswa/materi/{id}', [UserPageController::class, 'showMateri'])->name('materi.show');
 
     // Tasks
-    Route::get('/tugas', [UserPageController::class, 'showTask'])->name('Tugas');
-    Route::put('/tasks/{task_id}/collection', [CollectionController::class, 'updateCollection'])
-        ->name('updateCollection');
+    Route::put('/tasks/{task_id}/collection', [CollectionController::class, 'updateCollection'])->name('updateCollection');
 
-    // ==================== SOAL/KUIS ROUTES FOR STUDENT ====================
+    // ==================== MURID EXAM ROUTES ====================
     Route::prefix('soal')->name('soal.')->group(function () {
-        // Halaman daftar soal/kuis
-        Route::get('/', [UserPageController::class, 'showSoal'])->name('index');
+        // Exam Listing
+        Route::get('/list', [UserPageController::class, 'showSoal'])->name('list');
+        Route::get('/', [MuridExamController::class, 'indexSoal'])->name('index');
 
-        // Halaman detail soal sebelum mulai
-        Route::get('/{exam}/detail', [UserPageController::class, 'showSoalDetail'])->name('detail');
-
-        // Halaman mengerjakan soal
+        // Exam Detail & Attempt
+        Route::get('/{exam}/detail', [MuridExamController::class, 'showDetail'])->name('detail');
         Route::get('/{exam}/kerjakan', [MuridExamController::class, 'attemptFromSession'])->name('kerjakan');
-
-        // Submit jawaban
-        Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
-        // Tambahkan route khusus untuk violation submit
-        Route::post('/exams/{exam}/violation-submit', [ExamController::class, 'handleViolationSubmit'])
-            ->name('violation-submit');
-        // Lihat hasil
-        Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
-        Route::post('/{exam}/enable-fullscreen', [MuridExamController::class, 'enableFullscreen'])
-            ->name('enable-fullscreen');
-
-        // Route untuk memulai ujian
         Route::post('/{exam}/start', [MuridExamController::class, 'start'])->name('start');
+        Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
+        Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
 
-        // ... route lainnya yang sudah ada ...
-        Route::get('/exams', [MuridExamController::class, 'index'])->name('exams.index');
-        Route::get('/exams/active', [MuridExamController::class, 'active'])->name('exams.active');
-        Route::get('/exams/upcoming', [MuridExamController::class, 'upcoming'])->name('exams.upcoming');
-        Route::get('/exams/completed', [MuridExamController::class, 'completed'])->name('exams.completed');
-        Route::get('/exams/{exam}', [MuridExamController::class, 'show'])->name('exams.show');
-        // Route untuk direct attempt
-        Route::get('/soal/{id}/direct', [MuridExamController::class, 'directAttempt'])
-            ->name('direct');
-        // Exam Attempt Management
-        Route::post('/exams/{exam}/start', [MuridExamController::class, 'start'])->name('exams.start');
-        Route::post('/exams/{exam}/continue', [MuridExamController::class, 'continueAttempt'])
-            ->name('exams.continue');
-
-        // PERBAIKAN: Pastikan route submit ada
-        Route::post('/exams/{exam}/submit', [MuridExamController::class, 'submit'])->name('exams.submit');
-
-        Route::post('/exams/{exam}/save-answer', [MuridExamController::class, 'saveAnswer'])
-            ->name('exams.save-answer');
-        Route::post('/exams/{exam}/auto-save', [MuridExamController::class, 'autoSave'])
-            ->name('exams.auto-save');
-        Route::get('/exams/{exam}/attempt/{attempt}', [MuridExamController::class, 'attempt'])
-            ->name('exams.attempt');
-        Route::get('/exams/{exam}/review/{attempt}', [MuridExamController::class, 'review'])
-            ->name('exams.review');
-
-        // Exam Results
-        Route::get('/exams/{exam}/result/{attempt}', [MuridExamController::class, 'result'])
-            ->name('exams.result');
-        Route::get('/exams/{exam}/answers/{attempt}', [MuridExamController::class, 'answers'])
-            ->name('exams.answers');
-
-        // Security & Monitoring
-        Route::post('/exams/{exam}/heartbeat', [MuridExamController::class, 'heartbeat'])
-            ->name('exams.heartbeat');
-        Route::post('/exams/{exam}/violation', [MuridExamController::class, 'logViolation'])
-            ->name('violation');
+        // Security & Violation
+        Route::post('/{exam}/force-submit-violation', [MuridExamController::class, 'forceSubmitViolation'])->name('force-submit-violation');
+        Route::post('/exams/{exam}/violation-submit', [MuridExamController::class, 'handleViolationSubmit'])->name('violation-submit');
+        Route::post('/{exam}/enable-fullscreen', [MuridExamController::class, 'enableFullscreen'])->name('enable-fullscreen');
     });
 
-    // Hapus route profile yang lama karena sudah dipindahkan ke luar
-    // Route::get('/profile', [UserPageController::class, 'profile'])->name('profile');
-    // Route::put('/profile/update', [UserPageController::class, 'updateProfile'])->name('profile.update');
+    // Additional Exam Routes (Maintaining your structure)
+    Route::prefix('exams')->name('exams.')->group(function () {
+        Route::get('/', [MuridExamController::class, 'index'])->name('index');
+        Route::get('/active', [MuridExamController::class, 'active'])->name('active');
+        Route::get('/upcoming', [MuridExamController::class, 'upcoming'])->name('upcoming');
+        Route::get('/completed', [MuridExamController::class, 'completed'])->name('completed');
+        Route::get('/{exam}', [MuridExamController::class, 'show'])->name('show');
+        Route::get('/soal/{id}/direct', [MuridExamController::class, 'directAttempt'])->name('direct');
+
+        // Exam Attempt Management
+        Route::post('/{exam}/continue', [MuridExamController::class, 'continueAttempt'])->name('continue');
+        Route::post('/{exam}/save-answer', [MuridExamController::class, 'saveAnswer'])->name('save-answer');
+        Route::post('/{exam}/auto-save', [MuridExamController::class, 'autoSave'])->name('auto-save');
+        Route::get('/{exam}/attempt/{attempt}', [MuridExamController::class, 'attempt'])->name('attempt');
+        Route::get('/{exam}/review/{attempt}', [MuridExamController::class, 'review'])->name('review');
+
+        // Exam Results
+        Route::get('/{exam}/result/{attempt}', [MuridExamController::class, 'result'])->name('result');
+        Route::get('/{exam}/answers/{attempt}', [MuridExamController::class, 'answers'])->name('answers');
+
+        // Security & Monitoring
+        Route::post('/{exam}/heartbeat', [MuridExamController::class, 'heartbeat'])->name('heartbeat');
+        Route::post('/{exam}/violation', [MuridExamController::class, 'logViolation'])->name('violation');
+    });
 });
 
 // ==================== PUBLIC ROUTES ====================
 Route::get('/pilihkelasmateri', function () {
     return view('Siswa.pilihkelasmateri');
 })->name('pilihkelasmateri');
+
+// ==================== FALLBACK FOR LEGACY ROUTES ====================
+// These ensure backward compatibility
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+        if ($user->hasRole('Admin')) {
+            return redirect()->route('home');
+        } elseif ($user->hasRole('Guru')) {
+            return redirect()->route('homeguru');
+        } elseif ($user->hasRole('Murid')) {
+            return redirect()->route('dashboard');
+        }
+        return redirect('/Beranda');
+    });
+});
+
+// ==================== ERROR HANDLING ====================
+Route::fallback(function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+        if ($user->hasRole('Admin')) {
+            return redirect()->route('home');
+        } elseif ($user->hasRole('Guru')) {
+            return redirect()->route('homeguru');
+        } elseif ($user->hasRole('Murid')) {
+            return redirect()->route('dashboard');
+        }
+    }
+    return redirect('/Beranda');
+});

@@ -15,7 +15,7 @@
                     <nav class="flex mt-2 text-sm text-slate-500 font-medium" aria-label="Breadcrumb">
                         <ol class="inline-flex items-center space-x-1 md:space-x-2">
                             <li class="inline-flex items-center">
-                                <a href="#" class="hover:text-blue-600 transition-colors">Dashboard</a>
+                                <a href="{{ route('home') }}" class="hover:text-blue-600 transition-colors">Dashboard</a>
                             </li>
                             <li>
                                 <div class="flex items-center">
@@ -34,13 +34,13 @@
             <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-100/50 rounded-full blur-3xl"></div>
         </div>
 
-        <!-- Stats Cards - Diperbaiki -->
+        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-slate-500">Total Guru</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $teachers->total() }}</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $totalTeachers }}</p>
                     </div>
                     <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,9 +55,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-slate-500">Guru Aktif</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">
-                            {{ $teachers->where('teacher.teacherClasses', '!=', null)->count() }}
-                        </p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $activeTeachers }}</p>
                     </div>
                     <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,9 +70,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-slate-500">Belum Aktif</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">
-                            {{ $teachers->where('teacher.teacherClasses', null)->count() }}
-                        </p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $inactiveTeachers }}</p>
                     </div>
                     <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,6 +192,359 @@
                         </button>
                     </div>
                 </div>
+            @endif
+            {{-- File: resources/views/components/teacher-import-alert.blade.php --}}
+            {{-- Letakkan di bagian atas view Admins/Teachers/index.blade.php --}}
+
+            @if (session('import_stats'))
+                @php
+                    $stats = session('import_stats');
+                    $status = session('import_status', 'info');
+                @endphp
+
+                <div class="mb-6 animate-fade-in">
+                    <div class="space-y-4">
+
+                        {{-- Header Ringkasan --}}
+                        <div
+                            class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-3">
+                                    @if ($status === 'warning' || !empty($stats['error_list']) || $stats['skipped'] > 0)
+                                        <div class="bg-amber-100 p-2 rounded-lg">
+                                            <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    @elseif($stats['success'] > 0)
+                                        <div class="bg-green-100 p-2 rounded-lg">
+                                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    @else
+                                        <div class="bg-blue-100 p-2 rounded-lg">
+                                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                    @endif
+
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-slate-800">Hasil Import Data Guru</h3>
+                                        <p class="text-sm text-slate-600 mt-1">Total <span
+                                                class="font-semibold">{{ $stats['processed_rows'] }}</span> data diproses
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Statistik Ringkas --}}
+                            <div class="flex flex-wrap gap-2">
+                                @if ($stats['success'] > 0)
+                                    <span
+                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ $stats['success'] }} Berhasil
+                                    </span>
+                                @endif
+
+                                @if ($stats['skipped'] > 0)
+                                    <span
+                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700">
+                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ $stats['skipped'] }} Dilewati
+                                    </span>
+                                @endif
+
+                                @if ($stats['errors'] > 0)
+                                    <span
+                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700">
+                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ $stats['errors'] }} Error
+                                    </span>
+                                @endif
+
+                                @if ($stats['new_classes'] > 0)
+                                    <span
+                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z">
+                                            </path>
+                                        </svg>
+                                        {{ $stats['new_classes'] }} Kelas Baru
+                                    </span>
+                                @endif
+
+                                @if ($stats['new_subjects'] > 0)
+                                    <span
+                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
+                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z">
+                                            </path>
+                                        </svg>
+                                        {{ $stats['new_subjects'] }} Mapel Baru
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Data Berhasil --}}
+                        @if (!empty($stats['success_data']))
+                            <div class="border border-green-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div
+                                    class="bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 border-b border-green-200">
+                                    <h4 class="font-semibold text-green-800 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                            <path fill-rule="evenodd"
+                                                d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        Data Berhasil Diimport
+                                        <span
+                                            class="ml-2 bg-green-200 text-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['success'] }}
+                                            guru</span>
+                                    </h4>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                                    No</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Nama</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Email</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                                    NIP</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                                    Kelas</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                                    Mapel</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            @foreach (array_slice($stats['success_data'], 0, 50) as $index => $item)
+                                                <tr class="hover:bg-green-50 transition-colors duration-150">
+                                                    <td
+                                                        class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">
+                                                        {{ $index + 1 }}</td>
+                                                    <td
+                                                        class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {{ $item['nama'] }}</td>
+                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
+                                                        {{ $item['email'] }}</td>
+                                                    <td
+                                                        class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-mono">
+                                                        {{ $item['nip'] ?? '-' }}</td>
+                                                    <td class="px-4 py-3 text-sm text-blue-600">
+                                                        {{ $item['kelas'] ?? '-' }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-sm text-indigo-600">
+                                                        {{ $item['mapel'] ?? '-' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+
+                                    @if (count($stats['success_data']) > 50)
+                                        <div
+                                            class="bg-gradient-to-r from-gray-50 to-green-50 px-4 py-3 border-t border-gray-200">
+                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
+                                                <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                                                        clip-rule="evenodd"></path>
+                                                </svg>
+                                                dan <strong
+                                                    class="mx-1">{{ count($stats['success_data']) - 50 }}</strong> data
+                                                lainnya berhasil diimport
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Data Dilewati/Duplikat --}}
+                        @if ($stats['skipped'] > 0 && !empty($stats['skipped_data']))
+                            <div class="border border-amber-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div
+                                    class="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-200">
+                                    <h4 class="font-semibold text-amber-800 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        Data Dilewati
+                                        <span
+                                            class="ml-2 bg-amber-200 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['skipped'] }}
+                                            data</span>
+                                    </h4>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50 sticky top-0 z-10">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                                    No</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Nama</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Email</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                                    NIP</th>
+                                                <th scope="col"
+                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                                                    Alasan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            @foreach (array_slice($stats['skipped_data'], 0, 30) as $index => $item)
+                                                <tr class="hover:bg-amber-50 transition-colors duration-150">
+                                                    <td
+                                                        class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">
+                                                        {{ $index + 1 }}</td>
+                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                                        {{ $item['nama'] }}</td>
+                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
+                                                        {{ $item['email'] }}</td>
+                                                    <td
+                                                        class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-mono">
+                                                        {{ $item['nip'] ?? '-' }}</td>
+                                                    <td class="px-4 py-3 whitespace-nowrap text-xs">
+                                                        <span
+                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800">
+                                                            {{ $item['reason'] }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+
+                                    @if (count($stats['skipped_data']) > 30)
+                                        <div
+                                            class="bg-gradient-to-r from-gray-50 to-amber-50 px-4 py-3 border-t border-gray-200">
+                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
+                                                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd"></path>
+                                                </svg>
+                                                dan <strong
+                                                    class="mx-1">{{ count($stats['skipped_data']) - 30 }}</strong> data
+                                                dilewati lainnya
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Error Details --}}
+                        @if (!empty($stats['error_list']) && $stats['errors'] > 0)
+                            <div class="border border-red-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div class="bg-gradient-to-r from-red-50 to-pink-50 px-4 py-3 border-b border-red-200">
+                                    <h4 class="font-semibold text-red-800 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        Kesalahan Validasi
+                                        <span
+                                            class="ml-2 bg-red-200 text-red-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['errors'] }}
+                                            error</span>
+                                    </h4>
+                                </div>
+                                <div class="max-h-72 overflow-y-auto">
+                                    <div class="divide-y divide-red-100">
+                                        @foreach (array_slice($stats['error_list'], 0, 15) as $index => $error)
+                                            <div
+                                                class="px-4 py-3 hover:bg-red-50 transition-colors duration-150 flex items-start">
+                                                <span
+                                                    class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-bold mr-3">{{ $index + 1 }}</span>
+                                                <span class="text-sm text-gray-700">{{ $error }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    @if (count($stats['error_list']) > 15)
+                                        <div
+                                            class="bg-gradient-to-r from-gray-50 to-red-50 px-4 py-3 border-t border-red-200">
+                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
+                                                <svg class="w-4 h-4 mr-2 text-red-600" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd"></path>
+                                                </svg>
+                                                dan <strong class="mx-1">{{ count($stats['error_list']) - 15 }}</strong>
+                                                error lainnya
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                    </div>
+                </div>
+
+                <style>
+                    @keyframes fade-in {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-10px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .animate-fade-in {
+                        animation: fade-in 0.3s ease-out;
+                    }
+                </style>
             @endif
 
             <!-- Table Controls -->
@@ -332,9 +681,6 @@
                                 </div>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Kelas & Mapel
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Status
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -376,28 +722,6 @@
                                             class="bg-blue-50 px-2 py-1 rounded text-xs">{{ $teacher->teacher->nip }}</span>
                                     @else
                                         <span class="text-slate-400">-</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-600">
-                                    @if ($teacher->teacher && $teacher->teacher->teacherClasses->isNotEmpty())
-                                        <div class="space-y-1">
-                                            @foreach ($teacher->teacher->teacherClasses as $tc)
-                                                <div class="flex items-start">
-                                                    <span
-                                                        class="inline-flex px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-2">
-                                                        {{ $tc->classes->name_class ?? '-' }}
-                                                    </span>
-                                                    <span class="text-xs text-slate-500 truncate max-w-xs">
-                                                        {{ $tc->subjects->pluck('name_subject')->join(', ') }}
-                                                    </span>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span
-                                            class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
-                                            Belum ditempatkan
-                                        </span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -466,7 +790,7 @@
                     </div>
                     <h3 class="text-lg font-medium text-slate-900 mb-2">Tidak ada data guru</h3>
                     <p class="text-slate-600 mb-6">Mulai dengan menambahkan guru baru.</p>
-                
+
                 </div>
             @endif
 
@@ -600,7 +924,7 @@
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeAddModal()"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4">
-                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
                     <div
                         class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
                         <div class="flex items-center space-x-3">
@@ -625,60 +949,72 @@
                         </button>
                     </div>
 
-                    <form action="{{ route('teachers.store') }}" method="POST">
+                    <form action="{{ route('teachers.store') }}" method="POST" id="addForm">
                         @csrf
                         <div class="p-6 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span
-                                        class="text-red-500">*</span></label>
-                                <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('name') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
-                                        class="text-red-500">*</span></label>
-                                <input type="email" name="email" required placeholder="contoh@email.com"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('email') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
-                                        class="text-red-500">*</span></label>
-                                <input type="text" name="password" required placeholder="Masukkan password"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('password') }}">
-                                <p class="text-xs text-slate-500 mt-1">Password minimal 6 karakter, tidak boleh mengandung
-                                    spasi</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
-                                <input type="text" name="nip" placeholder="Masukkan NIP"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
-                                    value="{{ old('nip') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Sapaan (Opsional)</label>
-                                <input type="text" name="sapaan" placeholder="Contoh: Bapak, Ibu, Pak, Bu"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    value="{{ old('sapaan') }}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="name" required
+                                        placeholder="Masukkan nama lengkap guru"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('name') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="email" name="email" required placeholder="contoh@email.com"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('email') }}">
+                                </div>
                             </div>
 
-                            <!-- Kelas dan Mapel -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="password" required placeholder="Masukkan password"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        value="{{ old('password') }}">
+                                    <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
+                                    <input type="text" name="nip" placeholder="Masukkan NIP"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
+                                        value="{{ old('nip') }}">
+                                </div>
+                            </div>
+
+                            <!-- Kelas dan Mapel - SISTEM BARU -->
                             <div class="border-t border-slate-200 pt-4 mt-4">
                                 <label class="block text-sm font-medium text-slate-700 mb-2">Penempatan Kelas &
                                     Mapel</label>
-                                <div id="classContainer">
-                                    <!-- Container untuk dinamis kelas -->
+
+                                <!-- Pilih Kelas (Multiple Select) -->
+                                <div class="mb-4">
+                                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas <span
+                                            class="text-red-500">*</span></label>
+                                    <select id="classSelect" multiple
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                        style="width: 100%">
+                                        @foreach ($classes as $class)
+                                            <option value="{{ $class->id }}">{{ $class->name_class }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="hidden" name="selected_classes" id="selected_classes">
+                                    <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas (Ctrl+klik untuk
+                                        pilih banyak)</p>
                                 </div>
-                                <button type="button" onclick="addClassField()"
-                                    class="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Tambah Kelas
-                                </button>
+
+                                <!-- Container untuk Mapel per Kelas -->
+                                <div id="subjectContainer" class="space-y-4">
+                                    <!-- Subjects akan ditampilkan di sini berdasarkan kelas yang dipilih -->
+                                    <div class="text-sm text-slate-400 italic" id="noClassMessage">
+                                        Pilih kelas terlebih dahulu untuk menampilkan mata pelajaran
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -710,16 +1046,30 @@
     </div>
 
     <script>
-        // Initialize classes data
-        const allClasses = @json($classes);
-        const allSubjects = @json($subjects);
+        // Data dari Blade
+        const subjects = @json($subjects);
+        const classes = @json($classes);
 
-        // Modal functions
+        // Add Modal Functions
         function openAddModal() {
-            // Reset class container
-            const container = document.getElementById('classContainer');
-            container.innerHTML = '';
-            addClassField(); // Add one initial class field
+            // Reset form
+            document.getElementById('addForm').reset();
+            document.getElementById('selected_classes').value = '';
+            document.getElementById('subjectContainer').innerHTML = `
+                <div class="text-sm text-slate-400 italic" id="noClassMessage">
+                    Pilih kelas terlebih dahulu untuk menampilkan mata pelajaran
+                </div>
+            `;
+
+            // Initialize select2 for class selection
+            $('#classSelect').select2({
+                width: '100%',
+                placeholder: 'Pilih satu atau lebih kelas',
+                closeOnSelect: false
+            }).val(null).trigger('change');
+
+            // Add event listener for class selection
+            $('#classSelect').off('change').on('change', handleAddClassSelection);
 
             document.getElementById('addModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -730,63 +1080,67 @@
             document.body.style.overflow = '';
         }
 
-        function addClassField() {
-            const container = document.getElementById('classContainer');
-            const classCount = container.children.length;
-            const classId = `class_${classCount}`;
+        // Handle class selection for add modal
+        function handleAddClassSelection() {
+            const selectedOptions = $('#classSelect').select2('data');
+            const selectedClassIds = selectedOptions.map(opt => opt.id);
 
-            const classField = document.createElement('div');
-            classField.className = 'mb-4 p-3 border border-slate-200 rounded-lg';
-            classField.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-slate-700">Kelas ${classCount + 1}</span>
-                    <button type="button" onclick="removeClassField(this)" class="text-red-500 hover:text-red-700">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="mb-2">
-                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas</label>
-                    <select name="class_id[]" required class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm class-select">
-                        <option value="">Pilih Kelas</option>
-                        ${allClasses.map(cls => `<option value="${cls.id}">${cls.name_class}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-600 mb-1">Pilih Mata Pelajaran</label>
-                    <div class="space-y-1" id="subjects_${classId}">
-                        ${allSubjects.map(subject => `
-                                <label class="inline-flex items-center mr-3 mb-1">
-                                    <input type="checkbox" name="subjects[${classId}][]" value="${subject.id}" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-1 text-sm text-slate-700">${subject.name_subject}</span>
-                                </label>
-                            `).join('')}
+            // Simpan ke hidden input
+            document.getElementById('selected_classes').value = JSON.stringify(selectedClassIds);
+
+            // Bersihkan container
+            const subjectContainer = document.getElementById('subjectContainer');
+
+            if (selectedClassIds.length === 0) {
+                subjectContainer.innerHTML = `
+                    <div class="text-sm text-slate-400 italic" id="noClassMessage">
+                        Pilih kelas terlebih dahulu untuk menampilkan mata pelajaran
                     </div>
-                </div>
-            `;
+                `;
+                return;
+            }
 
-            container.appendChild(classField);
+            // Remove no class message
+            const noClassMessage = document.getElementById('noClassMessage');
+            if (noClassMessage) {
+                noClassMessage.remove();
+            }
 
-            // Initialize select2 for the new select
-            $(classField.querySelector('.class-select')).select2({
-                width: '100%',
-                placeholder: 'Pilih Kelas'
+            // Tampilkan select mapel untuk setiap kelas
+            subjectContainer.innerHTML = '';
+
+            selectedClassIds.forEach(classId => {
+                const classOption = $(`#classSelect option[value="${classId}"]`);
+                const className = classOption.length > 0 ? classOption.text() : 'Kelas';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'mb-4 p-4 border border-slate-200 rounded-lg';
+                wrapper.innerHTML = `
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Mata Pelajaran untuk ${className}
+                    </label>
+                    <select name="classes_${classId}_subject_ids[]" multiple
+                        class="subject-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        style="width: 100%">
+                        ${subjects.map(subject =>
+                            `<option value="${subject.id}">${subject.name_subject}</option>`
+                        ).join('')}
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Pilih mata pelajaran yang akan diajar (Ctrl+klik untuk pilih banyak)</p>
+                `;
+
+                subjectContainer.appendChild(wrapper);
+
+                // Initialize select2 for subject selection
+                $(wrapper.querySelector('.subject-select')).select2({
+                    width: '100%',
+                    placeholder: 'Pilih mata pelajaran',
+                    closeOnSelect: false
+                });
             });
         }
 
-        function removeClassField(button) {
-            const container = document.getElementById('classContainer');
-            if (container.children.length > 1) {
-                button.closest('.mb-4').remove();
-                // Renumber classes
-                const classFields = container.querySelectorAll('.mb-4');
-                classFields.forEach((field, index) => {
-                    field.querySelector('span').textContent = `Kelas ${index + 1}`;
-                });
-            }
-        }
-
+        // Edit Modal Functions
         function openEditModal(id) {
             fetch(`/teachers/${id}/edit`, {
                     headers: {
@@ -801,169 +1155,144 @@
                 .then(data => {
                     const modal = document.getElementById('editModal');
 
-                    // Build class and subjects HTML
-                    let classFieldsHTML = '';
-                    if (data.teacherClasses && data.teacherClasses.length > 0) {
-                        data.teacherClasses.forEach((tc, index) => {
-                            const classId = `class_${index}`;
-                            const subjectsArray = tc.subjects ? tc.subjects.map(s => s.id) : [];
+                    // Prepare selected classes and subjects
+                    let selectedClassIds = [];
+                    let selectedSubjects = {};
 
-                            classFieldsHTML += `
-                            <div class="mb-4 p-3 border border-slate-200 rounded-lg">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm font-medium text-slate-700">Kelas ${index + 1}</span>
-                                    ${index > 0 ? '<button type="button" onclick="removeClassField(this)" class="text-red-500 hover:text-red-700"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>' : ''}
-                                </div>
-                                <div class="mb-2">
-                                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas</label>
-                                    <select name="class_id[]" required class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm class-select">
-                                        <option value="">Pilih Kelas</option>
-                                        ${allClasses.map(cls => `<option value="${cls.id}" ${cls.id == tc.classes_id ? 'selected' : ''}>${cls.name_class}</option>`).join('')}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs text-slate-600 mb-1">Pilih Mata Pelajaran</label>
-                                    <div class="space-y-1">
-                                        ${allSubjects.map(subject => `
-                                                <label class="inline-flex items-center mr-3 mb-1">
-                                                    <input type="checkbox" name="subjects[${classId}][]" value="${subject.id}"
-                                                        ${subjectsArray.includes(subject.id) ? 'checked' : ''}
-                                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                                    <span class="ml-1 text-sm text-slate-700">${subject.name_subject}</span>
-                                                </label>
-                                            `).join('')}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                    if (data.teacherClasses && data.teacherClasses.length > 0) {
+                        data.teacherClasses.forEach(tc => {
+                            selectedClassIds.push(tc.classes_id.toString());
+                            selectedSubjects[tc.classes_id] = tc.subjects.map(s => s.id.toString());
                         });
-                    } else {
-                        classFieldsHTML = `
-                        <div class="mb-4 p-3 border border-slate-200 rounded-lg">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium text-slate-700">Kelas 1</span>
-                            </div>
-                            <div class="mb-2">
-                                <label class="block text-xs text-slate-600 mb-1">Pilih Kelas</label>
-                                <select name="class_id[]" required class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm class-select">
-                                    <option value="">Pilih Kelas</option>
-                                    ${allClasses.map(cls => `<option value="${cls.id}">${cls.name_class}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-slate-600 mb-1">Pilih Mata Pelajaran</label>
-                                <div class="space-y-1">
-                                    ${allSubjects.map(subject => `
-                                            <label class="inline-flex items-center mr-3 mb-1">
-                                                <input type="checkbox" name="subjects[class_0][]" value="${subject.id}" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                                <span class="ml-1 text-sm text-slate-700">${subject.name_subject}</span>
-                                            </label>
-                                        `).join('')}
+                    }
+
+                    modal.innerHTML = `
+                        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
+                        <div class="fixed inset-0 z-10 overflow-y-auto">
+                            <div class="flex min-h-full items-center justify-center p-4">
+                                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
+                                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-slate-900">Edit Guru</h3>
+                                                <p class="text-sm text-slate-500">Ubah data guru</p>
+                                            </div>
+                                        </div>
+                                        <button type="button" onclick="closeEditModal()"
+                                            class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <form action="/teachers/${id}" method="POST" id="editForm">
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="p-6 space-y-4">
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span class="text-red-500">*</span></label>
+                                                    <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                                        value="${data.name || ''}">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                                    <input type="email" name="email" required placeholder="contoh@email.com"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                                        value="${data.email || ''}">
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Password (Kosongkan jika tidak diubah)</label>
+                                                    <input type="text" name="password" placeholder="Masukkan password baru"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                                    <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
+                                                    <input type="text" name="nip" placeholder="Masukkan NIP"
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
+                                                        value="${data.teacher?.nip || ''}">
+                                                </div>
+                                            </div>
+
+                                            <!-- Kelas dan Mapel -->
+                                            <div class="border-t border-slate-200 pt-4 mt-4">
+                                                <label class="block text-sm font-medium text-slate-700 mb-2">Penempatan Kelas & Mapel</label>
+
+                                                <!-- Pilih Kelas (Multiple Select) -->
+                                                <div class="mb-4">
+                                                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas <span class="text-red-500">*</span></label>
+                                                    <select id="editClassSelect" multiple
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                        style="width: 100%">
+                                                        ${classes.map(cls =>
+                                                            `<option value="${cls.id}">${cls.name_class}</option>`
+                                                        ).join('')}
+                                                    </select>
+                                                    <input type="hidden" name="selected_classes" id="editSelectedClasses">
+                                                    <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas (Ctrl+klik untuk pilih banyak)</p>
+                                                </div>
+
+                                                <!-- Container untuk Mapel per Kelas -->
+                                                <div id="editSubjectContainer" class="space-y-4">
+                                                    <!-- Subjects akan ditampilkan di sini -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
+                                            <button type="button" onclick="closeEditModal()"
+                                                class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                                                Batal
+                                            </button>
+                                            <button type="submit"
+                                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                                Simpan Perubahan
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     `;
-                    }
-
-                    modal.innerHTML = `
-                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
-                    <div class="fixed inset-0 z-10 overflow-y-auto">
-                        <div class="flex min-h-full items-center justify-center p-4">
-                            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-                                <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-slate-900">Edit Guru</h3>
-                                            <p class="text-sm text-slate-500">Ubah data guru</p>
-                                        </div>
-                                    </div>
-                                    <button type="button" onclick="closeEditModal()"
-                                        class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <form action="/teachers/${id}" method="POST" id="editForm">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="p-6 space-y-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span class="text-red-500">*</span></label>
-                                            <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                                value="${data.name || ''}">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
-                                            <input type="email" name="email" required placeholder="contoh@email.com"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                                value="${data.email || ''}">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">Password (Kosongkan jika tidak diubah)</label>
-                                            <input type="text" name="password" placeholder="Masukkan password baru"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-                                            <p class="text-xs text-slate-500 mt-1">Password minimal 6 karakter, tidak boleh mengandung spasi</p>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
-                                            <input type="text" name="nip" placeholder="Masukkan NIP"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
-                                                value="${data.teacher?.nip || ''}">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">Sapaan (Opsional)</label>
-                                            <input type="text" name="sapaan" placeholder="Contoh: Bapak, Ibu, Pak, Bu"
-                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                                value="${data.teacher?.sapaan || ''}">
-                                        </div>
-
-                                        <!-- Kelas dan Mapel -->
-                                        <div class="border-t border-slate-200 pt-4 mt-4">
-                                            <label class="block text-sm font-medium text-slate-700 mb-2">Penempatan Kelas & Mapel</label>
-                                            <div id="editClassContainer">
-                                                ${classFieldsHTML}
-                                            </div>
-                                            <button type="button" onclick="addEditClassField()" class="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                Tambah Kelas
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
-                                        <button type="button" onclick="closeEditModal()"
-                                            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
-                                            Batal
-                                        </button>
-                                        <button type="submit"
-                                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                            Simpan Perubahan
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                `;
 
                     modal.classList.remove('hidden');
                     document.body.style.overflow = 'hidden';
 
-                    // Initialize select2 for edit modal
-                    $('.class-select').select2({
+                    // Initialize select2 for edit class selection
+                    $('#editClassSelect').select2({
                         width: '100%',
-                        placeholder: 'Pilih Kelas'
+                        placeholder: 'Pilih satu atau lebih kelas',
+                        closeOnSelect: false
                     });
+
+                    // Set selected classes
+                    if (selectedClassIds.length > 0) {
+                        $('#editClassSelect').val(selectedClassIds).trigger('change');
+                        document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
+
+                        // Load subjects for selected classes
+                        handleEditClassSelection(selectedClassIds, selectedSubjects);
+                    }
+
+                    // Add change event
+                    $('#editClassSelect').off('change').on('change', function() {
+                        const selectedOptions = $(this).select2('data');
+                        const selectedClassIds = selectedOptions.map(opt => opt.id);
+                        document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
+                        handleEditClassSelection(selectedClassIds, {});
+                    });
+
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -971,61 +1300,56 @@
                 });
         }
 
-        function addEditClassField() {
-            const container = document.getElementById('editClassContainer');
-            const classCount = container.children.length;
-            const classId = `class_${classCount}`;
+        function handleEditClassSelection(selectedClassIds, selectedSubjects = {}) {
+            const subjectContainer = document.getElementById('editSubjectContainer');
 
-            const classField = document.createElement('div');
-            classField.className = 'mb-4 p-3 border border-slate-200 rounded-lg';
-            classField.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-slate-700">Kelas ${classCount + 1}</span>
-                    <button type="button" onclick="removeEditClassField(this)" class="text-red-500 hover:text-red-700">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="mb-2">
-                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas</label>
-                    <select name="class_id[]" required class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm class-select">
-                        <option value="">Pilih Kelas</option>
-                        ${allClasses.map(cls => `<option value="${cls.id}">${cls.name_class}</option>`).join('')}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-600 mb-1">Pilih Mata Pelajaran</label>
-                    <div class="space-y-1">
-                        ${allSubjects.map(subject => `
-                                <label class="inline-flex items-center mr-3 mb-1">
-                                    <input type="checkbox" name="subjects[${classId}][]" value="${subject.id}" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-1 text-sm text-slate-700">${subject.name_subject}</span>
-                                </label>
-                            `).join('')}
+            if (selectedClassIds.length === 0) {
+                subjectContainer.innerHTML = `
+                    <div class="text-sm text-slate-400 italic">
+                        Pilih kelas terlebih dahulu untuk menampilkan mata pelajaran
                     </div>
-                </div>
-            `;
-
-            container.appendChild(classField);
-
-            // Initialize select2 for the new select
-            $(classField.querySelector('.class-select')).select2({
-                width: '100%',
-                placeholder: 'Pilih Kelas'
-            });
-        }
-
-        function removeEditClassField(button) {
-            const container = document.getElementById('editClassContainer');
-            if (container.children.length > 1) {
-                button.closest('.mb-4').remove();
-                // Renumber classes
-                const classFields = container.querySelectorAll('.mb-4');
-                classFields.forEach((field, index) => {
-                    field.querySelector('span').textContent = `Kelas ${index + 1}`;
-                });
+                `;
+                return;
             }
+
+            // Tampilkan select mapel untuk setiap kelas
+            subjectContainer.innerHTML = '';
+
+            selectedClassIds.forEach(classId => {
+                const classOption = $(`#editClassSelect option[value="${classId}"]`);
+                const className = classOption.length > 0 ? classOption.text() : 'Kelas';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'mb-4 p-4 border border-slate-200 rounded-lg';
+
+                // Get previously selected subjects for this class
+                const preSelectedSubjects = selectedSubjects[classId] || [];
+
+                wrapper.innerHTML = `
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Mata Pelajaran untuk ${className}
+                    </label>
+                    <select name="classes_${classId}_subject_ids[]" multiple
+                        class="subject-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        style="width: 100%">
+                        ${subjects.map(subject =>
+                            `<option value="${subject.id}" ${preSelectedSubjects.includes(subject.id.toString()) ? 'selected' : ''}>
+                                    ${subject.name_subject}
+                                </option>`
+                        ).join('')}
+                    </select>
+                    <p class="text-xs text-slate-500 mt-1">Pilih mata pelajaran yang akan diajar (Ctrl+klik untuk pilih banyak)</p>
+                `;
+
+                subjectContainer.appendChild(wrapper);
+
+                // Initialize select2 for subject selection
+                $(wrapper.querySelector('.subject-select')).select2({
+                    width: '100%',
+                    placeholder: 'Pilih mata pelajaran',
+                    closeOnSelect: false
+                });
+            });
         }
 
         function closeEditModal() {
@@ -1075,7 +1399,7 @@
                                 <form action="/teachers/${id}" method="POST" id="deleteForm">
                                     @csrf
                                     @method('DELETE')
-                                    <div class="flex justify-center space-x-3">
+                                    <div class="flex justify-end space-x-3">
                                         <button type="button" onclick="closeDeleteModal()"
                                             class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
                                             Batal
@@ -1175,29 +1499,6 @@
 
                 content.innerHTML = `
                     <div class="space-y-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
-                                <span class="text-2xl font-bold text-blue-600">${teacherName.charAt(0)}</span>
-                            </div>
-                            <div>
-                                <h4 class="text-lg font-semibold text-slate-900">${teacherName}</h4>
-                                <p class="text-sm text-slate-600">${teacherEmail}</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">NIP</label>
-                                <p class="text-sm font-medium text-slate-900">${teacherNip}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                <p class="text-sm ${statusColor} font-medium">
-                                    ${teacherStatus}
-                                </p>
-                            </div>
-                        </div>
-
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Kelas & Mata Pelajaran</label>
                             <div class="space-y-2">
@@ -1284,30 +1585,11 @@
                 }
             });
 
-            // Initialize Select2 for class filter
-            $('#classFilter').select2({
-                placeholder: 'Semua Kelas',
-                allowClear: true,
-                width: '150px'
-            });
-
             // Keyboard shortcuts
             document.addEventListener('keydown', function(e) {
                 // Escape to close modals
                 if (e.key === 'Escape') {
                     closeAllModals();
-                }
-
-                // Ctrl/Cmd + N for new teacher
-                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-                    e.preventDefault();
-                    openAddModal();
-                }
-
-                // Ctrl/Cmd + F for search
-                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                    e.preventDefault();
-                    document.getElementById('searchInput').focus();
                 }
             });
 
@@ -1386,18 +1668,42 @@
         }
 
         .select2-container {
-            z-index: 10000;
+            z-index: 10000 !important;
         }
 
         .select2-selection {
             border: 1px solid #d1d5db !important;
             border-radius: 0.5rem !important;
-            height: 2.5rem !important;
+            min-height: 2.5rem !important;
         }
 
         .select2-selection:focus {
             outline: 2px solid #3b82f6 !important;
             outline-offset: 2px !important;
+        }
+
+        .select2-selection--multiple .select2-selection__rendered {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .select2-selection--multiple .select2-selection__choice {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+        }
+
+        .select2-selection--multiple .select2-selection__choice__remove {
+            color: white;
+            margin-right: 4px;
+        }
+
+        .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #d1d5db;
         }
     </style>
 @endsection

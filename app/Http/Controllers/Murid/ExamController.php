@@ -10,117 +10,989 @@ use App\Models\ExamQuestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ExamController extends Controller
 {
-    public function index()
-    {
-        $student = Auth::user()->student;
-
-        if (!$student || !$student->class_id) {
-            return view('Murid.Exam.no-class');
-        }
-
-        $exams = Exam::where('class_id', $student->class_id)
-            ->where('status', 'active')
-            ->with(['subject', 'class'])
-            ->where(function ($query) {
-                $query->where('end_at', '>', now())
-                    ->orWhereNull('end_at');
-            })
-            ->orderBy('start_at', 'asc')
-            ->get();
-
-        $activeExams = $exams->filter(function ($exam) {
-            return $exam->isOngoing();
-        });
-
-        $upcomingExams = $exams->filter(function ($exam) {
-            return $exam->is_upcoming;
-        });
-
-        $completedExams = Exam::where('class_id', $student->class_id)
-            ->where('status', 'active')
-            ->where('end_at', '<', now())
-            ->with(['subject', 'class'])
-            ->get();
-
-        return view('Murid.Exam.index', compact(
-            'activeExams',
-            'upcomingExams',
-            'completedExams'
-        ));
-    }
-
+    /**
+     * GET /soal
+     * Tampilkan daftar soal untuk siswa
+     */
+    /**
+     * GET /soal
+     * Tampilkan daftar soal untuk siswa
+     */
     public function indexSoal(Request $request)
     {
-        $student = Auth::user()->student;
+        try {
+            $user = Auth::user();
+            $student = $user->student;
 
-        if (!$student || !$student->class_id) {
-            return view('Murid.Exam.no-class');
-        }
-
-        $query = Exam::where('class_id', $student->class_id)
-            ->where('status', 'active')
-            ->with(['subject', 'class', 'teacher.user'])
-            ->withCount('questions');
-
-        if ($request->has('search') && $request->search) {
-            $query->where('title', 'like', '%' . $request->search . '%')
-                ->orWhereHas('subject', function ($q) use ($request) {
-                    $q->where('name_subject', 'like', '%' . $request->search . '%');
-                });
-        }
-
-        if ($request->has('status')) {
-            $now = now();
-            switch ($request->status) {
-                case 'belum_dikerjakan':
-                    $query->whereDoesntHave('attempts', function ($q) {
-                        $q->where('student_id', Auth::id())
-                            ->whereIn('status', ['submitted', 'timeout']);
-                    });
-                    break;
-                case 'sudah_dikerjakan':
-                    $query->whereHas('attempts', function ($q) {
-                        $q->where('student_id', Auth::id())
-                            ->whereIn('status', ['submitted', 'timeout']);
-                    });
-                    break;
-                case 'kadaluarsa':
-                    $query->where('end_at', '<', $now);
-                    break;
+            // Validasi siswa
+            if (!$student) {
+                return view('Siswa.soal', [
+                    'exams' => collect(),
+                    'error' => 'Data siswa tidak ditemukan.'
+                ]);
             }
+
+            if (!$student->class_id) {
+                return view('Siswa.soal', [
+                    'exams' => collect(),
+                    'error' => 'Anda belum memiliki kelas.'
+                ]);
+            }
+
+            $classId = $student->class_id;
+            $search = $request->input('search');
+            $status = $request->input('status', 'all');
+
+            // Query dasar - hanya exam aktif untuk kelas siswa
+            $query = Exam::with([
+                'subject',
+                'teacher.user',
+                'questions'
+            ])
+                ->where('class_id', $classId)
+                ->where('status', 'active');
+
+            // Filter pencarian
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('type', 'like', '%' . $search . '%')
+                        ->orWhereHas('subject', function ($subjectQuery) use ($search) {
+                            $subjectQuery->where('name_subject', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('teacher.user', function ($teacherQuery) use ($search) {
+                            $teacherQuery->where('name', 'like', '%' . $search . '%');
+                        });
+                });
+            }
+
+            // Pagination
+            $exams = $query->orderBy('created_at', 'desc')->paginate(12);
+
+            // Tambahkan informasi untuk setiap exam
+            foreach ($exams as $exam) {
+                // Hitung status waktu
+                $now = now();
+                $timeStatus = 'available';
+
+                if ($exam->start_at && $now < $exam->start_at) {
+                    $timeStatus = 'upcoming';
+                } elseif ($exam->end_at && $now > $exam->end_at) {
+                    $timeStatus = 'finished';
+                }
+
+                $exam->time_status = $timeStatus;
+
+                // Cek attempt terakhir
+                $attempt = ExamAttempt::where('exam_id', $exam->id)
+                    ->where('student_id', $user->id)
+                    ->latest()
+                    ->first();
+
+                // Hitung jumlah percobaan yang sudah submit
+                $exam->attempt_count = ExamAttempt::where('exam_id', $exam->id)
+                    ->where('student_id', $user->id)
+                    ->whereIn('status', ['submitted', 'timeout'])
+                    ->count();
+
+                // Tentukan status tampilan
+                $displayStatus = 'available';
+
+                if ($exam->time_status === 'finished') {
+                    $displayStatus = 'finished';
+                } elseif ($exam->time_status === 'upcoming') {
+                    $displayStatus = 'upcoming';
+                } elseif ($attempt) {
+                    if ($attempt->status === 'submitted' || $attempt->status === 'timeout') {
+                        $displayStatus = 'completed';
+                    } elseif ($attempt->status === 'in_progress') {
+                        $displayStatus = 'ongoing';
+                    }
+                }
+
+                $exam->display_status = $displayStatus;
+                $exam->last_attempt = $attempt;
+                $exam->questions_count = $exam->questions->count();
+
+                // Cek apakah bisa retake
+                $exam->can_retake = true;
+                if ($exam->limit_attempts > 0 && $exam->attempt_count >= $exam->limit_attempts) {
+                    $exam->can_retake = false;
+                }
+            }
+
+            // Filter berdasarkan status jika ada
+            if ($status && $status !== 'all') {
+                $filteredExams = $exams->filter(function ($exam) use ($status) {
+                    return $exam->display_status === $status;
+                });
+
+                // Convert ke paginator
+                $page = $request->input('page', 1);
+                $perPage = 12;
+                $paginatedExams = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $filteredExams->forPage($page, $perPage),
+                    $filteredExams->count(),
+                    $perPage,
+                    $page,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+
+                $exams = $paginatedExams;
+            }
+
+            return view('Siswa.soal', compact('exams'));
+        } catch (\Exception $e) {
+            \Log::error('Error in indexSoal: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return view('Siswa.soal', [
+                'exams' => collect(),
+                'error' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
         }
+    }
 
-        $exams = $query->orderBy('start_at', 'asc')->paginate(12);
+    /**
+     * GET /soal/{exam}/detail
+     * Tampilkan detail soal sebelum mulai
+     */
+    /**
+     * GET /soal/{exam}/detail
+     * Tampilkan detail soal sebelum mulai
+     */
+    public function showDetail($examId)
+    {
+        try {
+            $user = Auth::user();
+            $student = $user->student;
 
-        $exams->getCollection()->transform(function ($exam) {
-            $lastAttempt = ExamAttempt::where('exam_id', $exam->id)
-                ->where('student_id', Auth::id())
+            if (!$student) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Data siswa tidak ditemukan.');
+            }
+
+            // Debug: Log student data
+            \Log::info('Student data:', [
+                'student_id' => $student->id,
+                'class_id' => $student->class_id,
+                'user_id' => $user->id
+            ]);
+
+            // Query exam dengan relasi
+            $exam = Exam::with([
+                'subject',
+                'teacher.user',
+                'questions' => function ($query) {
+                    $query->with('choices');
+                }
+            ])
+                ->where('id', $examId)
+                ->first();
+
+            if (!$exam) {
+                \Log::error('Exam not found', ['exam_id' => $examId]);
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak ditemukan.');
+            }
+
+            // Debug: Log exam data
+            \Log::info('Exam data:', [
+                'exam_id' => $exam->id,
+                'title' => $exam->title,
+                'class_id' => $exam->class_id,
+                'student_class_id' => $student->class_id,
+                'status' => $exam->status
+            ]);
+
+            // Cek apakah exam untuk kelas siswa
+            if ($exam->class_id != $student->class_id) {
+                \Log::warning('Class mismatch', [
+                    'exam_class' => $exam->class_id,
+                    'student_class' => $student->class_id
+                ]);
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak tersedia untuk kelas Anda.');
+            }
+
+            // Cek status exam
+            if ($exam->status !== 'active') {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak aktif.');
+            }
+
+            // Cek waktu akses dengan metode yang lebih sederhana
+            $now = now();
+            $timeStatus = 'available';
+
+            if ($exam->start_at && $now < $exam->start_at) {
+                $timeStatus = 'upcoming';
+            } elseif ($exam->end_at && $now > $exam->end_at) {
+                $timeStatus = 'finished';
+            }
+
+            if ($timeStatus === 'upcoming') {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian akan dimulai pada ' . $exam->start_at->format('d M Y H:i'));
+            }
+
+            if ($timeStatus === 'finished') {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian telah berakhir pada ' . $exam->end_at->format('d M Y H:i'));
+            }
+
+            // Cek attempt
+            $lastAttempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
                 ->latest()
                 ->first();
 
-            $exam->attempt = $lastAttempt;
+            $attemptCount = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->whereIn('status', ['submitted', 'timeout'])
+                ->count();
 
-            if ($lastAttempt) {
-                if ($lastAttempt->status == 'in_progress') {
-                    $exam->status = 'ongoing';
-                } elseif (in_array($lastAttempt->status, ['submitted', 'timeout'])) {
-                    $exam->status = 'completed';
-                }
-            } elseif ($exam->end_at && now()->gt($exam->end_at)) {
-                $exam->status = 'expired';
-            } elseif ($exam->start_at && now()->lt($exam->start_at)) {
-                $exam->status = 'upcoming';
-            } else {
-                $exam->status = 'available';
+            // Hitung jumlah soal
+            $questionsCount = $exam->questions->count();
+
+            // Cek apakah bisa retake
+            $canRetake = true;
+            if ($exam->limit_attempts > 0 && $attemptCount >= $exam->limit_attempts) {
+                $canRetake = false;
             }
 
-            return $exam;
-        });
+            // Tambahkan data ke exam object untuk view
+            $exam->questions_count = $questionsCount;
+            $exam->attempt_count = $attemptCount;
+            $exam->time_status = $timeStatus;
 
-        return view('Murid.Exam.soal', compact('exams'));
+            return view('Siswa.soal-detail', compact('exam', 'lastAttempt', 'attemptCount', 'canRetake'));
+        } catch (\Exception $e) {
+            \Log::error('Error in showDetail: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('soal.index')
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * POST /soal/{exam}/start
+     * Mulai attempt baru
+     */
+    /**
+     * POST /soal/{exam}/start
+     * Mulai attempt baru
+     */
+    public function start(Request $request, $examId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = Auth::user();
+            $student = $user->student;
+
+            if (!$student) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Data siswa tidak ditemukan.');
+            }
+
+            $exam = Exam::find($examId);
+
+            if (!$exam) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak ditemukan.');
+            }
+
+            // Debug log
+            \Log::info('Start exam attempt', [
+                'exam_id' => $examId,
+                'student_id' => $user->id,
+                'exam_class' => $exam->class_id,
+                'student_class' => $student->class_id
+            ]);
+
+            // Validasi akses
+            if ($exam->class_id != $student->class_id) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Anda tidak memiliki akses ke ujian ini.');
+            }
+
+            // Validasi status
+            if ($exam->status !== 'active') {
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Ujian tidak aktif.');
+            }
+
+            // Validasi waktu
+            $now = now();
+            if ($exam->start_at && $now < $exam->start_at) {
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Ujian akan dimulai pada ' . $exam->start_at->format('d M Y H:i'));
+            }
+
+            if ($exam->end_at && $now > $exam->end_at) {
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Ujian telah berakhir pada ' . $exam->end_at->format('d M Y H:i'));
+            }
+
+            // Cek apakah sudah ada attempt yang sedang berjalan
+            $ongoingAttempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->where('status', 'in_progress')
+                ->first();
+
+            if ($ongoingAttempt) {
+                DB::commit();
+                return redirect()->route('soal.kerjakan', $examId)
+                    ->with('info', 'Mengalihkan ke ujian yang sedang berjalan.');
+            }
+
+            // Cek batas percobaan
+            $attemptCount = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->whereIn('status', ['submitted', 'timeout'])
+                ->count();
+
+            if ($exam->limit_attempts > 0 && $attemptCount >= $exam->limit_attempts) {
+                DB::rollBack();
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Anda telah mencapai batas maksimal percobaan.');
+            }
+
+            // Buat attempt baru
+            $attempt = ExamAttempt::create([
+                'exam_id' => $exam->id,
+                'student_id' => $user->id,
+                'started_at' => now(),
+                'remaining_time' => $exam->duration * 60,
+                'status' => 'in_progress',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'exam_settings' => $exam->getAllSettings(),
+                'violation_count' => 0,
+            ]);
+
+            // Set session untuk tracking
+            session([
+                'current_attempt_' . $examId => $attempt->id,
+                'fullscreen_required_' . $examId => $exam->fullscreen_mode,
+                'exam_started_' . $examId => true,
+            ]);
+
+            DB::commit();
+
+            \Log::info('Exam attempt created', [
+                'attempt_id' => $attempt->id,
+                'exam_id' => $examId,
+                'student_id' => $user->id
+            ]);
+
+            return redirect()->route('soal.kerjakan', $examId)
+                ->with('success', 'Ujian dimulai! Anda memiliki ' . $exam->duration . ' menit.')
+                ->with('require_fullscreen', $exam->fullscreen_mode);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error starting exam: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('soal.detail', $examId)
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * GET /soal/{exam}/kerjakan
+     * Halaman mengerjakan soal
+     */
+    /**
+     * GET /soal/{exam}/kerjakan
+     * Halaman mengerjakan soal
+     */
+    public function attemptFromSession($examId)
+    {
+        try {
+            $user = Auth::user();
+            $student = $user->student;
+
+            if (!$student || !$student->class_id) {
+                return redirect()->route('soal.index')->with('error', 'Data siswa tidak ditemukan.');
+            }
+
+            $exam = Exam::with(['questions' => function ($query) {
+                $query->with('choices')->orderBy('order');
+            }])
+                ->where('id', $examId)
+                ->where('class_id', $student->class_id)
+                ->where('status', 'active')
+                ->firstOrFail();
+
+            // Cari attempt yang sedang berjalan
+            $attempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->where('status', 'in_progress')
+                ->first();
+
+            if (!$attempt) {
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Tidak ada ujian yang sedang berjalan. Silakan mulai ulang.');
+            }
+
+            // Cek pelanggaran
+            if ($exam->violation_limit && $attempt->violation_count >= $exam->violation_limit) {
+                $this->forceSubmitDueToViolation($attempt);
+                return redirect()->route('soal.hasil', ['exam' => $examId, 'attempt' => $attempt->id])
+                    ->with('error', 'Ujian dihentikan karena terlalu banyak pelanggaran.');
+            }
+
+            // Hitung waktu
+            $timeElapsed = 0;
+            if ($attempt->started_at) {
+                $timeElapsed = now()->diffInSeconds($attempt->started_at);
+            }
+
+            $totalTime = $exam->duration * 60;
+            $timeRemaining = max(0, $totalTime - $timeElapsed);
+
+            if ($timeRemaining <= 0) {
+                $this->forceSubmitDueToTimeout($attempt);
+                return redirect()->route('soal.hasil', ['exam' => $examId, 'attempt' => $attempt->id])
+                    ->with('error', 'Waktu ujian telah habis.');
+            }
+
+            // Format Pertanyaan (PENTING: Gunakan values() agar jadi Array di JSON, bukan Object)
+            $questions = $exam->questions->map(function ($question) {
+                $options = [];
+                if (($question->type === 'PG' || $question->type === 'multiple_choice') && $question->choices->isNotEmpty()) {
+                    foreach ($question->choices->sortBy('order') as $choice) {
+                        $options[$choice->label] = $choice->text; // Label A, B, C sebagai Key
+                    }
+                }
+
+                return [
+                    'id' => $question->id,
+                    'question_text' => $question->question,
+                    'question_image' => $question->question_image,
+                    'type' => $question->type,
+                    'score' => $question->score,
+                    'options' => $options,
+                    'order' => $question->order
+                ];
+            });
+
+            // Acak soal jika diaktifkan
+            if ($exam->shuffle_question) {
+                $questions = $questions->shuffle();
+            }
+
+            // Reset keys agar jadi array urut [0, 1, 2] untuk JavaScript
+            $questions = $questions->values();
+
+            // Ambil jawaban tersimpan
+            $savedAnswers = ExamAnswer::where('attempt_id', $attempt->id)->get();
+
+            $answers = $savedAnswers->whereNotNull('choice_id')
+                ->mapWithKeys(function ($item) use ($exam) {
+                    // Kita perlu label (A,B,C) untuk frontend, cari label dari choice_id
+                    $q = $exam->questions->find($item->question_id);
+                    if ($q && $q->choices) {
+                        $choice = $q->choices->find($item->choice_id);
+                        return [$item->question_id => $choice ? $choice->label : null];
+                    }
+                    return [$item->question_id => null];
+                })->toArray();
+
+            $essayAnswers = $savedAnswers->whereNotNull('answer_text')
+                ->whereNull('choice_id')
+                ->pluck('answer_text', 'question_id')
+                ->toArray();
+
+            // Security Settings
+            $securitySettings = [
+                'fullscreen_mode' => (bool) $exam->fullscreen_mode,
+                'block_new_tab' => (bool) $exam->block_new_tab,
+                'prevent_copy_paste' => (bool) $exam->prevent_copy_paste,
+                'violation_limit' => $exam->violation_limit ?? 3,
+                'disable_violations' => (bool) $exam->disable_violations,
+                'shuffle_question' => (bool) $exam->shuffle_question,
+                'shuffle_answer' => (bool) $exam->shuffle_answer,
+            ];
+
+            // Marked for review (default kosong, bisa disimpan di DB nanti)
+            $markedForReview = [];
+
+            return view('murid.exams.attempt', [
+                'exam' => $exam,
+                'questions' => $questions,
+                'attempt' => $attempt,
+                'timeRemaining' => $timeRemaining,
+                'answers' => $answers,
+                'essayAnswers' => $essayAnswers,
+                'markedForReview' => $markedForReview,
+                'securitySettings' => $securitySettings,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in attemptFromSession: ' . $e->getMessage());
+            return redirect()->route('soal.index')->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
+    }
+    /**
+     * POST /soal/{exam}/submit
+     * Submit jawaban
+     */
+    public function submit(Request $request, $examId)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'answers' => 'required|json',
+            ]);
+
+            $answers = json_decode($request->answers, true);
+
+            // Cek apakah ini submit paksa karena pelanggaran
+            $isForcedViolation = $request->input('force_submit_violation') == 'true';
+            $violationCount = $request->input('violation_count', 0);
+            $showResult = $request->input('show_result', 0); // Tambahkan ini
+
+            $attempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->where('status', 'in_progress')
+                ->latest()
+                ->first();
+
+            if (!$attempt) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Tidak ada ujian yang sedang berjalan.');
+            }
+
+            $exam = Exam::with(['questions.choices'])->findOrFail($examId);
+
+            // Simpan semua jawaban
+            foreach ($answers as $questionId => $answerValue) {
+                $question = $exam->questions->where('id', $questionId)->first();
+                if (!$question) continue;
+
+                $examAnswer = ExamAnswer::where('attempt_id', $attempt->id)
+                    ->where('question_id', $questionId)
+                    ->first();
+
+                if (!$examAnswer) {
+                    $examAnswer = new ExamAnswer();
+                    $examAnswer->exam_id = $examId;
+                    $examAnswer->question_id = $questionId;
+                    $examAnswer->student_id = $user->id;
+                    $examAnswer->attempt_id = $attempt->id;
+                }
+
+                // Untuk PG
+                if ($question->type === 'PG') {
+                    if (is_string($answerValue) && strlen($answerValue) === 1) {
+                        $choice = $question->choices->firstWhere('label', $answerValue);
+                    } else {
+                        $choice = $question->choices->firstWhere('id', $answerValue);
+                    }
+
+                    if ($choice) {
+                        $examAnswer->choice_id = $choice->id;
+                        $examAnswer->answer_text = $choice->text;
+                        $examAnswer->is_correct = $choice->is_correct;
+                        $examAnswer->score = $choice->is_correct ? $question->score : 0;
+                    }
+                } else {
+                    // Untuk Essay
+                    $examAnswer->answer_text = $answerValue;
+                    $examAnswer->score = 0;
+                }
+
+                $examAnswer->answered_at = now();
+                $examAnswer->save();
+            }
+
+            // Hitung total score
+            $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
+            $maxScore = $exam->questions->sum('score');
+            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+
+            // Update attempt
+            $attempt->status = 'submitted';
+            $attempt->ended_at = now();
+            $attempt->score = $totalScore;
+            $attempt->final_score = $finalScore;
+
+            // Tandai kecurangan jika submit dipaksa
+            if ($isForcedViolation) {
+                $attempt->is_cheating_detected = true;
+                $attempt->violation_count = $violationCount;
+            }
+
+            $attempt->save();
+
+            // Bersihkan session
+            session()->forget([
+                'current_attempt_' . $examId,
+                'fullscreen_required_' . $examId,
+                'exam_started_' . $examId,
+            ]);
+
+            session()->regenerate();
+
+            DB::commit();
+
+            // Tentukan redirect berdasarkan setting tampil hasil
+            if ($showResult || $exam->show_result_after === 'immediately') {
+                return redirect()->route('soal.hasil', [
+                    'exam' => $examId,
+                    'attempt' => $attempt->id
+                ])->with('success', $isForcedViolation ?
+                    'Ujian dihentikan karena pelanggaran.' :
+                    'Jawaban berhasil dikumpulkan!');
+            } else {
+                return redirect()->route('soal.index')
+                    ->with('success', 'Jawaban berhasil dikumpulkan! Hasil akan ditampilkan kemudian.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error submitting exam: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * GET /soal/{exam}/hasil/{attempt}
+     * Tampilkan hasil ujian
+     */
+    public function result($examId, $attemptId)
+    {
+        try {
+            $user = Auth::user();
+
+            $exam = Exam::findOrFail($examId);
+
+            $attempt = ExamAttempt::with(['answers.question.choices'])
+                ->where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->findOrFail($attemptId);
+
+            // Hitung statistik
+            $totalQuestions = $exam->questions()->count();
+            $answeredQuestions = $attempt->answers()->count();
+            $correctAnswers = $attempt->answers()->where('is_correct', true)->count();
+            $incorrectAnswers = $answeredQuestions - $correctAnswers;
+
+            $percentage = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
+
+            // Cek apakah lulus
+            $isPassed = false;
+            if ($exam->min_pass_grade) {
+                $isPassed = $attempt->final_score >= $exam->min_pass_grade;
+            }
+
+            // Cek apakah bisa mengulang
+            $allow_retake = false;
+            if ($exam->limit_attempts > 1) {
+                $attemptCount = ExamAttempt::where('exam_id', $examId)
+                    ->where('student_id', $user->id)
+                    ->whereIn('status', ['submitted', 'timeout'])
+                    ->count();
+
+                $allow_retake = $attemptCount < $exam->limit_attempts;
+            }
+
+            return view('murid.exams.result', [
+                'exam' => $exam,
+                'attempt' => $attempt,
+                'allow_retake' => $allow_retake,
+                'totalQuestions' => $totalQuestions,
+                'answeredQuestions' => $answeredQuestions,
+                'correctAnswers' => $correctAnswers,
+                'incorrectAnswers' => $incorrectAnswers,
+                'percentage' => $percentage,
+                'isPassed' => $isPassed,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error viewing result: ' . $e->getMessage());
+            return redirect()->route('soal.index')
+                ->with('error', 'Hasil ujian tidak ditemukan.');
+        }
+    }
+
+    /**
+     * POST /soal/{exam}/violation
+     * Log pelanggaran
+     */
+    public function logViolation(Request $request, $examId)
+    {
+        $request->validate([
+            'type' => 'required|string',
+            'count' => 'required|integer|min:1',
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            $attempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->where('status', 'in_progress')
+                ->first();
+
+            if (!$attempt) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada attempt yang sedang berjalan'
+                ], 404);
+            }
+
+            // Update violation count
+            $attempt->violation_count = $request->count;
+
+            // Save violation log
+            $log = $attempt->violation_log ?? [];
+            $log[] = [
+                'type' => $request->type,
+                'count' => $request->count,
+                'timestamp' => now()->toDateTimeString(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ];
+            $attempt->violation_log = $log;
+
+            // Jika mencapai batas, force submit
+            $exam = Exam::find($examId);
+            $violationLimit = $exam->violation_limit ?? 3;
+
+            if ($request->count >= $violationLimit) {
+                $attempt->is_cheating_detected = true;
+                $attempt->save();
+
+                $this->forceSubmitDueToViolation($attempt);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Attempt disubmit karena pelanggaran',
+                    'force_submit' => true,
+                    'redirect_url' => route('soal.hasil', [
+                        'exam' => $examId,
+                        'attempt' => $attempt->id
+                    ])
+                ]);
+            }
+
+            $attempt->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pelanggaran dicatat',
+                'violation_count' => $attempt->violation_count
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error logging violation: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper: Get exam status
+     */
+    private function getExamStatus($exam, $attempt)
+    {
+        if (!$exam) return 'not_available';
+
+        // Cek jika sudah melewati deadline
+        if ($exam->end_at && now() > $exam->end_at) {
+            return 'expired';
+        }
+
+        // Cek jika belum dimulai
+        if ($exam->start_at && now() < $exam->start_at) {
+            return 'upcoming';
+        }
+
+        // Cek berdasarkan attempt
+        if ($attempt) {
+            if ($attempt->status === 'submitted' || $attempt->status === 'timeout') {
+                return 'completed';
+            } elseif ($attempt->status === 'in_progress') {
+                return 'ongoing';
+            }
+        }
+
+        // Default: tersedia untuk dikerjakan
+        return 'available';
+    }
+
+    /**
+     * Helper: Force submit karena timeout
+     */
+    private function forceSubmitDueToTimeout($attempt)
+    {
+        try {
+            DB::beginTransaction();
+
+            $attempt->status = 'timeout';
+            $attempt->ended_at = now();
+            $attempt->save();
+
+            // Bersihkan session
+            session()->forget([
+                'current_attempt_' . $attempt->exam_id,
+                'fullscreen_required_' . $attempt->exam_id,
+                'exam_started_' . $attempt->exam_id,
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in forceSubmitDueToTimeout: ' . $e->getMessage());
+        }
+    }
+
+    public function forceSubmitViolation(Request $request, $examId)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+
+            // Validasi input
+            $validated = $request->validate([
+                'answers' => 'required|json',
+                'violation_count' => 'required|integer|min:1',
+                'attempt_id' => 'required|exists:exam_attempts,id',
+            ]);
+
+            $answers = json_decode($validated['answers'], true);
+
+            // Ambil attempt
+            $attempt = ExamAttempt::where('id', $validated['attempt_id'])
+                ->where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->firstOrFail();
+
+            // Pastikan attempt masih in_progress
+            if ($attempt->status !== 'in_progress') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attempt sudah disubmit sebelumnya'
+                ], 400);
+            }
+
+            $exam = Exam::with(['questions.choices'])->findOrFail($examId);
+
+            // Simpan semua jawaban
+            foreach ($answers as $questionId => $answerValue) {
+                $question = $exam->questions->where('id', $questionId)->first();
+                if (!$question) continue;
+
+                $examAnswer = ExamAnswer::where('attempt_id', $attempt->id)
+                    ->where('question_id', $questionId)
+                    ->first();
+
+                if (!$examAnswer) {
+                    $examAnswer = new ExamAnswer();
+                    $examAnswer->exam_id = $examId;
+                    $examAnswer->question_id = $questionId;
+                    $examAnswer->student_id = $user->id;
+                    $examAnswer->attempt_id = $attempt->id;
+                }
+
+                // Untuk PG
+                if ($question->type === 'PG') {
+                    if (is_string($answerValue) && strlen($answerValue) === 1) {
+                        $choice = $question->choices->firstWhere('label', $answerValue);
+                    } else {
+                        $choice = $question->choices->firstWhere('id', $answerValue);
+                    }
+
+                    if ($choice) {
+                        $examAnswer->choice_id = $choice->id;
+                        $examAnswer->answer_text = $choice->text;
+                        $examAnswer->is_correct = $choice->is_correct;
+                        $examAnswer->score = $choice->is_correct ? $question->score : 0;
+                    }
+                } else {
+                    // Untuk Essay
+                    $examAnswer->answer_text = $answerValue;
+                    $examAnswer->score = 0;
+                }
+
+                $examAnswer->answered_at = now();
+                $examAnswer->save();
+            }
+
+            // Hitung skor
+            $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
+            $maxScore = $exam->questions->sum('score');
+            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+
+            // Update attempt
+            $attempt->status = 'submitted';
+            $attempt->ended_at = now();
+            $attempt->score = $totalScore;
+            $attempt->final_score = $finalScore;
+            $attempt->is_cheating_detected = true;
+            $attempt->violation_count = $validated['violation_count'];
+            $attempt->save();
+
+            // Bersihkan session
+            $this->clearExamSession($examId);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ujian berhasil disubmit karena pelanggaran',
+                'redirect_url' => route('soal.hasil', [
+                    'exam' => $examId,
+                    'attempt' => $attempt->id
+                ])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error in forceSubmitViolation: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Helper: Force submit karena pelanggaran
+     */
+    private function forceSubmitDueToViolation($attempt)
+    {
+        try {
+            DB::beginTransaction();
+
+            $attempt->status = 'submitted';
+            $attempt->is_cheating_detected = true;
+            $attempt->ended_at = now();
+            $attempt->save();
+
+            // Bersihkan session
+            session()->forget([
+                'current_attempt_' . $attempt->exam_id,
+                'fullscreen_required_' . $attempt->exam_id,
+                'exam_started_' . $attempt->exam_id,
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in forceSubmitDueToViolation: ' . $e->getMessage());
+        }
     }
 
     public function active()
@@ -129,7 +1001,7 @@ class ExamController extends Controller
 
         $exams = Exam::where('class_id', $student->class_id)
             ->where('status', 'active')
-            ->where('start_at', '<=', now())
+            ->where('start_at', '<=', now()) // ← ERROR DI SINI
             ->where('end_at', '>=', now())
             ->with(['subject', 'class'])
             ->orderBy('end_at', 'asc')
@@ -144,7 +1016,7 @@ class ExamController extends Controller
 
         $exams = Exam::where('class_id', $student->class_id)
             ->where('status', 'active')
-            ->where('start_at', '>', now())
+            ->where('start_at', '>', now()) // ← Pastikan tidak ada `column:`
             ->with(['subject', 'class'])
             ->orderBy('start_at', 'asc')
             ->get();
@@ -158,7 +1030,7 @@ class ExamController extends Controller
 
         $exams = Exam::where('class_id', $student->class_id)
             ->where('status', 'active')
-            ->where('end_at', '<', now())
+            ->where('end_at', '<', now()) // ← Pastikan tidak ada `column:`
             ->with(['subject', 'class'])
             ->orderBy('end_at', 'desc')
             ->get();
@@ -202,92 +1074,6 @@ class ExamController extends Controller
         }
     }
 
-    public function start(Request $request, $examId)
-    {
-        try {
-            DB::beginTransaction();
-
-            $user = Auth::user();
-            $student = $user->student;
-
-            if (!$student || !$student->class_id) {
-                return redirect()->route('soal.index')
-                    ->with('error', 'Data siswa tidak ditemukan.');
-            }
-
-            $exam = Exam::findOrFail($examId);
-
-            if ($exam->class_id !== $student->class_id) {
-                return redirect()->route('soal.index')
-                    ->with('error', 'Anda tidak memiliki akses ke ujian ini.');
-            }
-
-            $existingAttempt = ExamAttempt::where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->where('status', 'in_progress')
-                ->first();
-
-            if ($existingAttempt) {
-                DB::commit();
-                return redirect()->route('soal.kerjakan', $examId)
-                    ->with('info', 'Mengalihkan ke ujian yang sedang berjalan.');
-            }
-
-            $attemptCount = ExamAttempt::where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->whereIn('status', ['submitted', 'timeout'])
-                ->count();
-
-            if ($exam->limit_attempts && $attemptCount >= $exam->limit_attempts) {
-                DB::rollBack();
-                return redirect()->route('soal.detail', $examId)
-                    ->with('error', 'Anda telah mencapai batas maksimal percobaan.');
-            }
-
-            $now = now();
-            if ($exam->start_at && $now < $exam->start_at) {
-                DB::rollBack();
-                return redirect()->route('soal.detail', $examId)
-                    ->with('error', 'Ujian belum dimulai. Mulai: ' . $exam->start_at->format('d M Y H:i'));
-            }
-
-            if ($exam->end_at && $now > $exam->end_at) {
-                DB::rollBack();
-                return redirect()->route('soal.detail', $examId)
-                    ->with('error', 'Ujian sudah berakhir. Berakhir: ' . $exam->end_at->format('d M Y H:i'));
-            }
-
-            $attempt = ExamAttempt::create([
-                'exam_id' => $exam->id,
-                'student_id' => $user->id,
-                'started_at' => now(),
-                'remaining_time' => $exam->duration * 60,
-                'status' => 'in_progress',
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'exam_settings' => $exam->getAllSettings(),
-            ]);
-
-            session([
-                'current_attempt_' . $examId => $attempt->id,
-                'fullscreen_required_' . $examId => $exam->fullscreen_mode,
-                'exam_started_' . $examId => true,
-            ]);
-
-            DB::commit();
-
-            return redirect()->route('soal.kerjakan', $examId)
-                ->with('success', 'Ujian dimulai! Anda memiliki ' . $exam->duration . ' menit.')
-                ->with('require_fullscreen', $exam->fullscreen_mode);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error starting exam: ' . $e->getMessage());
-
-            return redirect()->route('soal.detail', $examId)
-                ->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator.');
-        }
-    }
-
     public function directAttempt($examId)
     {
         $user = Auth::user();
@@ -316,204 +1102,6 @@ class ExamController extends Controller
             ->firstOrFail();
 
         return redirect()->route('murid.exams.attempt', ['exam' => $exam->id, 'attempt' => $attempt->id]);
-    }
-
-    public function attemptFromSession($examId)
-    {
-        try {
-            $user = Auth::user();
-            $student = $user->student;
-
-            if (!$student || !$student->class_id) {
-                return redirect()->route('soal.index')
-                    ->with('error', 'Data siswa tidak ditemukan atau belum memiliki kelas.');
-            }
-
-            $exam = Exam::with(['questions' => function ($query) {
-                $query->with(['choices' => function ($q) {
-                    $q->orderBy('order');
-                }]);
-            }])
-                ->where('id', $examId)
-                ->where('class_id', $student->class_id)
-                ->where('status', 'active')
-                ->firstOrFail();
-
-            $now = now();
-            if ($exam->start_at && $now < $exam->start_at) {
-                return redirect()->route('soal.detail', $examId)
-                    ->with('error', 'Ujian belum dimulai. Mulai: ' . $exam->start_at->format('d M Y H:i'));
-            }
-
-            if ($exam->end_at && $now > $exam->end_at) {
-                $this->forceSubmitAllAttempts($examId, $user->id);
-
-                return redirect()->route('soal.detail', $examId)
-                    ->with('error', 'Ujian sudah berakhir. Berakhir: ' . $exam->end_at->format('d M Y H:i'));
-            }
-
-            // CEK APAKAH SUDAH MELANGGAR 3x DAN DITUTUP
-            $attempt = ExamAttempt::where('exam_id', $exam->id)
-                ->where('student_id', $user->id)
-                ->where('status', 'in_progress')
-                ->first();
-
-            if (!$attempt) {
-                // Cek apakah sudah pernah melanggar 3x
-                $previousViolation = ExamAttempt::where('exam_id', $exam->id)
-                    ->where('student_id', $user->id)
-                    ->where('is_cheating_detected', true)
-                    ->where('violation_count', '>=', 3)
-                    ->latest()
-                    ->first();
-
-                if ($previousViolation) {
-                    // Jika sudah 3x pelanggaran, redirect ke hasil
-                    return redirect()->route('soal.hasil', [
-                        'exam' => $examId,
-                        'attempt' => $previousViolation->id,
-                        'violation' => 'max'
-                    ])->with('error', 'Anda telah mencapai batas maksimal pelanggaran.');
-                }
-
-                $attemptCount = ExamAttempt::where('exam_id', $exam->id)
-                    ->where('student_id', $user->id)
-                    ->whereIn('status', ['submitted', 'timeout'])
-                    ->count();
-
-                if ($exam->limit_attempts && $attemptCount >= $exam->limit_attempts) {
-                    return redirect()->route('soal.detail', $examId)
-                        ->with('error', 'Anda telah mencapai batas maksimal percobaan.');
-                }
-
-                $lastAttempt = ExamAttempt::where('exam_id', $exam->id)
-                    ->where('student_id', $user->id)
-                    ->latest()
-                    ->first();
-
-                if ($lastAttempt && ($lastAttempt->isSubmitted() || $lastAttempt->isTimeout())) {
-                    if ($exam->limit_attempts > 1 && $attemptCount < $exam->limit_attempts) {
-                        $attempt = ExamAttempt::create([
-                            'exam_id' => $exam->id,
-                            'student_id' => $user->id,
-                            'started_at' => now(),
-                            'remaining_time' => $exam->duration * 60,
-                            'status' => 'in_progress',
-                            'ip_address' => request()->ip(),
-                            'user_agent' => request()->userAgent(),
-                            'exam_settings' => $exam->getAllSettings(),
-                        ]);
-                    } else {
-                        return redirect()->route('soal.detail', $examId)
-                            ->with('error', 'Anda sudah menyelesaikan ujian ini.');
-                    }
-                } else {
-                    $attempt = ExamAttempt::create([
-                        'exam_id' => $exam->id,
-                        'student_id' => $user->id,
-                        'started_at' => now(),
-                        'remaining_time' => $exam->duration * 60,
-                        'status' => 'in_progress',
-                        'ip_address' => request()->ip(),
-                        'user_agent' => request()->userAgent(),
-                        'exam_settings' => $exam->getAllSettings(),
-                    ]);
-                }
-            }
-
-            session([
-                'current_attempt_' . $examId => $attempt->id,
-                'fullscreen_required_' . $examId => $exam->fullscreen_mode,
-                'exam_started_' . $examId => true,
-            ]);
-
-            $timeElapsed = $attempt->getTimeElapsed();
-            $timeRemaining = $exam->duration * 60 - $timeElapsed;
-
-            if ($timeRemaining <= 0) {
-                $this->forceSubmitDueToTimeout($attempt);
-                return redirect()->route('soal.hasil', ['exam' => $examId, 'attempt' => $attempt->id])
-                    ->with('error', 'Waktu ujian telah habis');
-            }
-
-            $attempt->update(['remaining_time' => $timeRemaining]);
-
-            // PERBAIKAN: Ambil jawaban dengan benar
-            $answers = ExamAnswer::where('attempt_id', $attempt->id)
-                ->get()
-                ->keyBy('question_id')
-                ->map(function ($item) {
-                    // Untuk PG, simpan choice_id atau label
-                    if ($item->choice_id) {
-                        return $item->choice_id;
-                    }
-                    // Untuk essay, simpan text
-                    return $item->answer_text;
-                })
-                ->toArray();
-
-            // PERBAIKAN: Format questions dengan benar
-            $questions = $exam->questions->map(function ($question) use ($answers) {
-                $options = [];
-
-                if (($question->type === 'PG' || $question->type === 'multiple_choice') && $question->choices->isNotEmpty()) {
-                    $choices = $question->choices->sortBy('order');
-
-                    foreach ($choices as $choice) {
-                        $options[$choice->label] = $choice->text; // Gunakan label (A, B, C) sebagai key
-                    }
-                }
-
-                $selectedAnswer = $answers[$question->id] ?? null;
-
-                return [
-                    'id' => $question->id,
-                    'question_text' => $question->question,
-                    'question_image' => $question->question_image,
-                    'type' => $question->type,
-                    'score' => $question->score,
-                    'options' => $options,
-                    'selected_answer' => $selectedAnswer,
-                    'order' => $question->order
-                ];
-            });
-
-            $securitySettings = [
-                'fullscreen_mode' => (bool) $exam->fullscreen_mode,
-                'block_new_tab' => (bool) $exam->block_new_tab,
-                'prevent_copy_paste' => (bool) $exam->prevent_copy_paste,
-                'allow_copy' => (bool) $exam->allow_copy,
-                'allow_screenshot' => (bool) $exam->allow_screenshot,
-                'shuffle_question' => (bool) $exam->shuffle_question,
-                'shuffle_answer' => (bool) $exam->shuffle_answer,
-                'auto_submit' => (bool) $exam->auto_submit,
-                'enable_proctoring' => (bool) $exam->enable_proctoring,
-                'require_camera' => (bool) $exam->require_camera,
-                'require_mic' => (bool) $exam->require_mic,
-                'violation_limit' => $exam->violation_limit ?? 3,
-            ];
-
-            return view('murid.exams.attempt', [
-                'exam' => $exam,
-                'questions' => $questions,
-                'attempt' => $attempt,
-                'timeRemaining' => $timeRemaining,
-                'answeredCount' => count(array_filter($answers)),
-                'securitySettings' => $securitySettings,
-                'requireFullscreen' => (bool) $exam->fullscreen_mode,
-                'attemptId' => $attempt->id,
-                'answers' => $answers,
-                'essayAnswers' => ExamAnswer::where('attempt_id', $attempt->id)
-                    ->whereNotNull('answer_text')
-                    ->pluck('answer_text', 'question_id')
-                    ->toArray(),
-                'markedForReview' => [],
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in attemptFromSession: ' . $e->getMessage());
-            return redirect()->route('soal.index')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
     }
 
     public function attempt($examId, $attemptId)
@@ -713,182 +1301,6 @@ class ExamController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function submit(Request $request, $examId)
-    {
-        DB::beginTransaction();
-        try {
-            $user = Auth::user();
-
-            $request->validate([
-                'answers' => 'required|json',
-            ]);
-
-            $answers = json_decode($request->answers, true);
-
-            // --- TAMBAHKAN KODE INI ---
-            // Cek apakah ini submit paksa karena pelanggaran
-            $isForcedViolation = $request->input('force_submit_violation') == 'true';
-            $violationCount = $request->input('violation_count', 0);
-            // --------------------------
-
-            $attempt = ExamAttempt::where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->where('status', 'in_progress')
-                ->latest()
-                ->first();
-
-            if (!$attempt) {
-                return redirect()->route('soal.index')
-                    ->with('error', 'Tidak ada ujian yang sedang berjalan.');
-            }
-
-            // ... (Kode loop penyimpanan jawaban biarkan sama seperti sebelumnya) ...
-            $exam = Exam::with(['questions.choices' => function ($query) {
-                $query->orderBy('order');
-            }])->findOrFail($examId);
-
-            foreach ($answers as $questionId => $answerValue) {
-                // ... (Logika simpan jawaban tetap sama) ...
-                $question = $exam->questions->where('id', $questionId)->first();
-                if (!$question) continue;
-
-                // Copy paste logika penyimpanan jawaban Anda di sini
-                // (Kode Anda sudah benar untuk bagian ini, tidak perlu diubah)
-
-                $examAnswer = ExamAnswer::where('attempt_id', $attempt->id)
-                    ->where('question_id', $questionId)
-                    ->first();
-
-                if (!$examAnswer) {
-                    $examAnswer = new ExamAnswer();
-                    $examAnswer->exam_id = $examId;
-                    $examAnswer->question_id = $questionId;
-                    $examAnswer->student_id = $user->id;
-                    $examAnswer->attempt_id = $attempt->id;
-                }
-
-                // ... Logic PG/Essay ...
-                if ($question->type === 'PG' || $question->type === 'multiple_choice') {
-                    $choice = $question->choices->firstWhere('label', $answerValue);
-
-                    if ($choice) {
-                        $examAnswer->choice_id = $choice->id;
-                        $examAnswer->answer_text = $choice->text;
-                        $examAnswer->is_correct = $choice->is_correct; // Pastikan ini diset
-                        $examAnswer->score = $choice->is_correct ? $question->score : 0;
-                    } else {
-                        $examAnswer->choice_id = null;
-                        $examAnswer->answer_text = $answerValue;
-                        $examAnswer->score = 0;
-                        $examAnswer->is_correct = false;
-                    }
-                } else {
-                    $examAnswer->choice_id = null;
-                    $examAnswer->answer_text = $answerValue;
-                    $examAnswer->score = 0;
-                    $examAnswer->is_correct = false;
-                }
-                $examAnswer->answered_at = now();
-                $examAnswer->save();
-            }
-
-            // Hitung Score Akhir
-            $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
-            $maxScore = $exam->questions->sum('score');
-            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
-
-            // Update Attempt Status
-            $attempt->status = 'submitted';
-            $attempt->ended_at = now();
-            $attempt->score = $totalScore;
-            $attempt->final_score = $finalScore;
-
-            // --- TAMBAHKAN KODE INI ---
-            // Tandai kecurangan jika submit dipaksa
-            if ($isForcedViolation) {
-                $attempt->is_cheating_detected = true;
-                $attempt->violation_count = $violationCount;
-            }
-            // --------------------------
-
-            $attempt->save();
-
-            // Bersihkan Session
-            session()->forget([
-                'current_attempt_' . $examId,
-                'fullscreen_required_' . $examId,
-                'exam_started_' . $examId,
-            ]);
-
-            // Regenerate session di sini (aman karena proses submit sudah selesai)
-            session()->regenerate();
-
-            DB::commit();
-
-            return redirect()->route('soal.hasil', ['exam' => $examId, 'attempt' => $attempt->id])
-                ->with('success', $isForcedViolation ? 'Ujian dihentikan karena pelanggaran.' : 'Jawaban berhasil dikumpulkan!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error submitting exam: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
-    }
-
-    public function result($examId, $attemptId)
-    {
-        try {
-            $user = Auth::user();
-
-            $exam = Exam::findOrFail($examId);
-
-            $attempt = ExamAttempt::with(['answers.question.choices'])
-                ->where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->findOrFail($attemptId);
-
-            $allow_retake = false;
-
-            if ($exam->limit_attempts > 1) {
-                $attemptCount = ExamAttempt::where('exam_id', $examId)
-                    ->where('student_id', $user->id)
-                    ->whereIn('status', ['submitted', 'timeout'])
-                    ->count();
-
-                $allow_retake = $attemptCount < $exam->limit_attempts;
-            }
-
-            $totalQuestions = $exam->questions()->count();
-            $answeredQuestions = $attempt->answers()->count();
-            $correctAnswers = $attempt->answers()->where('is_correct', true)->count();
-            $incorrectAnswers = $answeredQuestions - $correctAnswers;
-
-            $percentage = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
-
-            $isPassed = false;
-            if ($exam->min_pass_grade) {
-                $isPassed = $attempt->final_score >= $exam->min_pass_grade;
-            }
-
-            return view('murid.exams.result', [
-                'exam' => $exam,
-                'attempt' => $attempt,
-                'allow_retake' => $allow_retake,
-                'totalQuestions' => $totalQuestions,
-                'answeredQuestions' => $answeredQuestions,
-                'correctAnswers' => $correctAnswers,
-                'incorrectAnswers' => $incorrectAnswers,
-                'percentage' => $percentage,
-                'isPassed' => $isPassed,
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return redirect()->route('soal.index')
-                ->with('error', 'Hasil ujian tidak ditemukan.');
-        } catch (\Exception $e) {
-            \Log::error('Error viewing result: ' . $e->getMessage());
-            return redirect()->route('soal.index')->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
-    }
-
     public function review($examId, $attemptId)
     {
         $exam = Exam::findOrFail($examId);
@@ -921,134 +1333,6 @@ class ExamController extends Controller
         ]);
     }
 
-    public function logViolation(Request $request, $examId)
-    {
-        $request->validate([
-            'type' => 'required|string',
-            'count' => 'required|integer|min:1',
-        ]);
-
-        try {
-            $user = Auth::user();
-
-            $attempt = ExamAttempt::where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->where('status', 'in_progress')
-                ->first();
-
-            if (!$attempt) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada attempt yang sedang berjalan'
-                ], 404);
-            }
-
-            // Update violation count
-            $attempt->violation_count = $request->count;
-
-            // Save violation log
-            $log = $attempt->violation_log ?? [];
-            $log[] = [
-                'type' => $request->type,
-                'count' => $request->count,
-                'timestamp' => now()->toDateTimeString(),
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent()
-            ];
-            $attempt->violation_log = $log;
-
-            // SIMPAN DULU sebelum cek batas pelanggaran
-            $attempt->save();
-
-            // Jika pelanggaran mencapai batas
-            if ($request->count >= 10) {
-                // Lakukan submit di background
-                $this->forceSubmitDueToViolation($attempt);
-
-                // Kembalikan attempt yang sudah diupdate
-                $attempt->refresh();
-
-                // Generate URL yang aman
-                $redirectUrl = route('soal.hasil', [
-                    'exam' => $examId,
-                    'attempt' => $attempt->id,
-                    'violation' => 'max',
-                    't' => time() // Anti cache
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Attempt disubmit karena pelanggaran',
-                    'violation_count' => $attempt->violation_count,
-                    'force_submit' => true,
-                    'redirect_url' => $redirectUrl
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Violation logged',
-                'violation_count' => $attempt->violation_count
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error logging violation: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan'
-            ], 500);
-        }
-    }
-
-    private function forceSubmitDueToViolation($attempt)
-    {
-        try {
-            DB::beginTransaction();
-
-            $attempt->status = 'submitted';
-            $attempt->is_cheating_detected = true;
-            $attempt->ended_at = now();
-
-            // Hitung score
-            $exam = Exam::with('questions')->find($attempt->exam_id);
-            $answers = ExamAnswer::where('attempt_id', $attempt->id)->get();
-
-            $totalScore = 0;
-            foreach ($answers as $answer) {
-                $question = $exam->questions->firstWhere('id', $answer->question_id);
-                if ($question && ($question->type === 'PG' || $question->type === 'multiple_choice') && $answer->choice_id) {
-                    $correctChoice = $question->choices->firstWhere('is_correct', true);
-                    if ($correctChoice && $correctChoice->id == $answer->choice_id) {
-                        $answer->score = $question->score;
-                        $answer->is_correct = true;
-                        $totalScore += $question->score;
-                    } else {
-                        $answer->score = 0;
-                        $answer->is_correct = false;
-                    }
-                    $answer->save();
-                }
-            }
-
-            $maxScore = $exam ? $exam->questions->sum('score') : 0;
-            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
-
-            $attempt->score = $totalScore;
-            $attempt->final_score = $finalScore;
-            $attempt->save();
-
-            // Hapus session exam saja
-            session()->forget([
-                'current_attempt_' . $attempt->exam_id,
-                'fullscreen_required_' . $attempt->exam_id,
-                'exam_started_' . $attempt->exam_id,
-            ]);
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error in forceSubmitDueToViolation: ' . $e->getMessage());
-        }
-    }
 
     // Tambahkan method ini di controller
     public function handleViolationSubmit(Request $request, $examId)

@@ -40,7 +40,7 @@ class Subject extends Model
             'class_id' // Local key on Task table
         );
     }
-    
+
     public function Classes()
     {
         return $this->hasMany(Classes::class);
@@ -67,5 +67,15 @@ class Subject extends Model
     public function exams()
     {
         return $this->hasMany(Exam::class);
+    }
+
+    public function teachers()
+    {
+        return $this->belongsToMany(
+            \App\Models\Teacher::class,
+            'teacher_subjects',
+            'subject_id',   // FK ke subjects.id
+            'teacher_id'    // FK ke teachers.id
+        );
     }
 }

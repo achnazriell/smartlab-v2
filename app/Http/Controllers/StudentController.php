@@ -116,94 +116,16 @@ class StudentController extends Controller
             // Get import statistics
             $stats = $import->getImportStats();
 
-            // Buat pesan notifikasi yang lebih informatif
-            $message = "<div class='text-left'>";
-
-            // Header pesan
-            if ($stats['imported'] > 0) {
-                $message .= "<p class='font-bold text-green-600 text-lg mb-2'>✅ Import Berhasil!</p>";
-            } elseif (!empty($stats['errors'])) {
-                $message .= "<p class='font-bold text-red-600 text-lg mb-2'>⚠️ Import dengan Beberapa Masalah</p>";
-            } else {
-                $message .= "<p class='font-bold text-amber-600 text-lg mb-2'>ℹ️ Tidak Ada Data Baru</p>";
-            }
-
-            // Statistik utama
-            $message .= "<div class='space-y-1'>";
-            $message .= "<p><strong>📊 Ringkasan Import:</strong></p>";
-            $message .= "<p>• Total data diproses: <strong>{$stats['total_processed']}</strong></p>";
-            $message .= "<p>• Berhasil diimport: <strong class='text-green-600'>{$stats['imported']}</strong> murid</p>";
-
-            if ($stats['duplicate'] > 0) {
-                $message .= "<p>• Data duplikat: <strong class='text-amber-600'>{$stats['duplicate']}</strong> data (dilewati)</p>";
-            }
-
-            if ($stats['skipped'] > 0) {
-                $message .= "<p>• Data dilewati: <strong class='text-slate-600'>{$stats['skipped']}</strong> data</p>";
-            }
-
-            // Kelas yang dibuat otomatis
-            if (!empty($stats['created_classes'])) {
-                $message .= "<p>• Kelas dibuat otomatis: <strong class='text-blue-600'>" . count($stats['created_classes']) . "</strong> kelas</p>";
-                foreach ($stats['created_classes'] as $className => $count) {
-                    $message .= "<p class='ml-4'>- {$className} ({$count} siswa)</p>";
-                }
-            }
-            $message .= "</div>";
-
-            // Warnings (data duplikat, kelas dibuat, dll)
-            if (!empty($stats['warnings'])) {
-                $message .= "<div class='mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>";
-                $message .= "<p class='font-medium text-amber-800 mb-1'>⚠️ Peringatan:</p>";
-                $message .= "<ul class='text-sm text-amber-700 space-y-1 max-h-40 overflow-y-auto'>";
-                foreach (array_slice($stats['warnings'], 0, 10) as $warning) {
-                    $message .= "<li class='flex items-start'>";
-                    $message .= "<span class='mr-1'>•</span> {$warning}";
-                    $message .= "</li>";
-                }
-                if (count($stats['warnings']) > 10) {
-                    $message .= "<li class='text-xs italic'>... dan " . (count($stats['warnings']) - 10) . " peringatan lainnya</li>";
-                }
-                $message .= "</ul>";
-                $message .= "</div>";
-            }
-
-            // Errors (data error validasi)
-            if (!empty($stats['errors'])) {
-                $message .= "<div class='mt-3 p-3 bg-red-50 border border-red-200 rounded-lg'>";
-                $message .= "<p class='font-medium text-red-800 mb-1'>❌ Error yang ditemukan:</p>";
-                $message .= "<ul class='text-sm text-red-700 space-y-1 max-h-40 overflow-y-auto'>";
-                foreach (array_slice($stats['errors'], 0, 10) as $error) {
-                    $message .= "<li class='flex items-start'>";
-                    $message .= "<span class='mr-1'>•</span> {$error}";
-                    $message .= "</li>";
-                }
-                if (count($stats['errors']) > 10) {
-                    $message .= "<li class='text-xs italic'>... dan " . (count($stats['errors']) - 10) . " error lainnya</li>";
-                }
-                $message .= "</ul>";
-                $message .= "</div>";
-            }
-
-            // Success message contoh
-            if ($stats['imported'] > 0) {
-                $message .= "<div class='mt-3 p-3 bg-green-50 border border-green-200 rounded-lg'>";
-                $message .= "<p class='font-medium text-green-800'>🎉 Import berhasil menambahkan {$stats['imported']} data siswa baru!</p>";
-                if ($stats['duplicate'] > 0) {
-                    $message .= "<p class='text-green-700 text-sm mt-1'>{$stats['duplicate']} data duplikat dilewati.</p>";
-                }
-                $message .= "</div>";
-            }
-
-            $message .= "</div>";
+            // Simpan stats ke session untuk ditampilkan di view
+            session()->flash('import_stats', $stats);
 
             // Tentukan tipe flash message
             if (!empty($stats['errors'])) {
-                return back()->with('error', $message);
+                return back()->with('import_status', 'warning');
             } elseif ($stats['imported'] > 0) {
-                return back()->with('success', $message);
+                return back()->with('import_status', 'success');
             } else {
-                return back()->with('info', $message);
+                return back()->with('import_status', 'info');
             }
         } catch (\Exception $e) {
             \Log::error('Import error: ' . $e->getMessage());
@@ -264,12 +186,36 @@ class StudentController extends Controller
         return redirect()->route('students.index')->with('success', 'Data murid berhasil diperbarui.');
     }
 
-    public function destroy($id)
+    // App\Http\Controllers\StudentController.php
+    public function destroy(Student $student)
     {
-        Student::where('user_id', $id)->delete();
-        User::findOrFail($id)->delete();
+        try {
+            // Hapus user terkait
+            $student->user->delete();
 
-        return redirect()->back()->with('success', 'Murid berhasil dihapus.');
+            // Hapus student
+            $student->delete();
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Murid berhasil dihapus'
+                ]);
+            }
+
+            return redirect()->route('students.index')
+                ->with('success', 'Murid berhasil dihapus');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus murid: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->route('students.index')
+                ->with('error', 'Gagal menghapus murid: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -322,4 +268,3 @@ class StudentController extends Controller
         ]);
     }
 }
-

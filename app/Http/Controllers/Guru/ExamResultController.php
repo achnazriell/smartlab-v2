@@ -28,22 +28,47 @@ class ExamResultController extends Controller
 
         // Hitung statistik umum
         $totalStudents = $exam->class->students()->count();
-        $attempts = ExamAttempt::where('exam_id', $examId)
-            ->whereIn('status', ['submitted', 'timeout'])
-            ->get();
 
-        // Load relasi secara manual
-        $studentIds = $attempts->pluck('student_id')->unique()->toArray();
-        $students = Student::with('user')->whereIn('id', $studentIds)->get()->keyBy('id');
+        // Ambil attempts dengan data student yang lengkap
+        $attempts = ExamAttempt::select(
+            'exam_attempts.*',
+            'students.nis',
+            'users.name as student_name',
+            'users.email as student_email',
+            'users.profile_photo'
+        )
+            ->leftJoin('students', 'exam_attempts.student_id', '=', 'students.id')
+            ->leftJoin('users', 'students.user_id', '=', 'users.id')
+            ->where('exam_attempts.exam_id', $examId)
+            ->whereIn('exam_attempts.status', ['submitted', 'timeout'])
+            ->get()
+            ->map(function ($attempt) {
+                // Buat student data object
+                $attempt->student_data = (object) [
+                    'id' => $attempt->student_id,
+                    'nis' => $attempt->nis,
+                    'name' => $attempt->student_name,
+                    'email' => $attempt->student_email,
+                    'profile_photo' => $attempt->profile_photo,
+                    'profile_photo_url' => $attempt->profile_photo
+                        ? asset('storage/' . $attempt->profile_photo)
+                        : asset('images/default-avatar.png')
+                ];
 
-        // Attach students to attempts
-        $attempts->each(function ($attempt) use ($students) {
-            $attempt->student = $students->get($attempt->student_id);
-        });
+                // Hapus kolom tambahan yang tidak perlu
+                unset($attempt->nis, $attempt->student_name, $attempt->student_email, $attempt->profile_photo);
 
+                return $attempt;
+            });
+
+        // Hitung total attempts
         $totalAttempts = $attempts->count();
-        $avgScore = $attempts->avg('final_score') ?? 0;
 
+        // Hitung statistik tambahan
+        $completedAttempts = $totalAttempts;
+        $averageScore = $attempts->avg('final_score') ?? 0;
+        $maxScore = $attempts->max('final_score') ?? 0;
+        $avgScore = $averageScore;
 
         // Distribusi nilai
         $scoreDistribution = [
@@ -61,7 +86,7 @@ class ExamResultController extends Controller
             }])
             ->withCount('answers')
             ->get()
-            ->map(function ($question) {
+            ->map(function ($question) use ($totalAttempts) {
                 $question->accuracy = $question->answers_count > 0
                     ? round(($question->correct_answers_count / $question->answers_count) * 100, 1)
                     : 0;
@@ -75,7 +100,10 @@ class ExamResultController extends Controller
             'avgScore',
             'scoreDistribution',
             'questions',
-            'attempts'
+            'attempts',
+            'completedAttempts',
+            'averageScore',
+            'maxScore'
         ));
     }
 

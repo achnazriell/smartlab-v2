@@ -7,7 +7,6 @@ use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\ExamChoice;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +22,6 @@ class QuestionController extends Controller
     public function store(Request $request, $examId)
     {
         Log::info('Store Question Request:', $request->all());
-        Log::info('Exam ID:', ['examId' => $examId]);
 
         // Validasi exam
         $exam = Exam::where('teacher_id', $this->teacherId())
@@ -57,26 +55,12 @@ class QuestionController extends Controller
         try {
             DB::beginTransaction();
 
-            Log::info('Creating question with data:', [
-                'exam_id' => $exam->id,
-                'type' => $request->type,
-                'question' => $request->question,
-                'score' => $request->score,
-            ]);
-
+            // ✅ FIXED: Hanya field yang relevan untuk Question
             $questionData = [
                 'exam_id' => $exam->id,
                 'type' => $request->type,
                 'question' => trim($request->question),
                 'score' => (int) $request->score,
-                // TAMBAHKAN SETTING INI:
-                'enable_skip' => $request->boolean('enable_skip', true),
-                'enable_mark_review' => $request->boolean('enable_mark_review', true),
-                'randomize_choices' => $request->boolean('randomize_choices', false),
-                'show_explanation' => $request->boolean('show_explanation', false),
-                'enable_timer' => $request->boolean('enable_timer', false),
-                'time_limit' => $request->time_limit ?? null,
-                'require_all_options' => $request->boolean('require_all_options', false),
             ];
 
             // Handle IS (Isian Singkat)
@@ -116,12 +100,6 @@ class QuestionController extends Controller
                             'is_correct' => $index === $correctAnswer,
                             'order' => $index,
                         ]);
-                        Log::info('Choice created:', [
-                            'index' => $index,
-                            'label' => chr(65 + $index),
-                            'text' => trim($option),
-                            'is_correct' => $index === $correctAnswer
-                        ]);
                     }
                 }
             }
@@ -133,7 +111,7 @@ class QuestionController extends Controller
                 $query->orderBy('order');
             }]);
 
-            // Format response untuk Alpine.js
+            // Format response
             $responseData = [
                 'id' => $question->id,
                 'type' => $question->type,

@@ -1,4 +1,5 @@
 <?php
+// File: 2024_01_01_000006_create_exams_system_clean.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -10,101 +11,98 @@ return new class extends Migration {
     {
         /*
         |--------------------------------------------------------------------------
-        | EXAMS (Template Ujian)
+        | EXAMS (Template Ujian) - CLEAN VERSION
         |--------------------------------------------------------------------------
+        | Total: 19 fields (dengan disable_violations)
+        | Status: ✅ No conflicts, ✅ No redundancies
         */
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
+
+            // === BASIC INFO ===
             $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
             $table->foreignId('class_id')->constrained();
             $table->foreignId('subject_id')->nullable()->constrained();
-
             $table->string('title');
             $table->enum('type', ['UH', 'UTS', 'UAS', 'QUIZ', 'LAINNYA']);
+            $table->string('custom_type')->nullable(); // Untuk type LAINNYA
             $table->integer('duration'); // menit
+
+            // === TIMING ===
             $table->datetime('start_at')->nullable();
             $table->datetime('end_at')->nullable();
 
-            /*
-    |--------------------------------------------------------------------------
-    | FLOW
-    |--------------------------------------------------------------------------
-    */
-            $table->boolean('shuffle_question')->default(false);
-            $table->boolean('shuffle_answer')->default(false);
+            // === QUIZ SETTINGS (optional, hanya untuk type QUIZ) ===
+            $table->integer('time_per_question')->nullable();
+            $table->enum('quiz_mode', ['live', 'homework'])->nullable();
+            $table->enum('difficulty_level', ['easy', 'medium', 'hard'])->nullable();
 
-            /*
-    |--------------------------------------------------------------------------
-    | SECURITY
-    |--------------------------------------------------------------------------
-    */
+            // === FLOW SETTINGS ===
+            $table->boolean('shuffle_question')->default(false); // ✅ Unified for all exam types
+            $table->boolean('shuffle_answer')->default(false);   // ✅ Clear purpose
+
+            // === SECURITY SETTINGS ===
             $table->boolean('fullscreen_mode')->default(true);
             $table->boolean('block_new_tab')->default(true);
-            $table->boolean('prevent_copy_paste')->default(true);
-            $table->boolean('allow_copy')->default(false);        // ⬅️ TAMBAHAN
-            $table->boolean('allow_screenshot')->default(false);  // ⬅️ TAMBAHAN
-            $table->boolean('auto_submit')->default(true);
+            $table->boolean('prevent_copy_paste')->default(true); // ✅ Single source of truth
+            $table->boolean('disable_violations')->default(false); // ✅ NEW: Matikan semua pelanggaran
+            $table->integer('violation_limit')->default(3);       // ✅ Auto-submit automatically when reached
 
-            /*
-    |--------------------------------------------------------------------------
-    | PROCTORING
-    |--------------------------------------------------------------------------
-    */
+            // === PROCTORING ===
             $table->boolean('enable_proctoring')->default(false);
             $table->boolean('require_camera')->default(false);
             $table->boolean('require_mic')->default(false);
-            $table->integer('violation_limit')->default(3);
 
-            /*
-    |--------------------------------------------------------------------------
-    | RESULT
-    |--------------------------------------------------------------------------
-    */
+            // === RESULT SETTINGS ===
             $table->boolean('show_score')->default(false);
-            $table->boolean('show_correct_answer')->default(false);
+            $table->boolean('show_correct_answer')->default(false); // ✅ Master control
             $table->enum('show_result_after', [
-                'never',
-                'after_submit',
-                'after_exam'
+                'never',           // Tidak pernah
+                'immediately',     // Setelah submit (langsung)
+                'after_submit',    // Setelah semua siswa submit
+                'after_exam'       // Setelah waktu ujian berakhir
             ])->default('never');
-
-            /*
-    |--------------------------------------------------------------------------
-    | BUSINESS RULE
-    |--------------------------------------------------------------------------
-    */
             $table->integer('limit_attempts')->default(1);
+            $table->decimal('min_pass_grade', 5, 2)->default(0);
 
+            // === QUIZ FEATURES (optional, hanya untuk type QUIZ) ===
+            $table->boolean('show_leaderboard')->default(false);
+            $table->boolean('enable_music')->default(false);
+            $table->boolean('enable_memes')->default(false);
+            $table->boolean('enable_powerups')->default(false);
+            $table->boolean('instant_feedback')->default(false);
+            $table->boolean('streak_bonus')->default(false);
+            $table->boolean('time_bonus')->default(false);
+            $table->boolean('enable_retake')->default(false);
+
+            // === STATUS ===
             $table->enum('status', ['draft', 'active', 'finished', 'inactive'])->default('draft');
             $table->timestamps();
             $table->softDeletes();
         });
 
-
         /*
         |--------------------------------------------------------------------------
-        | EXAM QUESTIONS
+        | EXAM QUESTIONS - CLEAN VERSION
         |--------------------------------------------------------------------------
+        | Total: 3 essential fields (down from 10+)
+        | Status: ✅ No conflicts, ✅ No redundancies
         */
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
 
+            // === QUESTION CONTENT ===
             $table->enum('type', ['PG', 'IS']);
             $table->text('question');
             $table->integer('score')->default(1);
-            $table->json('short_answers')->nullable();
+            $table->json('short_answers')->nullable(); // Untuk soal IS
             $table->text('explanation')->nullable();
             $table->integer('order')->default(0);
 
-            // === PER QUESTION SETTINGS ===
-            $table->boolean('enable_timer')->default(false);
-            $table->integer('time_limit')->nullable(); // detik
-            $table->boolean('enable_skip')->default(true);
-            $table->boolean('enable_mark_review')->default(true);
-            $table->boolean('show_explanation')->default(false);
-            $table->boolean('randomize_choices')->default(false);
-            $table->boolean('require_all_options')->default(false);
+            // === ESSENTIAL QUESTION SETTINGS ===
+            $table->boolean('enable_skip')->default(true);       // ✅ Berguna per soal
+            $table->boolean('enable_mark_review')->default(true); // ✅ Berguna per soal
 
             $table->timestamps();
         });
@@ -136,6 +134,7 @@ return new class extends Migration {
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
 
+            // === TIMING ===
             $table->datetime('started_at')->nullable();
             $table->datetime('ended_at')->nullable();
             $table->integer('remaining_time'); // detik

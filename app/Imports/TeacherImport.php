@@ -27,6 +27,8 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
         'new_subjects' => 0,
         'processed_rows' => 0
     ];
+    private $successData = [];
+    private $skippedData = [];
 
     public function collection(Collection $rows)
     {
@@ -38,21 +40,38 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
                 $validator = Validator::make($row->toArray(), $this->rules());
 
                 if ($validator->fails()) {
-                    $this->errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $validator->errors()->all());
+                    $errorMsg = "Baris " . ($index + 2) . ": " . implode(', ', $validator->errors()->all());
+                    $this->errors[] = $errorMsg;
                     $this->importStats['errors']++;
                     continue;
                 }
 
                 // Cek duplikasi email
                 if (User::where('email', $row['email'])->exists()) {
-                    $this->errors[] = "Baris " . ($index + 2) . ": Email {$row['email']} sudah terdaftar";
+                    $warningMsg = "Baris " . ($index + 2) . ": Email '{$row['email']}' sudah terdaftar";
+                    $this->skippedData[] = [
+                        'nama' => $row['nama'] ?? '',
+                        'email' => $row['email'] ?? '',
+                        'nip' => $row['nip'] ?? null,
+                        'reason' => 'Email sudah terdaftar',
+                        'row' => $index + 2
+                    ];
+                    $this->errors[] = $warningMsg;
                     $this->importStats['skipped']++;
                     continue;
                 }
 
                 // Cek duplikasi NIP jika ada
                 if (!empty($row['nip']) && Teacher::where('nip', $row['nip'])->exists()) {
-                    $this->errors[] = "Baris " . ($index + 2) . ": NIP {$row['nip']} sudah digunakan";
+                    $warningMsg = "Baris " . ($index + 2) . ": NIP '{$row['nip']}' sudah digunakan";
+                    $this->skippedData[] = [
+                        'nama' => $row['nama'] ?? '',
+                        'email' => $row['email'] ?? '',
+                        'nip' => $row['nip'] ?? '',
+                        'reason' => 'NIP sudah digunakan',
+                        'row' => $index + 2
+                    ];
+                    $this->errors[] = $warningMsg;
                     $this->importStats['skipped']++;
                     continue;
                 }
@@ -66,7 +85,6 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
                     'email'    => $row['email'],
                     'password' => Hash::make($password),
                     'plain_password' => $password,
-                    'status'   => 'guru',
                 ]);
 
                 $user->assignRole('Guru');
@@ -77,13 +95,24 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
                     'nip'     => $row['nip'] ?? null,
                 ]);
 
-                // 3. Proses kelas dan mata pelajaran (bisa multiple dengan pemisah koma)
-                $this->processClassesAndSubjects($teacher, $row);
+                // 3. Proses kelas dan mata pelajaran
+                $kelasArray = $this->processClassesAndSubjects($teacher, $row);
+
+                // Simpan data yang berhasil
+                $this->successData[] = [
+                    'nama' => $row['nama'],
+                    'email' => $row['email'],
+                    'nip' => $row['nip'] ?? null,
+                    'kelas' => !empty($row['kelas']) ? $row['kelas'] : null,
+                    'mapel' => !empty($row['mapel']) ? $row['mapel'] : null,
+                    'password' => $password,
+                    'row' => $index + 2
+                ];
 
                 $this->importStats['success']++;
-
             } catch (\Exception $e) {
-                $this->errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                $errorMsg = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                $this->errors[] = $errorMsg;
                 $this->importStats['errors']++;
             }
         }
@@ -154,6 +183,8 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
                 }
             }
         }
+
+        return $kelasArray;
     }
 
     /**
@@ -200,12 +231,19 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
     /**
      * Prepare data sebelum validasi
      */
+    /**
+     * Prepare data sebelum validasi
+     */
     public function prepareForValidation($data)
     {
         // Bersihkan spasi
         foreach ($data as $key => $value) {
             if (is_string($value)) {
                 $data[$key] = trim($value);
+            }
+            // Jika password adalah angka, konversi ke string
+            if ($key === 'password' && is_numeric($value)) {
+                $data[$key] = (string) $value;
             }
         }
 
@@ -233,9 +271,21 @@ class TeacherImport implements ToCollection, WithHeadingRow, WithValidation
         return $this->errors;
     }
 
+    /**
+     * Get import statistics
+     */
     public function getImportStats()
     {
-        return $this->importStats;
+        return [
+            'success' => $this->importStats['success'],
+            'skipped' => $this->importStats['skipped'],
+            'errors' => $this->importStats['errors'],
+            'new_classes' => $this->importStats['new_classes'],
+            'new_subjects' => $this->importStats['new_subjects'],
+            'processed_rows' => $this->importStats['processed_rows'],
+            'success_data' => $this->successData,
+            'skipped_data' => $this->skippedData,
+            'error_list' => $this->errors
+        ];
     }
 }
-

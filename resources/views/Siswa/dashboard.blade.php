@@ -18,7 +18,7 @@
             <div class="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
                 {{-- Welcome Banner --}}
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden min-h-[180px] sm:min-h-[200px]">
-                    <img src="image/dahboardsiswa.svg" alt="dashboard1" class="absolute inset-0 w-full h-full object-cover">
+                    <img src="{{asset('image/banner dashboard siswa.webp')}}" alt="dashboard1" class="absolute inset-0 w-full h-full object-cover">
                     <div class="relative z-10 p-5 sm:p-8 flex flex-col justify-center h-full">
                         <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
                             Selamat Datang, {{ Auth::User()->name }}!
@@ -38,7 +38,7 @@
                     {{-- Card Tugas Belum Dikerjakan --}}
                     <a href="{{ route('Tugas', ['status' => 'Belum mengumpulkan']) }}"
                         class="block rounded-2xl shadow-md overflow-hidden transition-transform hover:scale-[1.02] hover:shadow-lg"
-                        style="background: url('image/bg.tugas1.svg') center/cover;">
+                        style="background: url('{{ asset('image/bg.tugas1.webp') }}') center/cover;">
                         <div class="p-4 sm:p-5 text-white min-h-[160px] sm:min-h-[180px] flex flex-col justify-between">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0">
@@ -64,7 +64,7 @@
                     {{-- Card Tugas Sudah Dikerjakan --}}
                     <a href="{{ route('Tugas', ['status' => 'Sudah mengumpulkan']) }}"
                         class="block rounded-2xl shadow-md overflow-hidden transition-transform hover:scale-[1.02] hover:shadow-lg"
-                        style="background: url('image/bg.tugas1.svg') center/cover;">
+                        style="background: url('{{ asset('image/bg.tugas1.webp') }}') center/cover;">
                         <div class="p-4 sm:p-5 text-white min-h-[160px] sm:min-h-[180px] flex flex-col justify-between">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0">

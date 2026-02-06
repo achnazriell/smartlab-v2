@@ -26,4 +26,22 @@ class Student extends Model
     {
         return $this->belongsTo(Classes::class, 'class_id');
     }
+
+    // Relasi ke ExamAttempt
+    public function examAttempts()
+    {
+        return $this->hasMany(ExamAttempt::class);
+    }
+
+    // Atau mungkin nama relasinya berbeda
+    public function userRelation()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Atau coba dengan alias lain
+    public function userAccount()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

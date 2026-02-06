@@ -23,7 +23,7 @@
     <header
         class="fixed top-0 left-0 right-0 h-16 bg-white shadow-md z-50 flex items-center justify-between px-4 sm:px-6 border-b border-blue-100">
         <!-- Logo Section -->
-        <a href="/dashboard" class="flex items-center gap-2 flex-shrink-0">
+        <a href="/student/dashboard" class="flex items-center gap-2 flex-shrink-0">
             <img src="{{ asset('image/logo.webp') }}" alt="Smart-Lab" class="h-10 w-auto">
             <span class="hidden sm:block text-sm font-bold text-blue-900">Smart Lab</span>
         </a>
@@ -109,7 +109,7 @@
 
         <nav class="flex flex-col items-center gap-2 px-2 flex-1">
             <!-- Beranda -->
-            <a href="/dashboard"
+            <a href="/student/dashboard"
                 class="w-full flex flex-col items-center py-3 px-2 rounded-lg transition-all {{ request()->is('dashboard') ? 'bg-blue-100 shadow-md border-l-4 border-blue-600' : 'hover:bg-blue-50' }}">
                 <svg class="w-6 h-6 {{ request()->is('dashboard') ? 'text-blue-600' : 'text-blue-700' }}"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">

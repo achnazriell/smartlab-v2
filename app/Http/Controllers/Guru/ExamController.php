@@ -10,36 +10,39 @@ use App\Models\ExamChoice;
 use App\Models\ExamQuestion;
 use App\Models\TeacherClass;
 use App\Models\TeacherClassSubject;
-use App\Models\TeacherSubject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class ExamController extends Controller
 {
+    /**
+     * Dapatkan ID teacher dari user yang login
+     */
     private function teacherId()
     {
         $teacher = auth()->user()->teacher;
-        abort_if(!$teacher, 403, 'Bukan akun guru');
+        abort_if(!$teacher, 403, 'Anda harus login sebagai guru');
         return $teacher->id;
     }
 
+    /**
+     * GET /guru/exams
+     * Tampilkan daftar semua ujian yang dibuat oleh guru
+     */
     public function index(Request $request)
     {
-        // DAPATKAN TEACHER DARI USER YANG LOGIN
         $user = auth()->user();
         $teacher = $user->teacher;
 
         if (!$teacher) {
-            // Jika user bukan guru
             return redirect()->back()
                 ->with('error', 'Anda harus login sebagai guru untuk mengakses halaman ini.');
         }
 
-        // PAKAI TEACHER_ID, BUKAN USER_ID!
-        $teacherId = $teacher->id;
-
-        $query = Exam::where('teacher_id', $this->teacherId()) // ← BENAR!
+        // Query exams berdasarkan teacher
+        $query = Exam::where('teacher_id', $this->teacherId())
             ->with(['subject', 'class'])
             ->latest();
 
@@ -63,13 +66,14 @@ class ExamController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter jenis soal
+        // Filter jenis
         if ($request->has('type') && $request->type != '') {
             $query->where('type', $request->type);
         }
 
         $exams = $query->paginate(10);
 
+        // Statistik
         $total = Exam::where('teacher_id', $this->teacherId())->count();
         $active = Exam::where('teacher_id', $this->teacherId())->where('status', 'active')->count();
         $draft = Exam::where('teacher_id', $this->teacherId())->where('status', 'draft')->count();
@@ -82,57 +86,46 @@ class ExamController extends Controller
         ));
     }
 
+    /**
+     * GET /guru/exams/create
+     * Tampilkan form untuk membuat ujian baru
+     */
     public function create()
     {
         $user = auth()->user();
         $teacher = $user->teacher;
 
         if (!$teacher) {
-            abort(403, 'Bukan akun guru');
+            abort(403, 'Anda harus login sebagai guru');
         }
 
-        // PAKAI $teacher, bukan langsung auth()->user()
-        $mapels = $teacher
-            ->teacherClasses()
-            ->with('subjects')
-            ->get()
-            ->pluck('subjects')
-            ->flatten()
-            ->unique('id')
-            ->values();
+        // Dapatkan semua mata pelajaran yang diajar oleh guru ini
+        $teacherId = $teacher->id;
 
-        $classes = $teacher->teacherClasses->pluck('classes');
+        // Ambil ID kelas yang diajar guru
+        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
+
+        // Ambil ID subjects dari kelas-kelas tersebut
+        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
+            ->pluck('subject_id')
+            ->unique();
+
+        // Ambil data subjects
+        $mapels = Subject::whereIn('id', $subjectIds)->get();
+
+        // Ambil kelas yang diajar
+        $classes = $teacher->classes;
 
         return view('Guru.Exam.create', compact('mapels', 'classes'));
     }
 
-    public function getClassesBySubject($subjectId)
-    {
-        $teacher = auth()->user()->teacher;
-
-        // SAMA PERSIS seperti route AJAX di Materi
-        $classes = $teacher
-            ->teacherClasses()
-            ->whereHas('subjects', function ($q) use ($subjectId) {
-                $q->where('subjects.id', $subjectId);
-            })
-            ->with('classes')
-            ->get()
-            ->pluck('classes')
-            ->unique('id')
-            ->values()
-            ->map(function ($class) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name_class
-                ];
-            });
-
-        return response()->json(['classes' => $classes]);
-    }
-
+    /**
+     * POST /guru/exams
+     * Simpan ujian baru ke database
+     */
     public function store(Request $request)
     {
+        // VALIDASI INPUT
         $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'required|in:UH,UTS,UAS,QUIZ,LAINNYA',
@@ -140,77 +133,209 @@ class ExamController extends Controller
             'class_id' => 'required|exists:classes,id',
             'duration' => 'required|integer|min:1|max:300',
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date',
+            'end_date' => 'nullable|date',
+            'limit_attempts' => 'nullable|integer|min:1|max:10',
+            'violation_limit' => 'nullable|integer|min:1|max:50',
+            'min_pass_grade' => 'nullable|numeric|min:0|max:100',
+
+            // Validasi untuk semua field yang mungkin
+            'custom_type' => 'nullable|string|max:100',
+            'time_per_question' => 'nullable|integer|min:5|max:300',
+            'quiz_mode' => 'nullable|in:live,homework',
+            'difficulty_level' => 'nullable|in:easy,medium,hard',
+            'show_result_after' => 'nullable|in:never,immediately,after_submit,after_exam',
         ]);
 
+        if ($request->type === 'LAINNYA') {
+            $request->validate([
+                'custom_type' => 'required|string|max:100',
+            ]);
+        }
+
+        // Validasi waktu jika keduanya diisi
+        if ($request->start_date && $request->end_date) {
+            $request->validate([
+                'end_date' => 'after:start_date',
+            ], [
+                'end_date.after' => 'Waktu selesai harus setelah waktu mulai.'
+            ]);
+        }
+
         $teacher = auth()->user()->teacher;
-        abort_if(!$teacher, 403);
+        abort_if(!$teacher, 403, 'Anda harus login sebagai guru');
 
         DB::beginTransaction();
         try {
-            $exam = Exam::create([
+            // LOG DATA YANG DITERIMA
+            \Log::info('Exam Store Request Data:', $request->all());
+
+            // Tentukan tipe ujian
+            $type = $request->type;
+            $customType = null;
+
+            if ($type === 'LAINNYA' && $request->has('custom_type')) {
+                $customType = $request->custom_type;
+            }
+
+            // Tentukan show_result_after
+            $showResultAfter = $request->input('show_result_after', 'never');
+
+            // DATA UNTUK QUIZ
+            $quizData = [];
+            if ($type === 'QUIZ') {
+                $quizData = [
+                    'time_per_question' => $request->input('time_per_question', 60),
+                    'quiz_mode' => $request->input('quiz_mode', 'live'),
+                    'difficulty_level' => $request->input('difficulty_level', 'medium'),
+                    'show_leaderboard' => $request->has('show_leaderboard') ? 1 : 0,
+                    'enable_music' => $request->has('enable_music') ? 1 : 0,
+                    'enable_memes' => $request->has('enable_memes') ? 1 : 0,
+                    'enable_powerups' => $request->has('enable_powerups') ? 1 : 0,
+                    'randomize_questions' => $request->has('randomize_questions') ? 1 : 0,
+                    'instant_feedback' => $request->has('instant_feedback') ? 1 : 0,
+                    'streak_bonus' => $request->has('streak_bonus') ? 1 : 0,
+                    'time_bonus' => $request->has('time_bonus') ? 1 : 0,
+                ];
+            }
+
+            // Tentukan nilai security berdasarkan dropdown
+            $securityLevel = $request->input('security_level', 'none');
+
+            // Setel nilai checkbox berdasarkan security level
+            $fullscreenMode = false;
+            $blockNewTab = false;
+            $preventCopyPaste = false;
+
+            // PERBAIKAN: Jika disable_violations dicentang, matikan semua pengaturan keamanan
+            $disableViolations = $request->has('disable_violations');
+
+            if ($disableViolations) {
+                // Jika disable_violations dicentang, matikan semua
+                $fullscreenMode = false;
+                $blockNewTab = false;
+                $preventCopyPaste = false;
+            } else {
+                // Jika tidak, gunakan logic security level biasa
+                if ($securityLevel === 'basic') {
+                    $fullscreenMode = true;
+                    $blockNewTab = true;
+                    $preventCopyPaste = false;
+                } elseif ($securityLevel === 'strict') {
+                    $fullscreenMode = true;
+                    $blockNewTab = true;
+                    $preventCopyPaste = true;
+                } elseif ($securityLevel === 'custom') {
+                    // Gunakan nilai dari checkbox jika custom
+                    $fullscreenMode = $request->has('fullscreen_mode');
+                    $blockNewTab = $request->has('block_new_tab');
+                    $preventCopyPaste = $request->has('prevent_copy_paste');
+                }
+            }
+
+            // Konversi nilai boolean ke integer untuk database
+            $fullscreenMode = $fullscreenMode ? 1 : 0;
+            $blockNewTab = $blockNewTab ? 1 : 0;
+            $preventCopyPaste = $preventCopyPaste ? 1 : 0;
+            $disableViolations = $disableViolations ? 1 : 0;
+
+            // Atur waktu
+            $startAt = $request->start_date ?: null;
+            $endAt = $request->end_date ?: null;
+
+            // BUAT EXAM
+            $examData = [
                 'teacher_id' => $teacher->id,
                 'subject_id' => $request->subject_id,
                 'class_id' => $request->class_id,
                 'title' => $request->title,
-                'type' => $request->type,
+                'type' => $type,
+                'custom_type' => $customType,
                 'duration' => $request->duration,
-                'start_at' => $request->start_date,
-                'end_at' => $request->end_date,
+                'start_at' => $startAt,
+                'end_at' => $endAt,
 
-                // FLOW
-                'shuffle_question' => $request->boolean('shuffle_question'),
-                'shuffle_answer' => $request->boolean('shuffle_answer'),
+                // PENGATURAN DASAR
+                'shuffle_question' => $request->has('shuffle_question') ? 1 : 0,
+                'shuffle_answer' => $request->has('shuffle_answer') ? 1 : 0,
+                'show_score' => $request->has('show_score') ? 1 : 0,
 
-                // SECURITY
-                'fullscreen_mode' => $request->boolean('fullscreen_mode'),
-                'block_new_tab' => $request->boolean('block_new_tab'),
-                'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
-                'allow_copy' => $request->boolean('allow_copy'),
-                'allow_screenshot' => $request->boolean('allow_screenshot'),
-                'auto_submit' => $request->boolean('auto_submit'),
-
-                // PROCTORING
-                'enable_proctoring' => $request->boolean('enable_proctoring'),
-                'require_camera' => $request->boolean('require_camera'),
-                'require_mic' => $request->boolean('require_mic'),
+                // PENGATURAN KEAMANAN
+                'fullscreen_mode' => $fullscreenMode,
+                'block_new_tab' => $blockNewTab,
+                'prevent_copy_paste' => $preventCopyPaste,
+                'disable_violations' => $disableViolations,
                 'violation_limit' => $request->input('violation_limit', 3),
 
-                // RESULT
-                'show_score' => $request->boolean('show_score'),
-                'show_correct_answer' => $request->boolean('show_correct_answer'),
-                'show_result_after' => $request->input('show_result_after', 'never'),
+                // PROCTORING
+                'enable_proctoring' => $request->has('enable_proctoring') ? 1 : 0,
+                'require_camera' => $request->has('require_camera') ? 1 : 0,
+                'require_mic' => $request->has('require_mic') ? 1 : 0,
 
+                // HASIL
+                'show_correct_answer' => $request->has('show_correct_answer') ? 1 : 0,
+                'show_result_after' => $showResultAfter,
                 'limit_attempts' => $request->input('limit_attempts', 1),
+                'min_pass_grade' => $request->input('min_pass_grade', 0),
+
+                // STATUS AWAL
                 'status' => 'draft',
-            ]);
+            ];
+
+            // Simpan security_level ke database jika ada di migration
+            if (Schema::hasColumn('exams', 'security_level')) {
+                $examData['security_level'] = $securityLevel;
+            }
+
+            // MERGE QUIZ DATA jika tipe QUIZ
+            if ($type === 'QUIZ') {
+                $examData = array_merge($examData, $quizData);
+            }
+
+            \Log::info('Exam Data to Save:', $examData);
+
+            $exam = Exam::create($examData);
 
             DB::commit();
 
+            \Log::info('Exam created successfully with ID: ' . $exam->id);
+
+            // Redirect ke halaman tambah soal
             return redirect()
                 ->route('guru.exams.soal', $exam->id)
-                ->with('success', 'Ujian berhasil dibuat, silakan tambahkan soal.');
+                ->with('success', 'Ujian berhasil dibuat! Sekarang tambahkan soal-soal.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', $e->getMessage());
+            \Log::error('Error creating exam: ' . $e->getMessage());
+            \Log::error('Error trace: ' . $e->getTraceAsString());
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-
+    /**
+     * GET /guru/exams/{id}/soal
+     * Tampilkan halaman untuk mengelola soal ujian
+     */
     public function soal($id)
     {
         $teacher = auth()->user()->teacher;
         abort_if(!$teacher, 403, 'Anda harus login sebagai guru.');
 
         $exam = Exam::where('teacher_id', $teacher->id)
-            ->with(['subject', 'class', 'questions.choices'])
+            ->with(['subject', 'class', 'questions' => function ($query) {
+                $query->with('choices')->orderBy('order');
+            }])
             ->findOrFail($id);
 
         return view('Guru.Exam.soal', compact('exam'));
     }
 
-    // Tambahkan method ini di ExamController.php
-
+    /**
+     * POST /guru/exams/{id}/soal
+     * Simpan soal baru (AJAX)
+     */
     public function storeQuestion(Request $request, $id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
@@ -229,21 +354,31 @@ class ExamController extends Controller
         try {
             DB::beginTransaction();
 
+            // Hitung order terakhir
+            $lastOrder = ExamQuestion::where('exam_id', $exam->id)->max('order') ?? 0;
+
             $questionData = [
                 'exam_id' => $exam->id,
                 'type' => $request->type,
                 'question' => $request->question,
                 'score' => $request->score,
+                'order' => $lastOrder + 1,
+                'enable_skip' => $request->boolean('enable_skip', true),
+                'enable_mark_review' => $request->boolean('enable_mark_review', true),
+                'show_explanation' => $request->boolean('show_explanation', false),
+                'randomize_choices' => $request->boolean('randomize_choices', false),
             ];
 
+            // Untuk soal ISIAN SINGKAT
             if ($request->type === 'IS') {
-                // Simpan multiple jawaban untuk isian singkat (pisahkan dengan koma)
+                // Pisahkan jawaban dengan koma
                 $answers = array_map('trim', explode(',', $request->short_answer));
                 $questionData['short_answers'] = json_encode($answers);
             }
 
             $question = ExamQuestion::create($questionData);
 
+            // Untuk soal PILIHAN GANDA
             if ($request->type === 'PG') {
                 foreach ($request->options as $index => $option) {
                     ExamChoice::create([
@@ -272,62 +407,49 @@ class ExamController extends Controller
         }
     }
 
-    public function updateQuestion(Request $request, $id, $questionId)
+    /**
+     * POST /guru/exams/{id}/finalize
+     * Finalize exam (ubah dari draft ke active)
+     */
+    public function finalize($id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
+            ->with('questions')
             ->findOrFail($id);
 
-        $question = ExamQuestion::where('exam_id', $exam->id)
-            ->findOrFail($questionId);
-
-        $request->validate([
-            'question' => 'required|string',
-            'type' => 'required|in:PG,IS',
-            'score' => 'required|integer|min:1|max:100',
-            'options' => 'required_if:type,PG|array|min:2',
-            'options.*' => 'required_if:type,PG|string',
-            'correct_answer' => 'required_if:type,PG|integer',
-            'short_answer' => 'required_if:type,IS|string',
-        ]);
+        // Validasi minimal 1 soal
+        if ($exam->questions->count() == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ujian harus memiliki minimal 1 soal'
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();
 
-            $question->update([
-                'question' => $request->question,
-                'type' => $request->type,
-                'score' => $request->score,
+            // Update status menjadi active
+            $exam->update([
+                'status' => 'active',
+                'updated_at' => now()
             ]);
 
-            if ($request->type === 'IS') {
-                $answers = array_map('trim', explode(',', $request->short_answer));
-                $question->short_answers = json_encode($answers);
-                $question->save();
+            // Jika QUIZ, hitung total waktu berdasarkan jumlah soal
+            if ($exam->type === 'QUIZ' && $exam->time_per_question > 0) {
+                $totalQuestions = $exam->questions->count();
+                $totalTime = $totalQuestions * $exam->time_per_question;
 
-                // Hapus pilihan jika ada
-                $question->choices()->delete();
-            } else {
-                // Hapus pilihan lama
-                $question->choices()->delete();
-
-                // Buat pilihan baru
-                foreach ($request->options as $index => $option) {
-                    ExamChoice::create([
-                        'question_id' => $question->id,
-                        'label' => chr(65 + $index),
-                        'text' => $option,
-                        'is_correct' => $index == $request->correct_answer,
-                        'order' => $index,
-                    ]);
-                }
+                $exam->update([
+                    'duration' => max(1, ceil($totalTime / 60)) // Konversi ke menit
+                ]);
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Soal berhasil diperbarui',
-                'question' => $question->load('choices')
+                'message' => 'Ujian berhasil dipublikasikan!',
+                'redirect' => route('guru.exams.show', $exam->id)
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -338,145 +460,71 @@ class ExamController extends Controller
         }
     }
 
-    public function deleteQuestion($id, $questionId)
+    /**
+     * GET /guru/exams/get-classes-by-subject/{subjectId}
+     * AJAX endpoint untuk mendapatkan kelas berdasarkan subject
+     */
+    public function getClassesBySubject($subjectId)
     {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->findOrFail($id);
+        $teacher = auth()->user()->teacher;
 
-        $question = ExamQuestion::where('exam_id', $exam->id)
-            ->findOrFail($questionId);
-
-        try {
-            DB::beginTransaction();
-
-            // Hapus pilihan terlebih dahulu
-            $question->choices()->delete();
-
-            // Hapus soal
-            $question->delete();
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Soal berhasil dihapus'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getQuestion($id, $questionId)
-    {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->findOrFail($id);
-
-        $question = ExamQuestion::where('exam_id', $exam->id)
-            ->with('choices')
-            ->findOrFail($questionId);
+        $classes = $teacher
+            ->teacherClasses()
+            ->whereHas('subjects', function ($q) use ($subjectId) {
+                $q->where('subjects.id', $subjectId);
+            })
+            ->with('classes')
+            ->get()
+            ->pluck('classes')
+            ->unique('id')
+            ->values()
+            ->map(function ($class) {
+                return [
+                    'id' => $class->id,
+                    'name' => $class->name_class
+                ];
+            });
 
         return response()->json([
             'success' => true,
-            'question' => $question
+            'classes' => $classes
         ]);
     }
 
-    public function edit($id)
+    /**
+     * GET /guru/exams/{id}
+     * Tampilkan detail ujian
+     */
+    public function show($id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
+            ->with(['subject', 'class', 'questions' => function ($query) {
+                $query->with('choices')->orderBy('order');
+            }])
             ->findOrFail($id);
 
-        $teacher = auth()->user()->teacher;
-        abort_if(!$teacher, 403);
+        $totalQuestions = $exam->questions->count();
+        $totalScore = $exam->questions->sum('score');
 
-        $teacherId = $teacher->id;
-
-        // PERBAIKAN: Ambil subjects melalui teacher_class_subjects
-        // 1. Ambil teacher_classes yang dimiliki guru ini
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)
-            ->pluck('id');
-
-        // 2. Ambil subject_ids dari teacher_class_subjects
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-
-        // 3. Ambil subjects berdasarkan subject_ids
-        $subjects = Subject::whereIn('id', $subjectIds)->get();
-
-        // 4. Ambil classes yang diajar guru ini
-        $classes = $teacher->classes;
-
-        return view('Guru.Exam.edit', compact('exam', 'classes', 'subjects'));
+        return view('Guru.Exam.show', compact('exam', 'totalQuestions', 'totalScore'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->findOrFail($id);
-
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|in:UH,UTS,UAS,QUIZ,LAINNYA',
-            'subject_id' => 'required|exists:subjects,id',
-            'class_id' => 'required|exists:classes,id',
-            'duration' => 'required|integer|min:1|max:300',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            $exam->update([
-                'title' => $request->title,
-                'type' => $request->type,
-                'subject_id' => $request->subject_id,
-                'class_id' => $request->class_id,
-                'duration' => $request->duration,
-                'start_at' => $request->start_date,
-                'end_at' => $request->end_date,
-
-                'shuffle_question' => $request->boolean('shuffle_question'),
-                'shuffle_answer' => $request->boolean('shuffle_answer'),
-
-                'fullscreen_mode' => $request->boolean('fullscreen_mode'),
-                'block_new_tab' => $request->boolean('block_new_tab'),
-                'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
-                'allow_copy' => $request->boolean('allow_copy'),
-                'allow_screenshot' => $request->boolean('allow_screenshot'),
-                'auto_submit' => $request->boolean('auto_submit'),
-
-                'enable_proctoring' => $request->boolean('enable_proctoring'),
-                'require_camera' => $request->boolean('require_camera'),
-                'require_mic' => $request->boolean('require_mic'),
-                'violation_limit' => $request->input('violation_limit', 3),
-
-                'show_score' => $request->boolean('show_score'),
-                'show_correct_answer' => $request->boolean('show_correct_answer'),
-                'show_result_after' => $request->input('show_result_after', 'never'),
-                'limit_attempts' => $request->input('limit_attempts', 1),
-            ]);
-
-            DB::commit();
-
-            return redirect()
-                ->route('guru.exams.index')
-                ->with('success', 'Ujian berhasil diperbarui');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', $e->getMessage());
-        }
-    }
-
-
+    /**
+     * DELETE /guru/exams/{id}
+     * Hapus ujian
+     */
     public function destroy($id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->findOrFail($id);
 
         try {
+            // Hanya bisa menghapus jika masih draft
+            if (!$exam->is_draft) {
+                return redirect()->back()
+                    ->with('error', 'Hanya ujian dalam status draft yang bisa dihapus');
+            }
+
             $exam->delete();
 
             return redirect()->route('guru.exams.index')
@@ -487,20 +535,164 @@ class ExamController extends Controller
         }
     }
 
-    public function show($id)
+    /**
+     * PUT /guru/exams/{id}
+     * Update ujian
+     */
+    public function edit($id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
-            ->with(['subject', 'class', 'questions' => function ($query) {
-                $query->with('choices');
-            }])
             ->findOrFail($id);
 
-        // Hitung total soal dan total skor
-        $totalQuestions = $exam->questions->count();
-        $totalScore = $exam->questions->sum('score');
+        // PERBAIKAN: Cek apakah exam masih draft
+        if ($exam->status !== 'draft') {
+            return redirect()->route('guru.exams.show', $exam->id)
+                ->with('error', 'Hanya ujian dalam status draft yang bisa diedit');
+        }
 
-        return view('Guru.Exam.show', compact('exam', 'totalQuestions', 'totalScore'));
+        $teacher = auth()->user()->teacher;
+
+        // Ambil semua subjects yang diajar guru
+        $teacherId = $teacher->id;
+        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
+        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
+            ->pluck('subject_id')
+            ->unique();
+        $mapels = Subject::whereIn('id', $subjectIds)->get();
+
+        // Ambil semua kelas yang diajar guru
+        $classes = $teacher->classes;
+
+        return view('Guru.Exam.edit', compact('exam', 'mapels', 'classes'));
     }
+
+    /**
+     * PUT /guru/exams/{id}
+     * Update ujian
+     */
+    public function update(Request $request, $id)
+    {
+        $exam = Exam::where('teacher_id', $this->teacherId())
+            ->findOrFail($id);
+
+        // PERBAIKAN: Cek status draft
+        if ($exam->status !== 'draft') {
+            return back()->with('error', 'Hanya ujian dalam status draft yang bisa diedit');
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|in:UH,UTS,UAS,QUIZ,LAINNYA',
+            'subject_id' => 'required|exists:subjects,id',
+            'class_id' => 'required|exists:classes,id',
+            'duration' => 'required|integer|min:1|max:300',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after:start_date',
+            'violation_limit' => 'nullable|integer|min:0|max:50',  // PERUBAHAN: dari max_violations
+            'limit_attempts' => 'nullable|integer|min:1|max:10',  // PERUBAHAN: dari max_attempts
+            'min_pass_grade' => 'nullable|numeric|min:0|max:100', // PERUBAHAN: dari passing_grade
+        ]);
+
+        if ($request->type === 'LAINNYA') {
+            $request->validate([
+                'custom_type' => 'required|string|max:100',
+            ]);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $type = $request->type;
+            $customType = null;
+
+            if ($type === 'LAINNYA' && $request->has('custom_type')) {
+                $customType = $request->custom_type;
+            }
+
+            // PERBAIKAN: Atur keamanan jika disable_violations dicentang
+            $disableViolations = $request->has('disable_violations');
+            $fullscreenMode = false;
+            $blockNewTab = false;
+            $preventCopyPaste = false;
+
+            if ($disableViolations) {
+                // Matikan semua jika disable_violations
+                $fullscreenMode = false;
+                $blockNewTab = false;
+                $preventCopyPaste = false;
+            } else {
+                // Gunakan nilai dari form
+                $fullscreenMode = $request->has('fullscreen_mode');
+                $blockNewTab = $request->has('block_new_tab');
+                $preventCopyPaste = $request->has('prevent_copy_paste');
+            }
+
+            // Update basic exam info
+            $updateData = [
+                'title' => $request->title,
+                'type' => $type,
+                'custom_type' => $customType,
+                'subject_id' => $request->subject_id,
+                'class_id' => $request->class_id,
+                'duration' => $request->duration,
+                'start_at' => $request->start_date,
+                'end_at' => $request->end_date,
+
+                // PENGATURAN DASAR - PERUBAHAN NAMA FIELD
+                'shuffle_question' => $request->boolean('shuffle_question'),
+                'shuffle_answer' => $request->boolean('shuffle_answer'),
+                'show_score' => $request->boolean('show_score'),
+                'show_correct_answer' => $request->boolean('show_correct_answer'),
+
+                // KEAMANAN - PERUBAHAN NAMA FIELD
+                'fullscreen_mode' => $fullscreenMode,
+                'block_new_tab' => $blockNewTab,
+                'prevent_copy_paste' => $preventCopyPaste,
+                'disable_violations' => $disableViolations,
+                'violation_limit' => $request->input('violation_limit', 3),
+
+                // PROCTORING
+                'enable_proctoring' => $request->boolean('enable_proctoring'),
+                'require_camera' => $request->boolean('require_camera'),
+                'require_mic' => $request->boolean('require_mic'),
+
+                // HASIL - PERUBAHAN NAMA FIELD
+                'show_result_after' => $request->input('show_result_after', 'never'),
+                'limit_attempts' => $request->input('limit_attempts', 1),
+                'min_pass_grade' => $request->input('min_pass_grade', 0),
+            ];
+
+            // Update Quiz Settings if type is QUIZ
+            if ($type === 'QUIZ') {
+                $updateData = array_merge($updateData, [
+                    'quiz_mode' => $request->input('quiz_mode', 'live'),
+                    'difficulty_level' => $request->input('difficulty_level', 'medium'),
+                    'show_leaderboard' => $request->boolean('show_leaderboard'),
+                    'instant_feedback' => $request->boolean('instant_feedback'),
+                    'enable_music' => $request->boolean('enable_music'),
+                    'enable_powerups' => $request->boolean('enable_powerups'),
+                ]);
+            }
+
+            $exam->update($updateData);
+
+            DB::commit();
+
+            return redirect()
+                ->route('guru.exams.show', $exam->id)
+                ->with('success', 'Ujian berhasil diperbarui');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+    /**
+     * GET /guru/exams/{id}/edit
+     * Tampilkan form edit ujian
+     */
+
 
     // PERBAIKI METHOD exportResults() - ada typo parameter
     public function exportResults($id) // bukan $examId
@@ -592,54 +784,7 @@ class ExamController extends Controller
 
     // ExamController.php - tambahkan sebelum method terakhir
 
-    public function finalize($id)
-    {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->with('questions')
-            ->findOrFail($id);
 
-        // Validasi minimal 1 soal
-        if ($exam->questions->count() == 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ujian harus memiliki minimal 1 soal'
-            ], 422);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            // Update status exam dari draft ke active
-            $exam->update([
-                'status' => 'active',
-                'updated_at' => now()
-            ]);
-
-            // Jika QUIZ, set waktu total berdasarkan jumlah soal
-            if ($exam->type === 'QUIZ' && $exam->time_per_question > 0) {
-                $totalQuestions = $exam->questions->count();
-                $totalTime = $totalQuestions * $exam->time_per_question;
-
-                $exam->update([
-                    'duration' => max($totalTime, 1)
-                ]);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Ujian berhasil disimpan!',
-                'redirect' => route('guru.exams.show', $exam->id)
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
     // TAMBAHKAN METHOD untuk menghapus semua attempts
     public function clearAttempts($id)

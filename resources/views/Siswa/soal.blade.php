@@ -65,12 +65,29 @@
             background-color: rgba(239, 68, 68, 0.1);
             color: #991b1b;
         }
+
+        .status-ongoing {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+        }
+
+        .status-upcoming {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #5b21b6;
+        }
+
+        /* Tambahkan styling untuk ikon tombol */
+        .btn-icon {
+            display: inline-block;
+            margin-right: 6px;
+        }
     </style>
 
     <div class="p-4 sm:p-6 lg:p-8">
         <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
             <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
         </div>
+
         @if (session('error'))
             <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                 <strong>Error:</strong> {{ session('error') }}
@@ -85,7 +102,7 @@
 
         <!-- Banner Header -->
         <div class="banner-container mb-8">
-            <img src="image/banner mapel.svg" alt="banner soal" class="w-full">
+            <img src="{{ asset('image/banner mapel.webp') }}" alt="banner soal" class="w-full">
             <div class="absolute inset-0 flex flex-col justify-center items-center p-5 sm:p-8">
                 <p class="span-nama">Hai, {{ Auth::user()->name }}</p>
                 <p class="deskripsi text-center mt-3 max-w-2xl">
@@ -134,15 +151,23 @@
                                 class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
                                 Semua Status
                             </button>
-                            <button type="submit" name="status" value="belum_dikerjakan"
+                            <button type="submit" name="status" value="available"
                                 class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
                                 Belum Dikerjakan
                             </button>
-                            <button type="submit" name="status" value="sudah_dikerjakan"
+                            <button type="submit" name="status" value="ongoing"
+                                class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
+                                Sedang Dikerjakan
+                            </button>
+                            <button type="submit" name="status" value="completed"
                                 class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
                                 Sudah Dikerjakan
                             </button>
-                            <button type="submit" name="status" value="kadaluarsa"
+                            <button type="submit" name="status" value="upcoming"
+                                class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
+                                Akan Datang
+                            </button>
+                            <button type="submit" name="status" value="expired"
                                 class="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors">
                                 Kadaluarsa
                             </button>
@@ -156,9 +181,92 @@
         <div class="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 lg:p-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @forelse($exams as $exam)
+                    @php
+                        // Gunakan status yang sudah dihitung di controller
+                        $status = $exam->display_status ?? 'available';
+                        $statusText = '';
+                        $statusClass = '';
+                        $buttonText = '';
+                        $buttonLink = '';
+                        $buttonClass = '';
+                        $disabled = false;
+                        $showDetail = false;
+                        $icon = '';
+
+                        // Tentukan status text, class, dan button berdasarkan status
+                        switch ($status) {
+                            case 'available':
+                                $statusText = 'Belum Dikerjakan';
+                                $statusClass = 'status-belum';
+                                $buttonText = 'Mulai Kuis';
+                                $buttonLink = route('soal.detail', $exam->id);
+                                $buttonClass = 'bg-blue-600 hover:bg-blue-700';
+                                $icon = 'fa-play';
+                                break;
+
+                            case 'ongoing':
+                                $statusText = 'Sedang Dikerjakan';
+                                $statusClass = 'status-ongoing';
+                                $buttonText = 'Lanjutkan';
+                                $buttonLink = route('soal.kerjakan', $exam->id);
+                                $buttonClass = 'bg-yellow-600 hover:bg-yellow-700';
+                                $icon = 'fa-arrow-right';
+                                break;
+
+                            case 'completed':
+                                $statusText = 'Sudah Dikerjakan';
+                                $statusClass = 'status-sudah';
+                                $buttonText = 'Lihat Detail';
+                                if ($exam->last_attempt) {
+                                    $buttonLink = route('soal.detail', [
+                                        'exam' => $exam->id,
+                                        'attempt' => $exam->last_attempt->id,
+                                    ]);
+                                    $icon = 'fa-solid fa-eye';
+                                } else {
+                                    // Jika tidak ada attempt, redirect ke detail
+                                    $buttonText = 'Lihat Detail';
+                                    $buttonLink = route('soal.detail', $exam->id);
+                                    $icon = 'fa-eye';
+                                }
+                                $buttonClass = 'bg-green-600 hover:bg-green-700';
+                                break;
+
+                            case 'upcoming':
+                                $statusText = 'Akan Datang';
+                                $statusClass = 'status-upcoming';
+                                $buttonText = 'Lihat Detail';
+                                $buttonLink = route('soal.detail', $exam->id);
+                                $buttonClass = 'bg-purple-600 hover:bg-purple-700';
+                                $icon = 'fa-eye';
+                                $showDetail = true;
+                                break;
+
+                            case 'expired':
+                            case 'finished':
+                                $statusText = 'Kadaluarsa';
+                                $statusClass = 'status-kadaluarsa';
+                                $buttonText = 'Lihat Detail';
+                                $buttonLink = route('soal.detail', $exam->id);
+                                $buttonClass = 'bg-gray-600 hover:bg-gray-700';
+                                $icon = 'fa-eye';
+                                $showDetail = true;
+                                break;
+
+                            default:
+                                $statusText = 'Tersedia';
+                                $statusClass = 'status-belum';
+                                $buttonText = 'Lihat Detail';
+                                $buttonLink = route('soal.detail', $exam->id);
+                                $buttonClass = 'bg-blue-600 hover:bg-blue-700';
+                                $icon = 'fa-eye';
+                                $showDetail = true;
+                        }
+                    @endphp
+
                     <div class="card-soal bg-white rounded-2xl shadow-md overflow-hidden">
                         <div class="relative h-48 flex flex-col justify-between text-white p-5"
-                            style="background-image: url('image/siswa/cardmapel.svg'); background-size: cover; background-position: center;">
+                            style="background-image: url('{{ asset('image/cardmapel.webp') }}'); background-size: cover; background-position: center;">
 
                             <!-- Exam Info -->
                             <div class="flex-1 flex flex-col justify-center">
@@ -215,83 +323,37 @@
                         <!-- Card Footer with Status and Button -->
                         <div class="p-4 bg-gray-50">
                             <div class="flex items-center justify-between mb-3">
-                                @php
-                                    // Ambil attempt terakhir siswa untuk exam ini
-                                    $lastAttempt = \App\Models\ExamAttempt::where('exam_id', $exam->id)
-                                        ->where('student_id', Auth::id())
-                                        ->latest()
-                                        ->first();
-
-                                    // Tentukan status
-                                    $status = 'available'; // default
-
-                                    if ($lastAttempt) {
-                                        if ($lastAttempt->status == 'in_progress') {
-                                            $status = 'ongoing';
-                                        } elseif ($lastAttempt->status == 'submitted') {
-                                            $status = 'completed';
-                                        } elseif ($lastAttempt->status == 'timeout') {
-                                            $status = 'timeout';
-                                        }
-                                    }
-
-                                    // Cek apakah exam sudah kadaluarsa
-                                    if ($exam->end_at && now()->gt($exam->end_at)) {
-                                        $status = 'expired';
-                                    }
-
-                                    // Cek apakah exam belum dimulai
-                                    if ($exam->start_at && now()->lt($exam->start_at)) {
-                                        $status = 'upcoming';
-                                    }
-
-                                    // Tentukan teks dan kelas untuk status
-                                    $statusText = 'Belum Dikerjakan';
-                                    $statusClass = 'status-belum';
-
-                                    if ($status === 'completed') {
-                                        $statusText = 'Sudah Dikerjakan';
-                                        $statusClass = 'status-sudah';
-                                    } elseif ($status === 'ongoing') {
-                                        $statusText = 'Sedang Dikerjakan';
-                                        $statusClass = 'status-ongoing';
-                                    } elseif ($status === 'expired') {
-                                        $statusText = 'Kadaluarsa';
-                                        $statusClass = 'status-kadaluarsa';
-                                    } elseif ($status === 'upcoming') {
-                                        $statusText = 'Akan Datang';
-                                        $statusClass = 'status-upcoming';
-                                    } elseif ($status === 'timeout') {
-                                        $statusText = 'Waktu Habis';
-                                        $statusClass = 'status-kadaluarsa';
-                                    }
-                                @endphp
                                 <span class="status-badge {{ $statusClass }}">{{ $statusText }}</span>
                                 <span class="text-xs text-gray-600">
-                                    Deadline: {{ $exam->end_at ? $exam->end_at->format('d M Y') : 'N/A' }}
+                                    @if ($exam->end_at)
+                                        Deadline: {{ $exam->end_at->format('d M Y, H:i') }}
+                                    @else
+                                        Tanpa Deadline
+                                    @endif
                                 </span>
                             </div>
 
-                            @if (in_array($status, ['completed', 'timeout']) && $lastAttempt)
-                                <a href="{{ route('soal.hasil', ['exam' => $exam->id, 'attempt' => $lastAttempt->id]) }}"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
-                                    Lihat Hasil
-                                </a>
-                            @elseif ($status === 'ongoing')
-                                <a href="{{ route('soal.kerjakan', $exam->id) }}"
-                                    class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
-                                    Lanjutkan
-                                </a>
-                            @elseif ($status === 'available')
-                                <a href="{{ route('soal.detail', $exam->id) }}"
-                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
-                                    Mulai Kuis
-                                </a>
-                            @else
+                            @if ($disabled)
                                 <button disabled
-                                    class="w-full bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg cursor-not-allowed text-center block">
-                                    {{ $statusText }}
+                                    class="w-full {{ $buttonClass }} text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
+                                    <i class="fas {{ $icon }} btn-icon"></i>
+                                    {{ $buttonText }}
                                 </button>
+                            @else
+                                <a href="{{ $buttonLink }}"
+                                    class="w-full {{ $buttonClass }} text-white font-semibold py-2 px-4 rounded-lg transition-colors text-center block">
+                                    <i class="fas {{ $icon }} btn-icon"></i>
+                                    {{ $buttonText }}
+                                </a>
+                            @endif
+
+                            @if ($status === 'completed' && $exam->attempt_count && $exam->limit_attempts)
+                                <div class="mt-2 text-xs text-gray-600 text-center">
+                                    Percobaan: {{ $exam->attempt_count }}/{{ $exam->limit_attempts }}
+                                    @if ($exam->can_retake)
+                                        <span class="text-green-600 font-medium"> • Dapat mengulang</span>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -308,26 +370,57 @@
                         </div>
                         <p class="text-gray-700 font-semibold text-lg">Belum Ada Soal</p>
                         <p class="text-gray-400 text-sm mt-1">Soal/Kuis akan muncul di sini setelah ditambahkan</p>
+                        @if (Auth::user()->student && !Auth::user()->student->class_id)
+                            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-yellow-700 text-sm">Anda belum memiliki kelas. Hubungi administrator untuk
+                                    ditugaskan ke kelas.</p>
+                            </div>
+                        @endif
                     </div>
                 @endforelse
-
-                <!-- Pagination -->
-                @if ($exams->hasPages())
-                    <div class="mt-8 pt-6 border-t border-blue-100">
-                        {{ $exams->links('vendor.pagination.tailwind') }}
-                    </div>
-                @endif
             </div>
+
+            <!-- Pagination -->
+            @if ($exams->hasPages())
+                <div class="mt-8 pt-6 border-t border-blue-100">
+                    {{ $exams->links('vendor.pagination.tailwind') }}
+                </div>
+            @endif
         </div>
 
         <!-- Scripts -->
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                // Hide loading screen
                 const loadingScreen = document.getElementById('loadingScreen');
                 if (loadingScreen) {
-                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 300);
+                    }, 500);
                 }
+
+                // Filter by status when clicking on stat cards
+                window.filterByStatus = function(status) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('status', status);
+                    window.location.href = url.toString();
+                }
+
+                // Auto-hide alerts after 5 seconds
+                setTimeout(() => {
+                    const alerts = document.querySelectorAll('.bg-red-100, .bg-green-100');
+                    alerts.forEach(alert => {
+                        alert.style.opacity = '0';
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 300);
+                    });
+                }, 5000);
             });
         </script>
-    @endsection
+    </div>
+@endsection

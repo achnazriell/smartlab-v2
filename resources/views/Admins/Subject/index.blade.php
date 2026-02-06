@@ -50,13 +50,14 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-slate-500">Total Kelas</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $totalClasses }}</p>
+                        <p class="text-sm text-slate-500">Total Guru</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $totalTeachers }}</p>
+                        <p class="text-xs text-slate-500">pengajar aktif</p>
                     </div>
                     <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
                 </div>
@@ -67,7 +68,7 @@
                     <div>
                         <p class="text-sm text-slate-500">Populer</p>
                         <p class="text-2xl font-bold text-slate-900 mt-1">{{ $popularSubjects }}</p>
-                        <p class="text-xs text-slate-500">≥ 5 kelas</p>
+                        <p class="text-xs text-slate-500">≥ 3 guru</p>
                     </div>
                     <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,8 +82,8 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-slate-500">Rasio Kelas/Mapel</p>
-                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $avgClassesPerSubject }}</p>
+                        <p class="text-sm text-slate-500">Rasio Guru/Mapel</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $avgTeachersPerSubject }}</p>
                         <p class="text-xs text-slate-500">per mapel</p>
                     </div>
                     <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -112,15 +113,13 @@
                                 </svg>
                                 <span>Import</span>
                             </button>
-
                         </div>
 
                         <!-- Add Button -->
                         <button type="button" onclick="openAddModal()"
                             class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4v16m8-8H4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
                             <span class="font-semibold">Tambah Mapel</span>
                         </button>
@@ -227,10 +226,9 @@
                                 <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A
                                 </option>
                                 <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Paling Banyak
-                                    Kelas</option>
+                                    Guru</option>
                             </select>
                         </div>
-
                     </div>
 
                     <div class="flex space-x-2">
@@ -271,28 +269,10 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
-                                onclick="sortColumn('name')">
-                                <div class="flex items-center">
-                                    No
-                                    @if (request('sort') == 'name_asc')
-                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M5 15l7-7 7 7" />
-                                        </svg>
-                                    @elseif(request('sort') == 'name_desc')
-                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    @endif
-                                </div>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                No
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
                                 onclick="sortColumn('name')">
                                 <div class="flex items-center">
                                     Nama Mata Pelajaran
@@ -311,12 +291,20 @@
                                     @endif
                                 </div>
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Jumlah Kelas
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                                onclick="sortColumn('teachers_count')">
+                                <div class="flex items-center">
+                                    Jumlah Guru
+                                    @if (request('sort') == 'popular')
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    @endif
+                                </div>
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
                                 onclick="sortColumn('created_at')">
                                 <div class="flex items-center">
                                     Dibuat
@@ -335,12 +323,7 @@
                                     @endif
                                 </div>
                             </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Aksi
                             </th>
                         </tr>
@@ -351,8 +334,8 @@
                         @endphp
                         @foreach ($subjects as $subject)
                             @php
-                                $classCount = $subject->classes_count ?? 0;
-                                $isPopular = $classCount >= 5;
+                                $teacherCount = $subject->teachers_count ?? 0;
+                                $isPopular = $teacherCount >= 3;
                             @endphp
                             <tr class="hover:bg-slate-50 transition-colors duration-200"
                                 id="subject-{{ $subject->id }}">
@@ -363,7 +346,7 @@
                                     <div class="flex items-center">
                                         <div
                                             class="w-10 h-10 rounded-lg flex items-center justify-center mr-3
-                                            {{ $isPopular ? 'bg-blue-100' : 'bg-slate-100' }}">
+                        {{ $isPopular ? 'bg-blue-100' : 'bg-slate-100' }}">
                                             <span class="font-bold {{ $isPopular ? 'text-blue-600' : 'text-slate-600' }}">
                                                 {{ substr($subject->name_subject, 0, 1) }}
                                             </span>
@@ -385,18 +368,13 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="text-sm font-medium text-slate-900">{{ $classCount }}</div>
-                                        <div class="ml-2 text-xs text-slate-500">kelas</div>
+                                        <div class="text-sm font-medium text-slate-900">{{ $teacherCount }}</div>
+                                        <div class="ml-2 text-xs text-slate-500">guru</div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                     {{ $subject->created_at->format('d/m/Y') }}
                                     <div class="text-xs text-slate-400">{{ $subject->created_at->format('H:i') }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                        Aktif
-                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <div class="flex items-center space-x-2">
@@ -856,19 +834,19 @@
                 content.innerHTML = `
                     <div class="space-y-4">
                         <div class="flex items-center space-x-3">
-                            <div class="w-16 h-16 ${data.classCount >= 5 ? 'bg-blue-100' : 'bg-slate-100'} rounded-xl flex items-center justify-center">
-                                <span class="text-2xl font-bold ${data.classCount >= 5 ? 'text-blue-600' : 'text-slate-600'}">${data.name.charAt(0)}</span>
+                            <div class="w-16 h-16 ${data.teachersCount >= 3 ? 'bg-blue-100' : 'bg-slate-100'} rounded-xl flex items-center justify-center">
+                                <span class="text-2xl font-bold ${data.teachersCount >= 3 ? 'text-blue-600' : 'text-slate-600'}">${data.name.charAt(0)}</span>
                             </div>
                             <div>
                                 <h4 class="text-lg font-semibold text-slate-900">${data.name}</h4>
-                                ${data.classCount >= 5 ? '<div class="text-xs text-blue-600 flex items-center"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg> Mata Pelajaran Populer</div>' : ''}
+                                ${data.teachersCount >= 3 ? '<div class="text-xs text-blue-600 flex items-center"><svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg> Mata Pelajaran Populer</div>' : ''}
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Jumlah Kelas</label>
-                                <p class="text-lg font-semibold text-slate-900">${data.classCount} <span class="text-sm font-normal text-slate-600">kelas</span></p>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Jumlah Guru</label>
+                                <p class="text-lg font-semibold text-slate-900">${data.teachersCount} <span class="text-sm font-normal text-slate-600">guru</span></p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
@@ -882,11 +860,11 @@
                         </div>
 
                         ${data.description ? `
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
-                                <p class="text-sm text-slate-900">${data.description}</p>
-                            </div>
-                            ` : ''}
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
+                                    <p class="text-sm text-slate-900">${data.description}</p>
+                                </div>
+                                ` : ''}
 
                         <div class="pt-4 border-t border-slate-200">
                             <div class="flex space-x-2">
@@ -944,12 +922,10 @@
                 } else {
                     newSort = 'name_asc';
                 }
+            } else if (column === 'teachers_count') {
+                newSort = currentSort === 'popular' ? 'newest' : 'popular';
             } else if (column === 'created_at') {
-                if (currentSort === 'oldest') {
-                    newSort = 'newest';
-                } else {
-                    newSort = 'oldest';
-                }
+                newSort = currentSort === 'oldest' ? 'newest' : 'oldest';
             }
 
             url.searchParams.set('sort', newSort);
@@ -1090,10 +1066,6 @@
             if (deleteForm) {
                 deleteForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
-
-                    if (!confirm('Anda yakin ingin menghapus mata pelajaran ini?')) {
-                        return;
-                    }
 
                     try {
                         const response = await fetch(this.action, {

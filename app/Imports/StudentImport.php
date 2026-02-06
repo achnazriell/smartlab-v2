@@ -29,6 +29,10 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
     private $importErrors = [];
     private $importWarnings = [];
     private $createdClasses = [];
+    private $successData = []; // ✅ TAMBAHKAN INI
+    private $duplicateData = []; // ✅ TAMBAHKAN INI
+
+    // 🔄 UPDATE METHOD model() PADA StudentImport.php
 
     public function model(array $row)
     {
@@ -65,7 +69,8 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
             if (empty($email)) $missing[] = 'email';
             if (empty($nis)) $missing[] = 'nis';
 
-            $this->importErrors[] = "Baris {$currentRow}: Data tidak lengkap (" . implode(', ', $missing) . ")";
+            $errorMsg = "Baris {$currentRow}: Data tidak lengkap (" . implode(', ', $missing) . ")";
+            $this->importErrors[] = $errorMsg;
             $this->skippedCount++;
             return null;
         }
@@ -81,7 +86,14 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
         $existingUser = User::where('email', $email)->first();
         if ($existingUser) {
             $this->duplicateCount++;
-            $this->importWarnings[] = "Baris {$currentRow}: Email '{$email}' sudah terdaftar - dilewati";
+            $warningMsg = "Baris {$currentRow}: Email '{$email}' sudah terdaftar";
+            $this->duplicateData[] = [
+                'nama' => $nama,
+                'nis' => $nis,
+                'email' => $email,
+                'reason' => 'Email sudah terdaftar'
+            ];
+            $this->importWarnings[] = $warningMsg;
             return null;
         }
 
@@ -89,7 +101,14 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
         $existingNIS = Student::where('nis', $nis)->first();
         if ($existingNIS) {
             $this->duplicateCount++;
-            $this->importWarnings[] = "Baris {$currentRow}: NIS '{$nis}' sudah terdaftar - dilewati";
+            $warningMsg = "Baris {$currentRow}: NIS '{$nis}' sudah terdaftar";
+            $this->duplicateData[] = [
+                'nama' => $nama,
+                'nis' => $nis,
+                'email' => $email,
+                'reason' => 'NIS sudah terdaftar'
+            ];
+            $this->importWarnings[] = $warningMsg;
             return null;
         }
 
@@ -114,8 +133,10 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
 
             // Proses kelas
             $classId = null;
+            $className = null;
             if (!empty($kelas)) {
                 $classId = $this->processClass($kelas, $currentRow);
+                $className = $kelas;
             }
 
             // Buat record student
@@ -127,13 +148,23 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
             ]);
 
             DB::commit();
+
+            // ✅ SIMPAN DATA YANG BERHASIL
+            $this->successData[] = [
+                'nama' => $nama,
+                'nis' => $nis,
+                'email' => $email,
+                'kelas' => $className,
+                'row' => $currentRow
+            ];
+
             $this->importedCount++;
 
             return null;
-
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->importErrors[] = "Baris {$currentRow}: " . $e->getMessage();
+            $errorMsg = "Baris {$currentRow}: " . $e->getMessage();
+            $this->importErrors[] = $errorMsg;
             $this->skippedCount++;
             return null;
         }
@@ -181,7 +212,6 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
             $this->importWarnings[] = "Baris {$rowNumber}: Kelas '{$kelasName}' dibuat otomatis";
 
             return $newClass->id;
-
         } catch (\Exception $e) {
             $this->importWarnings[] = "Baris {$rowNumber}: Gagal membuat kelas '{$kelasName}' - " . $e->getMessage();
             return null;
@@ -268,7 +298,9 @@ class StudentImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnE
             'errors' => $this->importErrors,
             'warnings' => $this->importWarnings,
             'created_classes' => $this->createdClasses,
-            'total_processed' => $this->rowNumber - 1
+            'total_processed' => $this->rowNumber - 1,
+            'success_data' => $this->successData, // ✅ TAMBAHKAN INI
+            'duplicate_data' => $this->duplicateData, // ✅ TAMBAHKAN INI
         ];
     }
 }

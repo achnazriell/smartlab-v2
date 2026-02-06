@@ -13,6 +13,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Validation\Rule;
 use App\Rules\ValidNIPGuru;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class TeacherController extends Controller
 {
@@ -23,25 +25,30 @@ class TeacherController extends Controller
     {
         $search = $request->input('search_teacher');
         $class_filter = $request->input('class_filter');
-        $sort_by = $request->input('sort_by', 'created_at');
-        $sort_order = $request->input('sort_order', 'desc');
+        $sort = $request->input('sort', 'newest');
+        $per_page = $request->input('per_page', 10);
 
+        // Query dasar untuk guru
         $query = User::with([
-                'teacher',
-                'teacher.teacherClasses.classes',
-                'teacher.teacherClasses.subjects'
-            ])
-            ->select('users.*', 'teachers.nip', 'teachers.created_at as teacher_created_at')
-            ->leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
-            ->whereHas('roles', fn($q) => $q->where('name', 'Guru'))
-            ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Admin'));
+            'teacher',
+            'teacher.teacherClasses.classes',
+            'teacher.teacherClasses.subjects'
+        ])
+            ->whereHas('roles', function ($q) {
+                $q->where('name', 'Guru');
+            })
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Admin');
+            });
 
         // 🔍 SEARCH
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%{$search}%")
                     ->orWhere('users.email', 'like', "%{$search}%")
-                    ->orWhere('teachers.nip', 'like', "%{$search}%");
+                    ->orWhereHas('teacher', function ($q2) use ($search) {
+                        $q2->where('nip', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -53,51 +60,70 @@ class TeacherController extends Controller
         }
 
         // 📊 SORTING
-        switch ($sort_by) {
-            case 'name':
-                $query->orderBy('users.name', $sort_order);
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('users.created_at', 'asc');
                 break;
-            case 'email':
-                $query->orderBy('users.email', $sort_order);
+            case 'name_asc':
+                $query->orderBy('users.name', 'asc');
                 break;
-            case 'nip':
-                $query->orderBy('teachers.nip', $sort_order);
+            case 'name_desc':
+                $query->orderBy('users.name', 'desc');
                 break;
-            case 'class':
-                $query->leftJoin('teacher_classes', 'teacher_classes.teacher_id', '=', 'teachers.id')
-                    ->leftJoin('classes', 'classes.id', '=', 'teacher_classes.classes_id')
-                    ->orderBy('classes.name_class', $sort_order)
-                    ->groupBy('users.id');
+            case 'nip_asc':
+                $query->leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+                    ->orderBy('teachers.nip', 'asc');
                 break;
-            default:
-                $query->orderBy('users.created_at', $sort_order);
+            case 'nip_desc':
+                $query->leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+                    ->orderBy('teachers.nip', 'desc');
+                break;
+            default: // newest
+                $query->orderBy('users.created_at', 'desc');
                 break;
         }
 
-        // Tambahkan sorting tambahan untuk konsistensi
-        if ($sort_by != 'name') {
-            $query->orderBy('users.name', 'asc');
-        }
+        // Hitung statistik sebelum pagination
+        $totalTeachers = $query->clone()->count();
 
-        // 🔄 Urutkan guru yang belum punya kelas di atas
-        $query->orderByRaw('NOT EXISTS (
-            SELECT 1
-            FROM teacher_classes
-            WHERE teacher_classes.teacher_id = teachers.id
-        ) DESC');
+        // Guru aktif = punya teacherClasses
+        $activeTeachers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'Guru');
+        })
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'Admin');
+            })
+            ->whereHas('teacher.teacherClasses')
+            ->count();
 
-        $teachers = $query->paginate(10)->withQueryString();
+        $inactiveTeachers = $totalTeachers - $activeTeachers;
+
+        // Pagination
+        $teachers = $query->paginate($per_page)->withQueryString();
 
         $classes = Classes::all();
-        $subjects = Subject::all();
+        $subjects = Subject::all(); // Semua mapel yang sudah dibuat
 
-        return view('Admins.Teachers.index', compact('teachers', 'subjects', 'classes', 'class_filter', 'sort_by', 'sort_order'));
+        return view('Admins.Teachers.index', compact(
+            'teachers',
+            'subjects',
+            'classes',
+            'totalTeachers',
+            'activeTeachers',
+            'inactiveTeachers',
+            'class_filter',
+            'sort',
+            'per_page'
+        ));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|regex:/^\S*$/',
             'nip' => [
@@ -106,127 +132,278 @@ class TeacherController extends Controller
                 new ValidNIPGuru,
                 'unique:teachers,nip',
             ],
-
-            'class_id' => 'required|array',
-            'class_id.*' => 'exists:classes,id',
-
-            'subjects' => 'required|array',
-            'subjects.*' => 'required|array',
-            'subjects.*.*' => 'exists:subjects,id',
+            'sapaan' => 'nullable|string|max:50',
+            'selected_classes' => 'required|json',
         ], [
-            'class_id.required' => 'Minimal pilih satu kelas',
-            'subjects.required' => 'Mapel per kelas wajib diisi',
-            'nip.unique' => 'nip sudah digunakan',
             'password.regex' => 'Password tidak boleh mengandung spasi',
+            'nip.unique' => 'NIP sudah digunakan',
+            'selected_classes.required' => 'Minimal pilih satu kelas',
         ]);
 
-        // 1️⃣ BUAT USER
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'plain_password' => $request->password,
-            'status' => 'guru',
-        ]);
-
-        $user->assignRole('Guru');
-
-        // 2️⃣ BUAT TEACHER (TANPA subject_id)
-        $teacher = Teacher::create([
-            'user_id' => $user->id,
-            'nip' => $request->nip,
-        ]);
-
-        foreach ($request->class_id as $classId) {
-
-            // 1️⃣ buat relasi guru - kelas
-            $teacherClass = TeacherClass::create([
-                'teacher_id' => $teacher->id,
-                'classes_id' => $classId,
-            ]);
-
-            // 2️⃣ isi mapel per kelas
-            if (isset($request->subjects[$classId])) {
-                $teacherClass->subjects()->sync(
-                    $request->subjects[$classId]
-                );
-            }
+        // Parse selected classes JSON
+        $selectedClasses = json_decode($request->selected_classes, true);
+        if (!is_array($selectedClasses) || empty($selectedClasses)) {
+            return back()->with('error', 'Harap pilih minimal satu kelas')->withInput();
         }
 
-        return back()->with('success', 'Guru berhasil ditambahkan & ditempatkan.');
+        DB::beginTransaction();
+        try {
+            // 1️⃣ BUAT USER
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'plain_password' => $request->password,
+            ]);
+
+            $user->assignRole('Guru');
+
+            // 2️⃣ BUAT TEACHER
+            $teacher = Teacher::create([
+                'user_id' => $user->id,
+                'nip' => $request->nip,
+                'sapaan' => $request->sapaan,
+            ]);
+
+            // 3️⃣ BUAT TEACHER CLASSES DAN SUBJECTS
+            foreach ($selectedClasses as $classId) {
+                if (!empty($classId)) {
+                    $teacherClass = TeacherClass::create([
+                        'teacher_id' => $teacher->id,
+                        'classes_id' => $classId,
+                    ]);
+
+                    // Sync subjects jika ada
+                    $subjectKey = "classes_{$classId}_subject_ids";
+                    if ($request->has($subjectKey)) {
+                        $subjectIds = $request->input($subjectKey);
+                        if (is_array($subjectIds) && !empty($subjectIds)) {
+                            $teacherClass->subjects()->sync($subjectIds);
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('teachers.index')->with('success', 'Guru berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menambahkan guru: ' . $e->getMessage())->withInput();
+        }
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $teacher = User::with([
+            'teacher',
+            'teacher.teacherClasses.classes',
+            'teacher.teacherClasses.subjects'
+        ])->findOrFail($id);
+
+        // Transform data untuk response JSON
+        $data = [
+            'id' => $teacher->id,
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'teacher' => $teacher->teacher,
+            'teacherClasses' => $teacher->teacher ? $teacher->teacher->teacherClasses->map(function ($tc) {
+                return [
+                    'classes_id' => $tc->classes_id,
+                    'subjects' => $tc->subjects
+                ];
+            }) : []
+        ];
+
+        return response()->json($data);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'nip' => [
+                'nullable',
+                'string',
+                new ValidNIPGuru,
+                Rule::unique('teachers', 'nip')->ignore($user->teacher->id ?? null),
+            ],
+            'sapaan' => 'nullable|string|max:50',
+            'selected_classes' => 'required|json',
+        ];
+
+        if ($request->filled('password')) {
+            $rules['password'] = 'required|string|min:8|regex:/^\S*$/';
+        }
+
+        $request->validate($rules, [
+            'password.regex' => 'Password tidak boleh mengandung spasi',
+            'selected_classes.required' => 'Minimal pilih satu kelas',
+            'nip.unique' => 'NIP sudah digunakan',
+        ]);
+
+        // Parse selected classes JSON
+        $selectedClasses = json_decode($request->selected_classes, true);
+        if (!is_array($selectedClasses) || empty($selectedClasses)) {
+            return back()->with('error', 'Harap pilih minimal satu kelas')->withInput();
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update user
+            $user->name = $request->name;
+            $user->email = $request->email;
+
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->password);
+                $user->plain_password = $request->password;
+            }
+
+            $user->save();
+
+            // Update teacher
+            $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
+            $teacher->nip = $request->nip;
+            $teacher->sapaan = $request->sapaan;
+            $teacher->save();
+
+            // Hapus semua relasi sebelumnya
+            $teacher->teacherClasses()->delete();
+
+            // Buat relasi baru
+            foreach ($selectedClasses as $classId) {
+                if (!empty($classId)) {
+                    $teacherClass = TeacherClass::create([
+                        'teacher_id' => $teacher->id,
+                        'classes_id' => $classId,
+                    ]);
+
+                    // Sync subjects jika ada
+                    $subjectKey = "classes_{$classId}_subject_ids";
+                    if ($request->has($subjectKey)) {
+                        $subjectIds = $request->input($subjectKey);
+                        if (is_array($subjectIds) && !empty($subjectIds)) {
+                            $teacherClass->subjects()->sync($subjectIds);
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('teachers.index')->with('success', 'Data guru berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memperbarui data guru: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Get all subjects (API endpoint) - Semua mapel yang sudah dibuat
+     */
+    public function getAllSubjects()
+    {
+        try {
+            $subjects = Subject::orderBy('name_subject')->get();
+            return response()->json($subjects);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Hanya hapus guru (role)
+        if (!$user->hasRole('Guru')) {
+            return back()->with('error', 'User ini bukan guru.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Hapus relasi teacher_classes terlebih dahulu
+            if ($user->teacher) {
+                $user->teacher->teacherClasses()->delete();
+                $user->teacher->delete();
+            }
+
+            // Hapus role guru
+            $user->removeRole('Guru');
+
+            // Hapus user
+            $user->delete();
+
+            DB::commit();
+            return back()->with('success', 'Guru berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal menghapus guru: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Import teachers from Excel/CSV
+     */
+// 🔄 GANTI BAGIAN IMPORT PADA TeacherController.php
+
+    /**
+     * Import teachers from Excel/CSV
+     */
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:5120' // 5MB
-        ], [
-            'file.required' => 'File wajib diupload',
-            'file.mimes' => 'Format file harus xlsx, xls, atau csv',
-            'file.max' => 'Ukuran file maksimal 5MB',
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120'
         ]);
 
         try {
             $import = new TeacherImport();
-
-            // Import data dengan progress
             Excel::import($import, $request->file('file'));
 
-            // Ambil statistik import
+            // Get import statistics
             $stats = $import->getImportStats();
 
-            // Siapkan pesan notifikasi
-            $message = "Import selesai!<br>";
+            // Simpan stats ke session untuk ditampilkan di view
+            session()->flash('import_stats', $stats);
 
-            if ($stats['success'] > 0) {
-                $message .= "✅ <strong>{$stats['success']}</strong> data guru berhasil diimport.<br>";
-            }
-
-            if ($stats['skipped'] > 0) {
-                $message .= "⚠️ <strong>{$stats['skipped']}</strong> data dilewati (sudah ada/duplikat).<br>";
-            }
-
+            // Tentukan tipe flash message
             if ($stats['errors'] > 0) {
-                $message .= "❌ <strong>{$stats['errors']}</strong> data error.<br>";
-
-                // Jika ada kelas baru yang dibuat
-                if ($stats['new_classes'] > 0) {
-                    $message .= "📚 <strong>{$stats['new_classes']}</strong> kelas baru dibuat.<br>";
-                }
-
-                // Jika ada mata pelajaran baru yang dibuat
-                if ($stats['new_subjects'] > 0) {
-                    $message .= "📖 <strong>{$stats['new_subjects']}</strong> mata pelajaran baru dibuat.<br>";
-                }
-
-                return back()
-                    ->with('info', $message)
-                    ->with('errors', $import->getErrors());
+                return back()->with('import_status', 'warning');
+            } elseif ($stats['success'] > 0) {
+                return back()->with('import_status', 'success');
+            } else {
+                return back()->with('import_status', 'info');
             }
-
-            // Jika semua sukses
-            $message .= "📚 <strong>{$stats['new_classes']}</strong> kelas baru dibuat.<br>";
-            $message .= "📖 <strong>{$stats['new_subjects']}</strong> mata pelajaran baru dibuat.";
-
-            return back()->with('success', $message);
-
         } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
             $failures = $e->failures();
-
             $errors = [];
+
             foreach ($failures as $failure) {
                 $row = $failure->row();
                 $errors[] = "Baris {$row}: " . implode(', ', $failure->errors());
             }
 
-            return back()
-                ->with('error', 'Terdapat data yang tidak valid:')
-                ->with('errors', $errors);
+            return back()->with('error', 'Terdapat data yang tidak valid. ' . implode('; ', array_slice($errors, 0, 5)));
         } catch (\Exception $e) {
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            \Log::error('Import guru error: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat mengimpor: ' . $e->getMessage());
         }
     }
 
+
+    /**
+     * Download import template
+     */
     public function downloadTemplate()
     {
         $path = storage_path('app/templates/template_import_guru.xlsx');
@@ -245,6 +422,9 @@ class TeacherController extends Controller
         // Bisa menggunakan PHPExcel atau library lainnya
     }
 
+    /**
+     * Preview import data
+     */
     public function previewImport(Request $request)
     {
         $request->validate([
@@ -260,11 +440,17 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function detail(Teacher $teacher)
+    /**
+     * Get teacher detail for quick view
+     */
+    public function detail($id)
     {
-        $data = $teacher->teacherClasses()
-            ->with(['classes', 'subjects'])
-            ->get()
+        $teacher = Teacher::with([
+            'teacherClasses.classes',
+            'teacherClasses.subjects'
+        ])->findOrFail($id);
+
+        $data = $teacher->teacherClasses
             ->map(function ($tc) {
                 return [
                     'class' => $tc->classes->name_class ?? '-',
@@ -275,98 +461,17 @@ class TeacherController extends Controller
         return response()->json($data);
     }
 
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
+    /**
+     * Get subjects by class ID (API endpoint)
+     */
 
-        $rules = [
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'nip' => [
-                'nullable',
-                'string',
-                new ValidNIPGuru,
-                Rule::unique('teachers', 'nip')->ignore($user->teacher->id ?? null),
-            ],
-            'class_id' => 'required|array',
-            'class_id.*' => 'exists:classes,id',
-            'subjects' => 'required|array',
-            'subjects.*' => 'required|array',
-            'subjects.*.*' => 'exists:subjects,id',
-        ];
 
-        if ($request->filled('password')) {
-            $rules['password'] = 'required|string|min:8|regex:/^\S*$/';
-        }
-
-        $request->validate($rules, [
-            'password.regex' => 'Password tidak boleh mengandung spasi',
-            'class_id.required' => 'Minimal pilih satu kelas',
-            'subjects.required' => 'Mapel per kelas wajib diisi',
-        ]);
-
-        // Update user
-        $user->name = $request->name;
-        $user->email = $request->email;
-
-        if ($request->filled('password')) {
-            $user->password = bcrypt($request->password);
-            $user->plain_password = $request->password;
-        }
-
-        $user->save();
-
-        // Update teacher
-        $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
-        $teacher->nip = $request->nip;
-        $teacher->save();
-
-        // Hapus semua relasi sebelumnya
-        $teacher->teacherClasses()->delete();
-
-        // Buat relasi baru
-        foreach ($request->class_id as $classId) {
-            $teacherClass = TeacherClass::create([
-                'teacher_id' => $teacher->id,
-                'classes_id' => $classId,
-            ]);
-
-            if (isset($request->subjects[$classId])) {
-                $teacherClass->subjects()->sync($request->subjects[$classId]);
-            }
-        }
-
-        return back()->with('success', 'Data guru berhasil diperbarui.');
-    }
-
-    public function destroy($id)
-    {
-        $teacher = User::findOrFail($id);
-
-        // Hanya hapus guru (role)
-        if (! $teacher->hasRole('Guru')) {
-            return back()->with('error', 'User ini bukan guru.');
-        }
-
-        // Hapus relasi teacher_classes terlebih dahulu
-        if ($teacher->teacher) {
-            $teacher->teacher->teacherClasses()->delete();
-            $teacher->teacher->delete();
-        }
-
-        // Hapus role guru
-        $teacher->removeRole('Guru');
-
-        // Hapus user
-        $teacher->delete();
-
-        return back()->with('success', 'Guru berhasil dihapus.');
-    }
-
+    /**
+     * Export filtered data
+     */
     public function exportFiltered(Request $request)
     {
         // Implementasi export data dengan filter yang sama
         // Bisa menggunakan Maatwebsite/Excel
     }
 }
-

@@ -9,8 +9,10 @@ use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SubjectImport;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Teacher;
 
 class SubjectController extends Controller
 {
@@ -26,107 +28,93 @@ class SubjectController extends Controller
         $letter = $request->input('letter');
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
-        $minClasses = $request->input('min_classes');
-        $maxClasses = $request->input('max_classes');
+        $minTeachers = $request->input('min_teachers');
+        $maxTeachers = $request->input('max_teachers');
         $status = $request->input('status');
 
-        $query = Subject::query();
+        // Query utama dengan count teachers - PERBAIKAN DI SINI
+        $query = Subject::query()
+            ->select('subjects.*')
+            ->leftJoin('teacher_subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->groupBy('subjects.id', 'subjects.name_subject', 'subjects.created_at', 'subjects.updated_at')
+            ->selectRaw('COUNT(DISTINCT teacher_subjects.teacher_id) as teachers_count');
 
         // Apply search filter
         if ($search) {
-            $query->where('name_subject', 'like', '%' . $search . '%');
+            $query->where('subjects.name_subject', 'like', '%' . $search . '%');
         }
 
         // Apply letter filter
         if ($letter) {
-            $query->where('name_subject', 'like', $letter . '%');
+            $query->where('subjects.name_subject', 'like', $letter . '%');
         }
 
         // Apply date filters
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
+            $query->whereDate('subjects.created_at', '>=', $dateFrom);
         }
         if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
+            $query->whereDate('subjects.created_at', '<=', $dateTo);
         }
 
-        // Get subjects first, then manually calculate class counts
-        $subjectsQuery = $query->clone();
-        $subjects = $subjectsQuery->orderBy('created_at', 'desc')->paginate($perPage)->withQueryString();
-
-        // Calculate classes count for each subject
-        $subjectIds = $subjects->pluck('id')->toArray();
-        $classCounts = [];
-
-        if (!empty($subjectIds)) {
-            // Check what columns exist in the classes table
-            $classCountsQuery = Classes::query();
-
-            // Coba beberapa kemungkinan nama kolom foreign key
-            if (Schema::hasColumn('classes', 'id_subject')) {
-                $classCounts = Classes::whereIn('id_subject', $subjectIds)
-                    ->select('id_subject', DB::raw('count(*) as count'))
-                    ->groupBy('id_subject')
-                    ->pluck('count', 'id_subject')
-                    ->toArray();
-            } elseif (Schema::hasColumn('classes', 'subject_id')) {
-                $classCounts = Classes::whereIn('subject_id', $subjectIds)
-                    ->select('subject_id', DB::raw('count(*) as count'))
-                    ->groupBy('subject_id')
-                    ->pluck('count', 'subject_id')
-                    ->toArray();
-            }
+        // Apply teacher count filters
+        if ($minTeachers) {
+            $query->havingRaw('COUNT(DISTINCT teacher_subjects.teacher_id) >= ?', [$minTeachers]);
+        }
+        if ($maxTeachers) {
+            $query->havingRaw('COUNT(DISTINCT teacher_subjects.teacher_id) <= ?', [$maxTeachers]);
         }
 
-        // Add classes_count to each subject
-        foreach ($subjects as $subject) {
-            $subject->classes_count = $classCounts[$subject->id] ?? 0;
-        }
-
-        // Apply sorting after pagination (client-side sorting)
+        // Apply sorting
         if ($sort === 'name_asc') {
-            $subjects = $subjects->sortBy('name_subject')->values();
+            $query->orderBy('subjects.name_subject', 'asc');
         } elseif ($sort === 'name_desc') {
-            $subjects = $subjects->sortByDesc('name_subject')->values();
+            $query->orderBy('subjects.name_subject', 'desc');
         } elseif ($sort === 'popular') {
-            $subjects = $subjects->sortByDesc('classes_count')->values();
+            $query->orderByDesc('teachers_count');
         } elseif ($sort === 'oldest') {
-            $subjects = $subjects->sortBy('created_at')->values();
+            $query->orderBy('subjects.created_at', 'asc');
+        } else {
+            $query->orderBy('subjects.created_at', 'desc');
         }
+
+        // Get paginated results
+        $subjects = $query->paginate($perPage);
 
         // Calculate statistics
         $totalSubjects = Subject::count();
         $totalClasses = Classes::count();
-        $avgClassesPerSubject = $totalSubjects > 0 ? round($totalClasses / $totalSubjects, 1) : 0;
+
+        // Hitung total guru yang mengajar semua mapel
+        $totalTeachers = 0;
+        if (Schema::hasTable('teacher_subjects')) {
+            $totalTeachers = DB::table('teacher_subjects')
+                ->distinct('teacher_id')
+                ->count('teacher_id');
+        }
+
+        $avgTeachersPerSubject = $totalSubjects > 0 ? round($totalTeachers / $totalSubjects, 1) : 0;
+
         $newThisMonth = Subject::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Calculate popular subjects (with 5 or more classes)
-        $popularSubjects = 0;
-        $allSubjects = Subject::all();
-        foreach ($allSubjects as $subject) {
-            // Get class count for each subject
-            $count = 0;
-            if (Schema::hasColumn('classes', 'id_subject')) {
-                $count = Classes::where('id_subject', $subject->id)->count();
-            } elseif (Schema::hasColumn('classes', 'subject_id')) {
-                $count = Classes::where('subject_id', $subject->id)->count();
-            }
-
-            if ($count >= 5) {
-                $popularSubjects++;
-            }
-        }
+        // Hitung mata pelajaran populer (dengan 3 atau lebih guru)
+        $popularSubjects = Subject::whereHas('teachers', function ($query) {
+            $query->select('teacher_id')
+                ->groupBy('teacher_id')
+                ->havingRaw('COUNT(DISTINCT teacher_id) >= 3');
+        })->count();
 
         return view('Admins.Subject.index', compact(
             'subjects',
             'order',
             'totalSubjects',
             'totalClasses',
-            'avgClassesPerSubject',
+            'avgTeachersPerSubject',
             'newThisMonth',
-            'popularSubjects'
+            'popularSubjects',
+            'totalTeachers'
         ));
     }
 
@@ -143,18 +131,51 @@ class SubjectController extends Controller
      */
     public function store(StoreSubjectRequest $request)
     {
-        // Check for duplicate
-        $exists = Subject::where('name_subject', $request->name_subject)->exists();
-        if ($exists) {
+        try {
+            // Check for duplicate
+            $exists = Subject::where('name_subject', $request->name_subject)->exists();
+            if ($exists) {
+                // Jika request AJAX
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => [
+                            'name_subject' => ['Mata pelajaran dengan nama ini sudah ada']
+                        ]
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['name_subject' => 'Mata pelajaran dengan nama ini sudah ada']);
+            }
+
+            Subject::create($request->all());
+
+            // Jika request AJAX
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mata pelajaran ' . $request->name_subject . ' berhasil ditambahkan'
+                ]);
+            }
+
+            return redirect()->route('subject.index')
+                ->with('success', 'Mata pelajaran ' . $request->name_subject . ' berhasil ditambahkan');
+        } catch (\Exception $e) {
+            \Log::error('Error creating subject: ' . $e->getMessage());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menambahkan data'
+                ], 500);
+            }
+
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['name_subject' => 'Mata pelajaran dengan nama ini sudah ada']);
+                ->with('error', 'Terjadi kesalahan saat menambahkan data');
         }
-
-        Subject::create($request->all());
-
-        return redirect()->route('subject.index')
-            ->with('success', 'Mata pelajaran ' . $request->name_subject . ' berhasil ditambahkan');
     }
 
     /**
@@ -164,19 +185,17 @@ class SubjectController extends Controller
     {
         $subject = Subject::findOrFail($id);
 
-        // Get class count
-        $classCount = 0;
-        if (\Schema::hasColumn('classes', 'id_subject')) {
-            $classCount = Classes::where('id_subject', $subject->id)->count();
-        } elseif (\Schema::hasColumn('classes', 'subject_id')) {
-            $classCount = Classes::where('subject_id', $subject->id)->count();
-        }
+        // Hitung jumlah guru
+        $teachersCount = DB::table('teacher_subjects')
+            ->where('subject_id', $id)
+            ->distinct('teacher_id')
+            ->count('teacher_id');
 
         return response()->json([
             'id' => $subject->id,
             'name' => $subject->name_subject,
-            'description' => $subject->description,
-            'classCount' => $classCount,
+            'description' => $subject->description ?? '-',
+            'teachersCount' => $teachersCount,
             'createdAt' => $subject->created_at->format('d/m/Y H:i'),
             'updatedAt' => $subject->updated_at->format('d/m/Y H:i'),
         ]);
@@ -201,23 +220,54 @@ class SubjectController extends Controller
      */
     public function update(UpdateSubjectRequest $request, $id)
     {
-        $subject = Subject::findOrFail($id);
+        try {
+            $subject = Subject::findOrFail($id);
 
-        // Check for duplicate (excluding current subject)
-        $exists = Subject::where('name_subject', $request->name_subject)
-            ->where('id', '!=', $id)
-            ->exists();
+            // Check for duplicate (excluding current subject)
+            $exists = Subject::where('name_subject', $request->name_subject)
+                ->where('id', '!=', $id)
+                ->exists();
 
-        if ($exists) {
+            if ($exists) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => [
+                            'name_subject' => ['Mata pelajaran dengan nama ini sudah ada']
+                        ]
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['name_subject' => 'Mata pelajaran dengan nama ini sudah ada']);
+            }
+
+            $subject->update($request->all());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mata pelajaran ' . $request->name_subject . ' berhasil diperbarui'
+                ]);
+            }
+
+            return redirect()->route('subject.index')
+                ->with('success', 'Mata pelajaran ' . $request->name_subject . ' berhasil diperbarui');
+        } catch (\Exception $e) {
+            \Log::error('Error updating subject: ' . $e->getMessage());
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat memperbarui data'
+                ], 500);
+            }
+
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['name_subject' => 'Mata pelajaran dengan nama ini sudah ada']);
+                ->with('error', 'Terjadi kesalahan saat memperbarui data');
         }
-
-        $subject->update($request->all());
-
-        return redirect()->route('subject.index')
-            ->with('success', 'Mata pelajaran ' . $request->name_subject . ' berhasil diperbarui');
     }
 
     /**
@@ -273,7 +323,6 @@ class SubjectController extends Controller
             }
 
             return back()->with('success', $message);
-
         } catch (\Exception $e) {
             return back()->with('error', 'Error: ' . $e->getMessage());
         }
@@ -290,7 +339,6 @@ class SubjectController extends Controller
             return response()->download($path, 'Template_Import_Mapel.xlsx');
         }
 
-        // Create a simple template if doesn't exist
         return redirect()->back()->with('error', 'Template tidak ditemukan');
     }
 
@@ -302,43 +350,36 @@ class SubjectController extends Controller
         $search = $request->input('search', '');
         $letter = $request->input('letter', '');
 
-        $query = Subject::query();
+        $query = Subject::query()
+            ->select('subjects.*')
+            ->leftJoin('teacher_subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->groupBy('subjects.id', 'subjects.name_subject', 'subjects.created_at', 'subjects.updated_at')
+            ->selectRaw('COUNT(DISTINCT teacher_subjects.teacher_id) as teachers_count');
 
         if ($search) {
-            $query->where('name_subject', 'like', '%' . $search . '%');
+            $query->where('subjects.name_subject', 'like', '%' . $search . '%');
         }
 
         if ($letter) {
-            $query->where('name_subject', 'like', $letter . '%');
+            $query->where('subjects.name_subject', 'like', $letter . '%');
         }
 
         $subjects = $query->get();
-
-        // Add class counts to each subject
-        foreach ($subjects as $subject) {
-            $classCount = 0;
-            if (\Schema::hasColumn('classes', 'id_subject')) {
-                $classCount = Classes::where('id_subject', $subject->id)->count();
-            } elseif (\Schema::hasColumn('classes', 'subject_id')) {
-                $classCount = Classes::where('subject_id', $subject->id)->count();
-            }
-            $subject->classes_count = $classCount;
-        }
 
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="subjects-export-' . date('Y-m-d') . '.csv"',
         ];
 
-        $callback = function() use ($subjects) {
+        $callback = function () use ($subjects) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['No', 'Nama Mata Pelajaran', 'Jumlah Kelas', 'Dibuat', 'Diperbarui', 'Status']);
+            fputcsv($file, ['No', 'Nama Mata Pelajaran', 'Jumlah Guru', 'Dibuat', 'Diperbarui', 'Status']);
 
             foreach ($subjects as $index => $subject) {
                 fputcsv($file, [
                     $index + 1,
                     $subject->name_subject,
-                    $subject->classes_count ?? 0,
+                    $subject->teachers_count ?? 0,
                     $subject->created_at->format('d/m/Y H:i'),
                     $subject->updated_at->format('d/m/Y H:i'),
                     'Aktif'
@@ -392,20 +433,45 @@ class SubjectController extends Controller
     {
         $subject = Subject::findOrFail($id);
 
-        // Get class count
-        $classCount = 0;
-        if (\Schema::hasColumn('classes', 'id_subject')) {
-            $classCount = Classes::where('id_subject', $subject->id)->count();
-        } elseif (\Schema::hasColumn('classes', 'subject_id')) {
-            $classCount = Classes::where('subject_id', $subject->id)->count();
-        }
+        $teachersCount = DB::table('teacher_subjects')
+            ->where('subject_id', $id)
+            ->distinct('teacher_id')
+            ->count('teacher_id');
 
         return response()->json([
             'id' => $subject->id,
             'name' => $subject->name_subject,
-            'description' => $subject->description,
-            'classCount' => $classCount,
+            'description' => $subject->description ?? '-',
+            'teachersCount' => $teachersCount,
             'createdAt' => $subject->created_at->format('d/m/Y H:i'),
+        ]);
+    }
+
+    /**
+     * Get teachers for a specific subject
+     */
+    public function teachers($id)
+    {
+        $subject = Subject::findOrFail($id);
+
+        $teachers = DB::table('teacher_subjects')
+            ->join('teachers', 'teacher_subjects.teacher_id', '=', 'teachers.id')
+            ->leftJoin('users', 'teachers.user_id', '=', 'users.id')
+            ->where('teacher_subjects.subject_id', $id)
+            ->select(
+                'teachers.id',
+                'users.name as name',
+                'users.email as email',
+                'users.phone as phone'
+            )
+            ->get();
+
+        $teachersCount = $teachers->count();
+
+        return response()->json([
+            'subject' => $subject->name_subject,
+            'teachersCount' => $teachersCount,
+            'teachers' => $teachers
         ]);
     }
 }

@@ -367,7 +367,7 @@
 
     <!-- =================== HERO =================== -->
     <section class="min-h-screen relative flex items-center justify-center overflow-hidden"
-        style="background: url('{{ asset('image/bc atas.svg') }}') no-repeat center center; background-size: cover;">
+        style="background: url('{{ asset('image/bc atas.webp') }}') no-repeat center center; background-size: cover;">
         <div class="hero-content text-white font-poppins text-center w-full z-10 fade-in-up">
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 animate-on-scroll">Platform LMS
                 gratis yang</h1>
@@ -388,10 +388,10 @@
 
         <!-- Floating images -->
         <div class="image-container image-wedok floating slide-in-right">
-            <img src="{{ asset('image/orang wedok.svg') }}" alt="orangwedok" class="w-full h-auto" />
+            <img src="{{ asset('image/perempuan.webp') }}" alt="orangwedok" class="w-full h-auto" />
         </div>
         <div class="image-container image-laki floating-delay slide-in-left">
-            <img src="{{ asset('image/element laki.svg') }}" alt="wonglanang" class="w-full h-auto" />
+            <img src="{{ asset('image/laki.webp') }}" alt="wonglanang" class="w-full h-auto" />
         </div>
     </section>
 
@@ -427,7 +427,7 @@
 
     <!-- =================== FEATURES / CAROUSEL =================== -->
     <section class="min-h-screen bg-cover bg-center relative py-16 md:py-20"
-        style="background-image: url('{{ asset('image/landing 2.svg') }}');">
+        style="background-image: url('{{ asset('image/landing 2.webp') }}');">
         <div class="container mx-auto px-4">
             <div class="text-center mb-8 md:mb-12 animate-on-scroll">
                 <h1 class="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl font-poppins">KEUNGGULAN

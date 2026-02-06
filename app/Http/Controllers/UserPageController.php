@@ -619,6 +619,7 @@ class UserPageController extends Controller
     }
 
 
+    // Di UserPageController - perbaiki method showSoal()
     public function showSoal(Request $request)
     {
         try {
@@ -650,13 +651,14 @@ class UserPageController extends Controller
             $search = $request->input('search');
             $status = $request->input('status');
 
-            // Query dasar
+            // Query dasar dengan scope untuk exam yang aktif dan tersedia
             $query = Exam::with([
                 'subject',
-                'teacher.user'
+                'teacher.user',
+                'questions' // Tambahkan untuk menghitung jumlah soal
             ])
                 ->where('class_id', $kelasId)
-                ->where('status', 'active')
+                ->where('status', 'active') // Hanya exam yang aktif
                 ->where(function ($query) {
                     $query->whereNull('end_at')
                         ->orWhere('end_at', '>=', now());
@@ -666,6 +668,7 @@ class UserPageController extends Controller
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('type', 'like', '%' . $search . '%')
                         ->orWhereHas('subject', function ($subjectQuery) use ($search) {
                             $subjectQuery->where('name_subject', 'like', '%' . $search . '%');
                         })
@@ -675,62 +678,63 @@ class UserPageController extends Controller
                 });
             }
 
-            // Ambil semua data untuk filtering status
-            $allExams = $query->orderBy('created_at', 'desc')->get();
+            // Filter berdasarkan status
+            if ($status) {
+                switch ($status) {
+                    case 'available':
+                        // Belum dikerjakan dan tersedia
+                        $query->where(function ($q) use ($user) {
+                            $q->whereDoesntHave('attempts', function ($subQuery) use ($user) {
+                                $subQuery->where('student_id', $user->id)
+                                    ->whereIn('status', ['submitted', 'timeout']);
+                            })
+                                ->orWhereHas('attempts', function ($subQuery) use ($user) {
+                                    $subQuery->where('student_id', $user->id)
+                                        ->where('status', 'in_progress');
+                                });
+                        });
+                        break;
 
-            // Tambahkan status untuk setiap exam
-            foreach ($allExams as $exam) {
+                    case 'completed':
+                        // Sudah dikerjakan
+                        $query->whereHas('attempts', function ($q) use ($user) {
+                            $q->where('student_id', $user->id)
+                                ->whereIn('status', ['submitted', 'timeout']);
+                        });
+                        break;
+
+                    case 'expired':
+                        // Kadaluarsa
+                        $query->where('end_at', '<', now());
+                        break;
+
+                    case 'upcoming':
+                        // Akan datang
+                        $query->where('start_at', '>', now());
+                        break;
+                }
+            }
+
+            $exams = $query->orderBy('created_at', 'desc')->paginate(12);
+
+            // Tambahkan informasi status untuk setiap exam
+            foreach ($exams as $exam) {
                 $attempt = ExamAttempt::where('exam_id', $exam->id)
                     ->where('student_id', $user->id)
                     ->latest()
                     ->first();
 
-                $exam->status = $this->getExamStatus($exam, $attempt);
                 $exam->attempt = $attempt;
-                $exam->questions_count = $exam->questions()->count();
-            }
+                $exam->questions_count = $exam->questions->count();
+                $exam->status = $this->getExamStatus($exam, $attempt);
 
-            // Filter berdasarkan status jika ada
-            if ($status) {
-                $statusMap = [
-                    'belum_dikerjakan' => 'available',
-                    'sudah_dikerjakan' => 'completed',
-                    'kadaluarsa' => 'expired'
-                ];
+                // Hitung berapa kali sudah attempt
+                $exam->attempt_count = ExamAttempt::where('exam_id', $exam->id)
+                    ->where('student_id', $user->id)
+                    ->whereIn('status', ['submitted', 'timeout'])
+                    ->count();
 
-                $targetStatus = $statusMap[$status] ?? $status;
-
-                $filteredExams = $allExams->filter(function ($exam) use ($targetStatus) {
-                    return $exam->status === $targetStatus;
-                });
-
-                // Convert ke paginator
-                $page = $request->input('page', 1);
-                $perPage = 9;
-                $paginatedExams = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $filteredExams->forPage($page, $perPage),
-                    $filteredExams->count(),
-                    $perPage,
-                    $page,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
-
-                $exams = $paginatedExams;
-            } else {
-                // Jika tidak ada filter status, gunakan pagination biasa
-                $exams = $query->orderBy('created_at', 'desc')->paginate(9);
-
-                // Tambahkan status untuk exams yang dipaginate
-                foreach ($exams as $exam) {
-                    $attempt = ExamAttempt::where('exam_id', $exam->id)
-                        ->where('student_id', $user->id)
-                        ->latest()
-                        ->first();
-
-                    $exam->status = $this->getExamStatus($exam, $attempt);
-                    $exam->attempt = $attempt;
-                    $exam->questions_count = $exam->questions()->count();
-                }
+                $exam->can_retake = $exam->limit_attempts > $exam->attempt_count;
             }
 
             return view('Siswa.soal', compact('exams'));
@@ -740,55 +744,66 @@ class UserPageController extends Controller
         }
     }
 
-    public function showSoalDetail($exam_id)
+    public function showSoalDetail($examId)
     {
         try {
             $user = Auth::user();
+            $student = $user->student;
 
-            // Pastikan user adalah siswa
-            if (!$user->hasRole('Murid')) {
-                abort(403, 'Hanya siswa yang dapat mengakses halaman ini.');
-            }
-
-            // Pastikan user memiliki data student
-            if (!$user->student) {
-                abort(403, 'Data siswa tidak ditemukan.');
-            }
-
-            // Pastikan student memiliki kelas
-            if (!$user->student->class_id) {
-                abort(403, 'Anda belum memiliki kelas.');
+            if (!$student || !$student->class_id) {
+                return back()->with('error', 'Anda belum memiliki kelas.');
             }
 
             $exam = Exam::with([
                 'subject',
                 'teacher.user',
-                'questions.choices'
+                'questions' => function ($query) {
+                    $query->with('choices');
+                }
             ])
-                ->where('id', $exam_id)
-                ->firstOrFail();
+                ->where('id', $examId)
+                ->where('class_id', $student->class_id)
+                ->first();
 
-            // Cek apakah exam tersedia untuk kelas siswa
-            if ($exam->class_id !== $user->student->class_id) {
-                return back()->with('error', 'Anda tidak memiliki akses ke ujian ini');
+            if (!$exam) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak ditemukan atau tidak tersedia untuk kelas Anda.');
             }
 
-            // Cek apakah sudah ada attempt yang belum disubmit
-            $ongoingAttempt = ExamAttempt::where('exam_id', $exam_id)
+            // PERBAIKI: Gunakan isAccessibleForStudent() bukan cek manual
+            if (!$exam->isAccessibleForStudent()) {
+                $status = $exam->getTimeStatus();
+                $message = 'Ujian tidak dapat diakses. ';
+
+                if ($status === 'upcoming') {
+                    $message .= 'Mulai: ' . $exam->start_at->format('d M Y H:i');
+                } elseif ($status === 'finished') {
+                    $message .= 'Berakhir: ' . $exam->end_at->format('d M Y H:i');
+                } elseif ($status === 'inactive') {
+                    $message .= 'Status: ' . $exam->status;
+                }
+
+                return redirect()->route('soal.index')
+                    ->with('error', $message);
+            }
+
+            // Cek attempt - PERBAIKI: Gunakan status 'in_progress' bukan 'ongoing'
+            $latestAttempt = ExamAttempt::where('exam_id', $examId)
                 ->where('student_id', $user->id)
-                ->where('status', 'in_progress')
+                ->orderBy('created_at', 'desc')
                 ->first();
 
-            // Cek apakah sudah pernah submit
-            $completedAttempt = ExamAttempt::where('exam_id', $exam_id)
+            $attemptCount = ExamAttempt::where('exam_id', $examId)
                 ->where('student_id', $user->id)
-                ->where('status', 'submitted')
-                ->latest()
-                ->first();
+                ->whereIn('status', ['submitted', 'timeout'])
+                ->count();
 
-            return view('Siswa.soal-detail', compact('exam', 'ongoingAttempt', 'completedAttempt'));
+            $exam->questions_count = $exam->questions->count();
+            $canRetake = $exam->limit_attempts > $attemptCount;
+
+            return view('Siswa.soal-detail', compact('exam', 'latestAttempt', 'attemptCount', 'canRetake'));
         } catch (\Exception $e) {
-            \Log::error('Error in showSoalDetail: ' . $e->getMessage());
+            Log::error('Error in showDetail: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -797,23 +812,26 @@ class UserPageController extends Controller
     {
         if (!$exam) return 'not_available';
 
+        // Cek jika sudah melewati batas waktu
+        if ($exam->end_at && now() > $exam->end_at) {
+            return 'expired';
+        }
+
+        // Cek jika belum dimulai
+        if ($exam->start_at && now() < $exam->start_at) {
+            return 'upcoming';
+        }
+
+        // Cek berdasarkan attempt
         if ($attempt) {
-            if ($attempt->status === 'submitted') {
+            if ($attempt->status === 'submitted' || $attempt->status === 'timeout') {
                 return 'completed';
             } elseif ($attempt->status === 'in_progress') {
                 return 'ongoing';
             }
         }
 
-        // Cek apakah masih dalam rentang waktu
-        if ($exam->start_at && now() < $exam->start_at) {
-            return 'upcoming';
-        }
-
-        if ($exam->end_at && now() > $exam->end_at) {
-            return 'expired';
-        }
-
+        // Default: tersedia untuk dikerjakan
         return 'available';
     }
 }
