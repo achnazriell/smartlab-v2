@@ -156,29 +156,34 @@
                         $statusText = 'Aktif';
                         $statusIcon = 'fa-check-circle';
 
-                        // Gunakan method dari model
-                        $timeStatus = $exam->getTimeStatus();
+                        // GANTI INI: Gunakan exam_status dari model
+                        $examStatus = $exam->exam_status ?? 'aktif';
 
+                        // Tentukan status berdasarkan exam_status
                         if ($exam->status !== 'active') {
                             $statusClass = 'bg-gray-500/25 text-white';
                             $statusText = ucfirst($exam->status);
                             $statusIcon = 'fa-times-circle';
-                        } elseif ($timeStatus === 'upcoming') {
+                        } elseif ($examStatus === 'belum_dimulai') {
                             $statusClass = 'bg-blue-400/25 text-white';
                             $statusText = 'Akan Datang';
                             $statusIcon = 'fa-clock';
-                        } elseif ($timeStatus === 'ongoing') {
+                        } elseif ($examStatus === 'quiz_berlangsung' || $examStatus === 'aktif') {
                             $statusClass = 'bg-emerald-500/25 text-white';
                             $statusText = 'Sedang Berlangsung';
                             $statusIcon = 'fa-hourglass-half';
-                        } elseif ($timeStatus === 'finished') {
+                        } elseif ($examStatus === 'selesai') {
                             $statusClass = 'bg-gray-500/25 text-white';
                             $statusText = 'Telah Berakhir';
                             $statusIcon = 'fa-times-circle';
-                        } elseif ($timeStatus === 'inactive') {
+                        } elseif ($examStatus === 'ruangan_terbuka') {
+                            $statusClass = 'bg-yellow-500/25 text-white';
+                            $statusText = 'Ruangan Terbuka';
+                            $statusIcon = 'fa-door-open';
+                        } elseif ($examStatus === 'ruangan_ditutup') {
                             $statusClass = 'bg-red-500/25 text-white';
-                            $statusText = 'Tidak Aktif';
-                            $statusIcon = 'fa-ban';
+                            $statusText = 'Ruangan Ditutup';
+                            $statusIcon = 'fa-door-closed';
                         }
                     @endphp
                     <span
@@ -417,13 +422,25 @@
         @endif
 
         <!-- Action Buttons -->
+        <!-- Action Buttons -->
         <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-stretch">
             @php
-                // Cek apakah ujian bisa diakses
-                $canAccess = $exam->isAccessibleForStudent();
+                // Cek apakah ujian bisa diakses - GUNAKAN METHOD YANG SUDAH ADA
+                // Ganti $exam->isAccessibleForStudent() dengan method yang ada di model
+
+                // Untuk exam biasa (non-quiz)
+                if ($exam->is_quiz) {
+                    // Untuk quiz, gunakan method canAccessQuiz() atau canStartNow()
+                    $canAccess = $exam->canAccessQuiz() || $exam->canStartNow();
+                } else {
+                    // Untuk exam biasa, gunakan method canAccessRegularExam() atau canStartNow()
+                    $canAccess = $exam->canAccessRegularExam() || $exam->canStartNow();
+                }
+
                 $hasOngoingAttempt = $latestAttempt && $latestAttempt->status == 'in_progress';
                 $hasCompletedAttempt = $latestAttempt && in_array($latestAttempt->status, ['submitted', 'timeout']);
-                $canStartNewAttempt = $canAccess && !$hasOngoingAttempt && (!$hasCompletedAttempt || ($canRetake ?? false));
+                $canStartNewAttempt =
+                    $canAccess && !$hasOngoingAttempt && (!$hasCompletedAttempt || ($canRetake ?? false));
             @endphp
 
             @if ($canStartNewAttempt)

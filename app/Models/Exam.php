@@ -44,6 +44,7 @@ class Exam extends Model
         'enable_proctoring',
         'require_camera',
         'require_mic',
+        'show_explanation', // TAMBAHKAN JIKA KOLOM ADA
 
         // RESULT SETTINGS
         'show_score',

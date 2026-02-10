@@ -196,6 +196,13 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
         Route::get('/exams/create', [GuruExamController::class, 'create'])->name('exams.create');
         Route::post('/exams', [GuruExamController::class, 'store'])->name('exams.store');
 
+        Route::prefix('exams/{exam}/questions')->name('exams.questions.')->group(function () {
+            Route::post('/', [GuruExamController::class, 'storeQuestion'])->name('store');
+            Route::get('/{question}', [GuruExamController::class, 'getQuestion'])->name('show');
+            Route::put('/{question}', [GuruExamController::class, 'updateQuestion'])->name('update');
+            Route::delete('/{question}', [GuruExamController::class, 'deleteQuestion'])->name('destroy');
+        });
+
         // Exam Specific Routes
         Route::get('exams/{exam}/soal', [GuruExamController::class, 'soal'])->name('exams.soal');
         Route::post('exams/{exam}/soal', [GuruExamController::class, 'storeQuestion'])->name('exams.store-question');
@@ -310,12 +317,16 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
         // Exam Listing
         Route::get('/', [MuridExamController::class, 'indexSoal'])->name('index');
         Route::get('/list', [UserPageController::class, 'showSoal'])->name('list');
+        Route::post('/{exam}/start', [MuridExamController::class, 'start'])->name('start');
 
         // Exam Detail & Attempt
         Route::get('/{exam}/detail', [MuridExamController::class, 'showDetail'])->name('detail');
         Route::get('/{exam}/kerjakan', [MuridExamController::class, 'attemptFromSession'])->name('kerjakan');
         Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
         Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
+
+        // TAMBAHKAN INI: Route untuk force submit karena pelanggaran
+        Route::post('/{exam}/force-submit-violation', [MuridExamController::class, 'forceSubmitViolation'])->name('force-submit-violation');
     });
 
     // ==================== MURID QUIZ ROUTES ====================

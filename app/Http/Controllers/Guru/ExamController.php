@@ -286,17 +286,21 @@ class ExamController extends Controller
             \Log::info('Exam created successfully with ID: ' . $exam->id);
 
             // Redirect ke halaman soal untuk exam
-            return redirect()
-                ->route('guru.exams.soal', $exam->id)
-                ->with('success', 'Ujian berhasil dibuat! Sekarang tambahkan soal-soal.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Ujian berhasil dibuat!',
+                'exam_id' => $exam->id,
+                'redirect' => route('guru.exams.soal', $exam->id)
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error creating exam: ' . $e->getMessage());
             \Log::error('Error trace: ' . $e->getTraceAsString());
 
-            return back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -527,7 +531,7 @@ class ExamController extends Controller
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
-            ->with(['attempts' => function($query) {
+            ->with(['attempts' => function ($query) {
                 $query->with('student')->orderBy('created_at', 'desc');
             }])
             ->findOrFail($id);
@@ -733,7 +737,7 @@ class ExamController extends Controller
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
-            ->with(['questions' => function($query) {
+            ->with(['questions' => function ($query) {
                 $query->with('choices')->orderBy('order');
             }])
             ->findOrFail($id);
@@ -913,7 +917,7 @@ class ExamController extends Controller
     public function storeQuestion(Request $request, $id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
+            ->where('type', '!=', 'QUIZ')
             ->findOrFail($id);
 
         $request->validate([
@@ -929,9 +933,9 @@ class ExamController extends Controller
         try {
             DB::beginTransaction();
 
-            // Hitung order terakhir
             $lastOrder = ExamQuestion::where('exam_id', $exam->id)->max('order') ?? 0;
 
+            // HAPUS show_explanation dari data yang disimpan
             $questionData = [
                 'exam_id' => $exam->id,
                 'type' => $request->type,
@@ -940,18 +944,125 @@ class ExamController extends Controller
                 'order' => $lastOrder + 1,
                 'enable_skip' => $request->boolean('enable_skip', true),
                 'enable_mark_review' => $request->boolean('enable_mark_review', true),
-                'show_explanation' => $request->boolean('show_explanation', false),
+                // 'show_explanation' => $request->boolean('show_explanation', false), // HAPUS BARIS INI
                 'randomize_choices' => $request->boolean('randomize_choices', false),
             ];
 
             // Untuk soal ISIAN SINGKAT
             if ($request->type === 'IS') {
-                // Pisahkan jawaban dengan koma
                 $answers = array_map('trim', explode(',', $request->short_answer));
                 $questionData['short_answers'] = json_encode($answers);
             }
 
             $question = ExamQuestion::create($questionData);
+
+            // Untuk soal PILIHAN GANDA
+            if ($request->type === 'PG') {
+                foreach ($request->options as $index => $option) {
+                    if (!empty($option)) {
+                        ExamChoice::create([
+                            'question_id' => $question->id,
+                            'label' => chr(65 + $index), // A, B, C, D
+                            'text' => $option,
+                            'is_correct' => $index == $request->correct_answer,
+                            'order' => $index,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Soal berhasil ditambahkan',
+                'question' => $question->load('choices')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /guru/exams/{examId}/questions/{questionId}
+     * Ambil data soal untuk diedit (AJAX)
+     */
+    public function editQuestion($examId, $questionId)
+    {
+        $exam = Exam::where('teacher_id', $this->teacherId())
+            ->where('type', '!=', 'QUIZ')
+            ->findOrFail($examId);
+
+        $question = ExamQuestion::where('exam_id', $exam->id)
+            ->with('choices')
+            ->findOrFail($questionId);
+
+        return response()->json([
+            'success' => true,
+            'question' => [
+                'id' => $question->id,
+                'type' => $question->type,
+                'question' => $question->question,
+                'score' => $question->score,
+                'short_answers' => $question->short_answers,
+                'choices' => $question->choices->map(function ($choice) {
+                    return [
+                        'text' => $choice->text,
+                        'is_correct' => $choice->is_correct,
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    /**
+     * PUT /guru/exams/{examId}/questions/{questionId}
+     * Update soal (AJAX)
+     */
+    public function updateQuestion(Request $request, $examId, $questionId)
+    {
+        $exam = Exam::where('teacher_id', $this->teacherId())
+            ->where('type', '!=', 'QUIZ')
+            ->findOrFail($examId);
+
+        $question = ExamQuestion::where('exam_id', $exam->id)
+            ->findOrFail($questionId);
+
+        $request->validate([
+            'question' => 'required|string',
+            'type' => 'required|in:PG,IS',
+            'score' => 'required|integer|min:1|max:100',
+            'options' => 'required_if:type,PG|array|min:2',
+            'options.*' => 'required_if:type,PG|string',
+            'correct_answer' => 'required_if:type,PG|integer',
+            'short_answer' => 'required_if:type,IS|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $questionData = [
+                'type' => $request->type,
+                'question' => $request->question,
+                'score' => $request->score,
+            ];
+
+            // Untuk soal ISIAN SINGKAT
+            if ($request->type === 'IS') {
+                $answers = array_map('trim', explode(',', $request->short_answer));
+                $questionData['short_answers'] = json_encode($answers);
+            }
+
+            $question->update($questionData);
+
+            // Hapus pilihan lama jika ada
+            if ($question->choices->isNotEmpty()) {
+                $question->choices()->delete();
+            }
 
             // Untuk soal PILIHAN GANDA
             if ($request->type === 'PG') {
@@ -970,8 +1081,46 @@ class ExamController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Soal berhasil ditambahkan',
+                'message' => 'Soal berhasil diperbarui',
                 'question' => $question->load('choices')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * DELETE /guru/exams/{examId}/questions/{questionId}
+     * Hapus soal (AJAX)
+     */
+    public function destroyQuestion($examId, $questionId)
+    {
+        $exam = Exam::where('teacher_id', $this->teacherId())
+            ->where('type', '!=', 'QUIZ')
+            ->findOrFail($examId);
+
+        $question = ExamQuestion::where('exam_id', $exam->id)
+            ->findOrFail($questionId);
+
+        try {
+            DB::beginTransaction();
+
+            // Hapus pilihan jika ada
+            if ($question->choices->isNotEmpty()) {
+                $question->choices()->delete();
+            }
+
+            $question->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Soal berhasil dihapus'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
