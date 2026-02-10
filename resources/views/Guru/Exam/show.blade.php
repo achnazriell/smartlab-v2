@@ -35,7 +35,6 @@
             from {
                 opacity: 0;
             }
-
             to {
                 opacity: 1;
             }
@@ -46,77 +45,10 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e0e7ff;
-        }
-
-        .modal-icon {
-            width: 48px;
-            height: 48px;
-            background: #fee2e2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e3a8a;
-            margin: 0;
-        }
-
-        .modal-body {
-            color: #475569;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .modal-btn-cancel {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .modal-btn-cancel:hover {
-            background: #d1d5db;
-        }
-
-        .modal-btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-
-        .modal-btn-danger:hover {
-            background: #b91c1c;
         }
     </style>
 
@@ -128,7 +60,7 @@
                     <h1 class="text-2xl font-bold text-slate-800 font-poppins">{{ $exam->title }}</h1>
                     <div class="flex flex-wrap items-center gap-3 mt-2">
                         <span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                            {{ $exam->type }}
+                            {{ $exam->type == 'LAINNYA' ? $exam->custom_type : $exam->type }}
                         </span>
                         <span class="text-slate-600">
                             {{ $exam->subject->name_subject ?? 'Tidak ada mapel' }}
@@ -138,8 +70,7 @@
                             {{ $exam->class->name_class ?? 'Tidak ada kelas' }}
                         </span>
                         <span class="text-slate-600">•</span>
-                        <span
-                            class="px-3 py-1 {{ $exam->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }} text-sm font-medium rounded-full">
+                        <span class="px-3 py-1 {{ $exam->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }} text-sm font-medium rounded-full">
                             {{ $exam->status === 'active' ? 'Aktif' : ($exam->status === 'draft' ? 'Draft' : ucfirst($exam->status)) }}
                         </span>
                     </div>
@@ -166,7 +97,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
@@ -208,13 +139,22 @@
                     </div>
                     <div>
                         <p class="text-sm text-slate-500">Durasi</p>
-                        <p class="text-2xl font-bold text-slate-800">
-                            @if ($exam->type === 'QUIZ')
-                                {{ $exam->time_per_question }} detik/soal
-                            @else
-                                {{ $exam->duration }} menit
-                            @endif
-                        </p>
+                        <p class="text-2xl font-bold text-slate-800">{{ $exam->duration }} menit</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Percobaan Maks</p>
+                        <p class="text-2xl font-bold text-slate-800">{{ $exam->limit_attempts }} kali</p>
                     </div>
                 </div>
             </div>
@@ -282,6 +222,18 @@
                             </p>
                         </div>
                         <div>
+                            <p class="text-sm text-slate-500">Tampilkan Jawaban Benar</p>
+                            <p class="font-medium text-slate-800">
+                                {{ $exam->show_correct_answer ? 'Ya' : 'Tidak' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Mode Fullscreen</p>
+                            <p class="font-medium text-slate-800">
+                                {{ $exam->fullscreen_mode ? 'Ya' : 'Tidak' }}
+                            </p>
+                        </div>
+                        <div>
                             <p class="text-sm text-slate-500">Maksimal Percobaan</p>
                             <p class="font-medium text-slate-800">
                                 {{ $exam->limit_attempts ?? 1 }} kali
@@ -336,7 +288,7 @@
                                         <div class="text-sm">
                                             <p class="text-slate-600 mb-1">Jawaban diterima:</p>
                                             <div class="flex flex-wrap gap-2">
-                                                @foreach ($question->short_answers ?? [] as $answer)
+                                                @foreach (json_decode($question->short_answers ?? '[]') as $answer)
                                                     <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">
                                                         {{ $answer }}
                                                     </span>
@@ -389,7 +341,7 @@
                             </span>
                         </div>
 
-                        <!-- TAMBAHKAN INI: Informasi Finalisasi -->
+                        <!-- Informasi Finalisasi -->
                         @if ($exam->status === 'draft')
                             <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
                                 <div class="flex items-start">
@@ -409,7 +361,7 @@
                         @endif
 
                         <div class="pt-3 border-t border-slate-100">
-                            <!-- TAMBAHKAN INI: Tombol Finalisasi/Publikasi -->
+                            <!-- Tombol Finalisasi/Publikasi -->
                             @if ($exam->status === 'draft')
                                 <div class="mb-4">
                                     <form action="{{ route('guru.exams.finalize', $exam->id) }}" method="POST"
@@ -573,23 +525,30 @@
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-icon">⚠️</div>
+            <div class="flex items-start gap-4 mb-4">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.282 16.5c-.77.833.192 2.5 1.732 2.5z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
                 <div>
-                    <h2 class="modal-title">Hapus Ujian</h2>
+                    <h3 class="text-lg font-bold text-slate-800">Hapus Ujian</h3>
+                    <p class="text-slate-600 mt-1"><strong>{{ $exam->title }}</strong></p>
+                    <p class="mt-3 text-red-600 font-medium">Apakah Anda yakin ingin menghapus ujian ini? Tindakan ini tidak dapat dibatalkan.</p>
                 </div>
             </div>
-            <div class="modal-body">
-                <p><strong>Ujian:</strong> {{ $exam->title }}</p>
-                <p class="mt-3" style="color: #dc2626; font-weight: 600;">Apakah Anda yakin ingin menghapus ujian ini?
-                    Tindakan ini tidak dapat dibatalkan dan semua data terkait ujian akan dihapus.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeDeleteModal()"
+                    class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
                     Batal
                 </button>
-                <button type="button" class="modal-btn modal-btn-danger" onclick="submitDeleteForm()">
-                    Ya, Hapus Ujian
+                <button type="button" onclick="submitDeleteForm()"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    Ya, Hapus
                 </button>
             </div>
         </div>

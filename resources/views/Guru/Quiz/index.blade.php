@@ -1,31 +1,34 @@
 @extends('layouts.appTeacher')
 @section('content')
     <div class="space-y-6">
-        <!-- Modern header dengan blue gradient dan design yang lebih clean -->
-        <div class="bg-gradient-to-r from-blue-400 to-blue-200 rounded-2xl p-8 text-white shadow-lg">
+        <!-- Modern header dengan purple gradient dan design yang lebih fun -->
+        <div class="bg-gradient-to-r from-purple-500 to-purple-300 rounded-2xl p-8 text-white shadow-lg">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-3xl md:text-4xl font-bold text-white">Kelola Ujian</h1>
-                    <p class="text-blue-50 mt-2">Buat dan kelola ujian untuk siswa</p>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white">Kelola Quiz Interaktif</h1>
+                    <p class="text-purple-50 mt-2">Buat dan kelola quiz seru untuk siswa</p>
                 </div>
-                <div>
-                    <a href="{{ route('guru.exams.create') }}"
-                        class="px-6 md:px-8 py-3 md:py-4 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all shadow-md flex items-center space-x-2 font-semibold text-sm md:text-base whitespace-nowrap hover:shadow-lg">
-                        <span>Buat Ujian</span>
+                <div class="flex gap-3">
+                    <a href="{{ route('guru.quiz.create') }}"
+                        class="px-6 md:px-8 py-3 md:py-4 bg-white text-purple-600 rounded-xl hover:bg-purple-50 transition-all shadow-md flex items-center space-x-2 font-semibold text-sm md:text-base whitespace-nowrap hover:shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Buat Quiz Baru</span>
                     </a>
                 </div>
             </div>
 
             <!-- Search dan filter dengan styling yang lebih modern -->
             <div class="flex flex-col sm:flex-row gap-3 mt-6">
-                <form action="{{ route('guru.exams.index') }}" method="GET" class="flex-1 relative" id="searchForm">
-                    <input type="text" name="search" placeholder="Cari ujian, mapel, atau kelas..."
+                <form action="{{ route('guru.quiz.index') }}" method="GET" class="flex-1 relative" id="searchForm">
+                    <input type="text" name="search" placeholder="Cari quiz, mapel, atau kelas..."
                         value="{{ request('search') }}"
-                        class="w-full px-4 py-2.5 rounded-xl text-gray-800 placeholder-blue-300 outline-none ring-2 ring-white text-sm md:text-base transition-all focus:ring-blue-300"
+                        class="w-full px-4 py-2.5 rounded-xl text-gray-800 placeholder-purple-300 outline-none ring-2 ring-white text-sm md:text-base transition-all focus:ring-purple-300"
                         onchange="document.getElementById('searchForm').submit();">
                     @if (request('search'))
-                        <button type="button" onclick="window.location='{{ route('guru.exams.index') }}'"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-blue-200 transition-colors"
+                        <button type="button" onclick="window.location='{{ route('guru.quiz.index') }}'"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-purple-200 transition-colors"
                             title="Hapus pencarian">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
@@ -37,29 +40,44 @@
                 </form>
 
                 <!-- Filter Form -->
-                <form action="{{ route('guru.exams.index') }}" method="GET" id="filterForm" class="flex gap-2">
+                <form action="{{ route('guru.quiz.index') }}" method="GET" id="filterForm" class="flex gap-2">
                     @if(request('search'))
                         <input type="hidden" name="search" value="{{ request('search') }}">
                     @endif
 
                     <select name="status" onchange="document.getElementById('filterForm').submit()"
-                        class="px-4 py-2.5 rounded-xl bg-white text-gray-800 border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm hover:bg-blue-50 transition-all duration-200">
+                        class="px-4 py-2.5 rounded-xl bg-white text-gray-800 border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm shadow-sm hover:bg-purple-50 transition-all duration-200">
                         <option value="">Semua Status</option>
                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
-                        {{-- <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Nonaktif</option> --}}
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
                     </select>
 
-                    <select name="type" onchange="document.getElementById('filterForm').submit()"
-                        class="px-4 py-2.5 rounded-xl bg-white text-gray-800 border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm hover:bg-blue-50 transition-all duration-200">
-                        <option value="">Semua Jenis</option>
-                        <option value="UH" {{ request('type') == 'UH' ? 'selected' : '' }}>Ulangan Harian</option>
-                        <option value="UTS" {{ request('type') == 'UTS' ? 'selected' : '' }}>UTS</option>
-                        <option value="UAS" {{ request('type') == 'UAS' ? 'selected' : '' }}>UAS</option>
-                        <option value="LAINNYA" {{ request('type') == 'LAINNYA' ? 'selected' : '' }}>Lainnya</option>
+                    @if($classes->count() > 0)
+                    <select name="class_id" onchange="document.getElementById('filterForm').submit()"
+                        class="px-4 py-2.5 rounded-xl bg-white text-gray-800 border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm shadow-sm hover:bg-purple-50 transition-all duration-200">
+                        <option value="">Semua Kelas</option>
+                        @foreach($classes as $class)
+                            <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>
+                                {{ $class->name_class }}
+                            </option>
+                        @endforeach
                     </select>
+                    @endif
 
-                    @if (request('status') || request('type') || request('search'))
+                    @if($subjects->count() > 0)
+                    <select name="subject_id" onchange="document.getElementById('filterForm').submit()"
+                        class="px-4 py-2.5 rounded-xl bg-white text-gray-800 border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm shadow-sm hover:bg-purple-50 transition-all duration-200">
+                        <option value="">Semua Mapel</option>
+                        @foreach($subjects as $subject)
+                            <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
+                                {{ $subject->name_subject }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @endif
+
+                    @if (request('status') || request('class_id') || request('subject_id') || request('search'))
                         <button type="button" onclick="resetFilters()"
                             class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl border border-amber-600 transition-colors text-sm shadow-sm flex items-center gap-2 hover:shadow-md transition-all duration-200">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,9 +93,9 @@
         <!-- Summary statistics cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div
-                class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex items-center space-x-5 group hover:border-blue-300 transition-all duration-300">
+                class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex items-center space-x-5 group hover:border-purple-300 transition-all duration-300">
                 <div
-                    class="p-4 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    class="p-4 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
@@ -85,8 +103,8 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-[11px] text-slate-400 font-extrabold uppercase tracking-[0.2em] mb-1">Total Ujian</p>
-                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">{{ $total ?? 0 }}</p>
+                    <p class="text-[11px] text-slate-400 font-extrabold uppercase tracking-[0.2em] mb-1">Total Quiz</p>
+                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">{{ $quizzes->total() ?? 0 }}</p>
                 </div>
             </div>
             <div
@@ -99,7 +117,8 @@
                 </div>
                 <div>
                     <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-[0.2em] mb-1">Aktif</p>
-                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">{{ $active ?? 0 }}</p>
+                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">
+                        {{ $quizzes->where('status', 'active')->count() }}</p>
                 </div>
             </div>
             <div
@@ -113,7 +132,8 @@
                 </div>
                 <div>
                     <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-[0.2em] mb-1">Draft</p>
-                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">{{ $draft ?? 0 }}</p>
+                    <p class="text-3xl font-semibold text-slate-800 tracking-tight">
+                        {{ $quizzes->where('status', 'draft')->count() }}</p>
                 </div>
             </div>
         </div>
@@ -150,27 +170,30 @@
 
         <!-- Table yang lebih modern dengan white card design -->
         <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-50">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-purple-50">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-lg md:text-xl font-bold text-gray-900">Daftar Ujian</h3>
+                        <h3 class="text-lg md:text-xl font-bold text-gray-900">Daftar Quiz Interaktif</h3>
                         <p class="text-xs md:text-sm text-gray-600 mt-1">Total: <span
-                                class="font-semibold text-blue-600">{{ $exams->total() ?? 0 }}</span> Ujian</p>
+                                class="font-semibold text-purple-600">{{ $quizzes->total() ?? 0 }}</span> Quiz</p>
                     </div>
-                    @if(request('status') || request('type'))
-                        <div class="flex items-center gap-2 text-sm text-gray-600">
-                            @if(request('status'))
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                                    Status: {{ request('status') == 'draft' ? 'Draft' : (request('status') == 'active' ? 'Aktif' : 'Nonaktif') }}
-                                </span>
-                            @endif
-                            @if(request('type'))
-                                <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
-                                    Jenis: {{ request('type') == 'UH' ? 'Ulangan Harian' : (request('type') == 'UTS' ? 'UTS' : (request('type') == 'UAS' ? 'UAS' : 'Lainnya')) }}
-                                </span>
-                            @endif
-                        </div>
-                    @endif
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        @if(request('status'))
+                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                Status: {{ request('status') == 'draft' ? 'Draft' : (request('status') == 'active' ? 'Aktif' : 'Nonaktif') }}
+                            </span>
+                        @endif
+                        @if(request('class_id') && $classes->where('id', request('class_id'))->first())
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                Kelas: {{ $classes->where('id', request('class_id'))->first()->name_class }}
+                            </span>
+                        @endif
+                        @if(request('subject_id') && $subjects->where('id', request('subject_id'))->first())
+                            <span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                                Mapel: {{ $subjects->where('id', request('subject_id'))->first()->name_subject }}
+                            </span>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -183,13 +206,13 @@
                                 No</th>
                             <th
                                 class="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                Judul Ujian</th>
+                                Judul Quiz</th>
                             <th
                                 class="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 uppercase tracking-wider">
                                 Mapel / Kelas</th>
                             <th
                                 class="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                                Jenis / Durasi</th>
+                                Mode</th>
                             <th
                                 class="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold text-gray-700 uppercase tracking-wider">
                                 Status</th>
@@ -199,58 +222,66 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @forelse ($exams as $index => $exam)
-                            <tr class="hover:bg-blue-50/50 transition-colors">
+                        @forelse ($quizzes as $index => $quiz)
+                            <tr class="hover:bg-purple-50/50 transition-colors">
                                 <td
                                     class="px-4 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-900 font-medium">
-                                    {{ $index + 1 + (($exams->currentPage() - 1) * $exams->perPage()) }}</td>
+                                    {{ $index + 1 + (($quizzes->currentPage() - 1) * $quizzes->perPage()) }}</td>
                                 <td class="px-4 md:px-6 py-4">
-                                    <div class="text-xs md:text-sm font-semibold text-gray-900">{{ $exam->title }}</div>
-                                    <div class="text-xs text-gray-500 mt-1">ID:
-                                        {{ $exam->type }}-{{ str_pad($exam->id, 5, '0', STR_PAD_LEFT) }}</div>
+                                    <div class="text-xs md:text-sm font-semibold text-gray-900">{{ $quiz->title }}</div>
+                                    <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                        <span class="flex items-center">
+                                            <svg class="w-3 h-3 text-purple-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                            {{ $quiz->time_per_question }} detik/soal
+                                        </span>
+                                        <span>•</span>
+                                        <span>{{ $quiz->questions_count ?? 0 }} soal</span>
+                                    </div>
                                 </td>
                                 <td class="px-4 md:px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">
-                                        {{ $exam->subject?->name_subject ?? '-' }}</div>
-                                    <div class="text-xs text-gray-500 mt-1">{{ $exam->class?->name_class ?? '-' }}</div>
+                                        {{ $quiz->subject?->name_subject ?? '-' }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ $quiz->class?->name_class ?? '-' }}</div>
                                 </td>
                                 <td class="px-4 md:px-6 py-4 text-xs md:text-sm text-gray-700">
                                     <div class="flex flex-col gap-1">
-                                        <span class="text-xs font-medium">
-                                            {{ $exam->type == 'LAINNYA' ? $exam->custom_type : $exam->type }}
-                                        </span>
-                                        <span class="text-xs text-gray-600">
-                                            {{ $exam->duration }} menit
+                                        <span class="text-xs font-medium px-2 py-1 rounded-full
+                                            {{ $quiz->quiz_mode == 'live' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700' }}">
+                                            {{ $quiz->quiz_mode == 'live' ? '🎮 Live' : '📚 Homework' }}
                                         </span>
                                     </div>
                                 </td>
-                                <td class="px-4 md:px-6 py-4 text-xs md:text-sm text-gray-600">
+                                <td class="px-4 md:px-6 py-4 text-xs md:text-sm">
                                     @php
                                         $statusClass =
-                                            $exam->status === 'active'
+                                            $quiz->status === 'active'
                                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                                : ($exam->status === 'draft'
+                                                : ($quiz->status === 'draft'
                                                     ? 'bg-amber-100 text-amber-800 border-amber-200'
                                                     : 'bg-slate-100 text-slate-800 border-slate-200');
                                         $statusDot =
-                                            $exam->status === 'active'
+                                            $quiz->status === 'active'
                                                 ? 'bg-emerald-500'
-                                                : ($exam->status === 'draft'
+                                                : ($quiz->status === 'draft'
                                                     ? 'bg-amber-500'
                                                     : 'bg-slate-500');
                                     @endphp
                                     <span
                                         class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $statusClass }} border">
                                         <span class="w-1.5 h-1.5 rounded-full mr-2 {{ $statusDot }}"></span>
-                                        {{ ucfirst($exam->status) }}
+                                        {{ ucfirst($quiz->status) }}
                                     </span>
                                 </td>
                                 <td class="px-4 md:px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center space-x-2">
-                                        <!-- Detail button -->
-                                        <a href="{{ route('guru.exams.show', $exam->id) }}"
-                                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="Detail">
+                                        <!-- Detail/Preview button -->
+                                        <a href="{{ route('guru.quiz.preview', $quiz->id) }}"
+                                            class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                            title="Preview">
                                             <svg class="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -260,7 +291,7 @@
                                             </svg>
                                         </a>
                                         <!-- Soal button -->
-                                        <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                                        <a href="{{ route('guru.quiz.questions', $quiz->id) }}"
                                             class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                             title="Kelola Soal">
                                             <svg class="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,7 +301,7 @@
                                             </svg>
                                         </a>
                                         <!-- Edit button -->
-                                        <a href="{{ route('guru.exams.edit', $exam->id) }}"
+                                        <a href="{{ route('guru.quiz.edit', $quiz->id) }}"
                                             class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                             title="Edit">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 md:w-5 h-4 md:h-5"
@@ -280,8 +311,17 @@
                                                     d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                             </svg>
                                         </a>
+                                        <!-- Results button -->
+                                        <a href="{{ route('guru.quiz.results', $quiz->id) }}"
+                                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Lihat Hasil">
+                                            <svg class="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            </svg>
+                                        </a>
                                         <!-- Delete button -->
-                                        <button onclick="openDeleteModal('{{ $exam->id }}', '{{ $exam->title }}')"
+                                        <button onclick="openDeleteModal('{{ $quiz->id }}', '{{ $quiz->title }}')"
                                             class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                             title="Hapus">
                                             <svg class="w-4 md:w-5 h-4 md:h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -299,10 +339,16 @@
                                     <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none"
                                         stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                            d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
                                     </svg>
-                                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Belum Ada Ujian</h3>
-                                    <p class="text-xs md:text-sm text-gray-500">Mulai dengan membuat ujian pertama Anda</p>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Belum Ada Quiz</h3>
+                                    <p class="text-xs md:text-sm text-gray-500">Mulai dengan membuat quiz interaktif pertama Anda</p>
+                                    <div class="mt-4">
+                                        <a href="{{ route('guru.quiz.create') }}"
+                                            class="inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                                            Buat Quiz Pertama
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
@@ -310,9 +356,9 @@
                 </table>
             </div>
 
-            @if ($exams->hasPages())
+            @if ($quizzes->hasPages())
                 <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                    {{ $exams->links('vendor.pagination.tailwind') }}
+                    {{ $quizzes->links('vendor.pagination.tailwind') }}
                 </div>
             @endif
         </div>
@@ -323,7 +369,7 @@
         class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm pt-6 pb-6 px-6">
             <div class="flex justify-between items-center mb-4">
-                <h5 class="text-xl md:text-2xl font-bold text-gray-900">Hapus Ujian</h5>
+                <h5 class="text-xl md:text-2xl font-bold text-gray-900">Hapus Quiz</h5>
                 <button type="button" class="text-gray-500 hover:text-gray-700"
                     onclick="closeDeleteModal()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -332,8 +378,8 @@
                     </svg>
                 </button>
             </div>
-            <p class="text-sm md:text-base text-gray-600 mb-6">Apakah Anda yakin ingin menghapus ujian <strong
-                    class="text-blue-600" id="deleteExamTitle"></strong>? Tindakan ini tidak dapat dibatalkan.
+            <p class="text-sm md:text-base text-gray-600 mb-6">Apakah Anda yakin ingin menghapus quiz <strong
+                    class="text-purple-600" id="deleteExamTitle"></strong>? Tindakan ini tidak dapat dibatalkan.
             </p>
             <div class="flex gap-3 justify-end">
                 <button type="button"
@@ -350,9 +396,9 @@
     </div>
 
     <script>
-        function openDeleteModal(examId, examTitle) {
-            document.getElementById('deleteExamTitle').textContent = examTitle;
-            document.getElementById('deleteForm').action = `/guru/exams/${examId}`;
+        function openDeleteModal(quizId, quizTitle) {
+            document.getElementById('deleteExamTitle').textContent = quizTitle;
+            document.getElementById('deleteForm').action = `/guru/quiz/${quizId}`;
             document.getElementById('deleteModal').classList.remove('hidden');
             document.getElementById('deleteModal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
@@ -370,9 +416,9 @@
             const search = url.searchParams.get('search');
 
             if (search) {
-                window.location.href = '{{ route("guru.exams.index") }}?search=' + search;
+                window.location.href = '{{ route("guru.quiz.index") }}?search=' + search;
             } else {
-                window.location.href = '{{ route("guru.exams.index") }}';
+                window.location.href = '{{ route("guru.quiz.index") }}';
             }
         }
 
@@ -433,6 +479,10 @@
 
         .space-y-6>*:nth-child(3) {
             animation-delay: 0.3s;
+        }
+
+        .space-y-6>*:nth-child(4) {
+            animation-delay: 0.4s;
         }
 
         tbody tr {

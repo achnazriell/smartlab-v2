@@ -28,6 +28,7 @@ use App\Http\Controllers\Guru\ExamController as GuruExamController;
 use App\Http\Controllers\Guru\QuestionController as GuruQuestionController;
 use App\Http\Controllers\Guru\ClassController as GuruClassController;
 use App\Http\Controllers\Guru\ExamResultController;
+use App\Http\Controllers\Guru\QuizController as GuruQuizController;
 
 // Murid Controllers
 use App\Http\Controllers\Murid\ExamController as MuridExamController;
@@ -85,7 +86,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ==================== ADMIN ROUTES ====================
-// PERBAIKAN: Gunakan 'role:Admin' bukan 'role:Admin'
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     // Dashboard
     Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -119,11 +119,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/Students', [StudentController::class, 'index'])->name('Students');
     Route::put('/student/{student}', [StudentController::class, 'assign'])->name('murid.assignMurid');
 
-    // Class Approval
-    Route::post('/approve', [StudentController::class, 'store'])->name('class.approval.store');
-    Route::put('/class-approvals/{id}/approve', [StudentController::class, 'approve'])->name('class-approvals.approve');
-    Route::post('/class-approval/{id}/reject', [StudentController::class, 'reject'])->name('class.approval.reject');
-
     // Admin Feedback Management
     Route::prefix('admin/feedback')->name('feedback.')->group(function () {
         Route::get('/', [AdminFeedbackController::class, 'index'])->name('index');
@@ -135,7 +130,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 });
 
 // ==================== GURU ROUTES ====================
-// PERBAIKAN: Pisahkan route Guru dan Admin jika ada konflik
 Route::middleware(['auth', 'role:Guru'])->group(function () {
     // Dashboard Guru
     Route::get('/teacher/dashboard', [HomeguruController::class, 'index'])->name('homeguru');
@@ -195,8 +189,12 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
 
     // ==================== GURU EXAM ROUTES ====================
     Route::prefix('guru')->name('guru.')->group(function () {
-        // Exams Resource
+        // Exams Resource (untuk UH, UTS, UAS, LAINNYA)
         Route::resource('exams', GuruExamController::class);
+
+        // Create Exam (umum untuk semua jenis)
+        Route::get('/exams/create', [GuruExamController::class, 'create'])->name('exams.create');
+        Route::post('/exams', [GuruExamController::class, 'store'])->name('exams.store');
 
         // Exam Specific Routes
         Route::get('exams/{exam}/soal', [GuruExamController::class, 'soal'])->name('exams.soal');
@@ -214,17 +212,6 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
         Route::get('/exams/{id}/edit', [GuruExamController::class, 'edit'])->name('exams.edit');
         Route::put('/exams/{id}', [GuruExamController::class, 'update'])->name('exams.update');
 
-
-        // Questions Routes
-        Route::prefix('exams/{exam}')->group(function () {
-            Route::get('/questions/create', [GuruQuestionController::class, 'create'])->name('exams.questions.create');
-            Route::post('/questions', [GuruQuestionController::class, 'store'])->name('exams.questions.store');
-            Route::get('/questions/{question}', [GuruQuestionController::class, 'show'])->name('exams.questions.show');
-            Route::get('/questions/{question}/edit', [GuruQuestionController::class, 'edit'])->name('exams.questions.edit');
-            Route::put('/questions/{question}', [GuruQuestionController::class, 'update'])->name('exams.questions.update');
-            Route::delete('/questions/{question}', [GuruQuestionController::class, 'destroy'])->name('exams.questions.destroy');
-        });
-
         // Exam Results Management
         Route::prefix('exams/{exam}/results')->name('exams.results.')->group(function () {
             Route::get('/', [ExamResultController::class, 'index'])->name('index');
@@ -237,18 +224,70 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
             Route::get('/question-analysis', [ExamResultController::class, 'questionAnalysis'])->name('question-analysis');
         });
     });
-});
 
-// ==================== ADMIN ACCESS TO GURU ROUTES ====================
-// Route khusus untuk Admin yang ingin mengakses fitur Guru
-Route::middleware(['auth', 'role:Admin'])->group(function () {
-    // Admin bisa mengakses dashboard guru dengan route yang berbeda
-    Route::get('/admin/teacher/dashboard', [HomeguruController::class, 'index'])->name('admin.homeguru');
+    // ==================== GURU QUIZ ROUTES ====================
+    Route::prefix('guru/quiz')->name('guru.quiz.')->group(function () {
+        // Quiz Management
+        Route::get('/', [GuruQuizController::class, 'index'])->name('index');
+        Route::get('/create', [GuruQuizController::class, 'create'])->name('create');
+        Route::post('/', [GuruQuizController::class, 'store'])->name('store');
+        Route::get('/{quiz}/edit', [GuruQuizController::class, 'edit'])->name('edit');
+        Route::put('/{quiz}', [GuruQuizController::class, 'update'])->name('update');
+        Route::delete('/{quiz}', [GuruQuizController::class, 'destroy'])->name('destroy');
 
-    // Admin bisa melihat materi
-    Route::get('/admin/materis', [MateriController::class, 'index'])->name('admin.materis.index');
+        // Quiz Room Management
+        Route::get('/{quiz}/room', [GuruQuizController::class, 'showRoom'])->name('room');
+        Route::get('/{quiz}/room/participants', [GuruQuizController::class, 'getRoomParticipants'])->name('room.participants');
+        Route::get('/guru/quiz/{quiz}/room/status', [GuruQuizController::class, 'getRoomStatus'])->name('room.status');
 
-    // Tambahkan route lain yang perlu diakses Admin sebagai Guru
+        // Room Control Routes
+        Route::post('/{quiz}/room/open', [GuruQuizController::class, 'openRoom'])->name('room.open');
+        Route::post('/{quiz}/room/close', [GuruQuizController::class, 'closeRoom'])->name('room.close');
+        Route::post('/{quiz}/room/start', [GuruQuizController::class, 'startQuiz'])->name('room.start');
+        Route::post('/{quiz}/room/stop', [GuruQuizController::class, 'stopQuiz'])->name('room.stop');
+        Route::post('/{quiz}/room/kick/{participant}', [GuruQuizController::class, 'kickParticipant'])->name('room.kick');
+        Route::post('/{quiz}/room/mark-ready/{participant}', [GuruQuizController::class, 'markParticipantAsReady'])->name('room.mark-ready');
+
+        // Alternative routes untuk kompatibilitas
+        Route::post('/{quiz}/close-room', [GuruQuizController::class, 'closeRoom'])->name('close-room');
+        Route::post('/{quiz}/start-quiz', [GuruQuizController::class, 'startQuiz'])->name('start-quiz');
+        Route::post('/{quiz}/open-room', [GuruQuizController::class, 'openRoom'])->name('open-room');
+        Route::post('/{quiz}/stop-quiz', [GuruQuizController::class, 'stopQuiz'])->name('stop-quiz');
+
+        // Quiz Filters
+        Route::get('/draft', [GuruQuizController::class, 'draftQuizzes'])->name('draft');
+        Route::get('/active', [GuruQuizController::class, 'activeQuizzes'])->name('active');
+        Route::get('/completed', [GuruQuizController::class, 'completedQuizzes'])->name('completed');
+
+        // Bulk operations
+        Route::post('/bulk-delete', [GuruQuizController::class, 'bulkDelete'])->name('bulk-delete');
+        Route::post('/bulk-publish', [GuruQuizController::class, 'bulkPublish'])->name('bulk-publish');
+
+        // Quiz Question Management
+        Route::prefix('{quiz}')->group(function () {
+            // Question Management
+            Route::get('/questions', [GuruQuizController::class, 'showQuestionCreator'])->name('questions');
+            Route::get('/questions/list', [GuruQuizController::class, 'getQuestions'])->name('questions.list');
+            Route::post('/questions/store', [GuruQuizController::class, 'storeQuestions'])->name('questions.store');
+            Route::post('/questions/import', [GuruQuizController::class, 'importQuestions'])->name('questions.import');
+            Route::post('/questions/{question}/update', [GuruQuizController::class, 'updateQuestion'])->name('questions.update');
+            Route::delete('/questions/{question}', [GuruQuizController::class, 'deleteQuestion'])->name('questions.delete');
+            Route::post('/questions/reorder', [GuruQuizController::class, 'reorderQuestions'])->name('questions.reorder');
+            Route::get('/import-preview/{sourceExamId}', [GuruQuizController::class, 'importPreview'])->name('import.preview');
+
+            // Quiz Operations
+            Route::get('/preview', [GuruQuizController::class, 'previewQuiz'])->name('preview');
+            Route::post('/finalize', [GuruQuizController::class, 'finalizeQuiz'])->name('finalize');
+            Route::post('/publish', [GuruQuizController::class, 'publishQuiz'])->name('publish');
+            Route::post('/unpublish', [GuruQuizController::class, 'unpublishQuiz'])->name('unpublish');
+            Route::post('/duplicate', [GuruQuizController::class, 'duplicateQuiz'])->name('duplicate');
+
+            // Quiz Results
+            Route::get('/results', [GuruQuizController::class, 'quizResults'])->name('results');
+            Route::get('/results/export/{format?}', [GuruQuizController::class, 'exportResults'])->name('results.export');
+            Route::get('/results/student/{studentId}', [GuruQuizController::class, 'studentResults'])->name('results.student');
+        });
+    });
 });
 
 // ==================== MURID ROUTES ====================
@@ -266,48 +305,50 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
     // Tasks
     Route::put('/tasks/{task_id}/collection', [CollectionController::class, 'updateCollection'])->name('updateCollection');
 
-    // ==================== MURID EXAM ROUTES ====================
+    // ==================== MURID REGULAR EXAM ROUTES ====================
     Route::prefix('soal')->name('soal.')->group(function () {
         // Exam Listing
-        Route::get('/list', [UserPageController::class, 'showSoal'])->name('list');
         Route::get('/', [MuridExamController::class, 'indexSoal'])->name('index');
+        Route::get('/list', [UserPageController::class, 'showSoal'])->name('list');
 
         // Exam Detail & Attempt
         Route::get('/{exam}/detail', [MuridExamController::class, 'showDetail'])->name('detail');
         Route::get('/{exam}/kerjakan', [MuridExamController::class, 'attemptFromSession'])->name('kerjakan');
-        Route::post('/{exam}/start', [MuridExamController::class, 'start'])->name('start');
         Route::post('/{exam}/submit', [MuridExamController::class, 'submit'])->name('submit');
         Route::get('/{exam}/hasil/{attempt}', [MuridExamController::class, 'result'])->name('hasil');
-
-        // Security & Violation
-        Route::post('/{exam}/force-submit-violation', [MuridExamController::class, 'forceSubmitViolation'])->name('force-submit-violation');
-        Route::post('/exams/{exam}/violation-submit', [MuridExamController::class, 'handleViolationSubmit'])->name('violation-submit');
-        Route::post('/{exam}/enable-fullscreen', [MuridExamController::class, 'enableFullscreen'])->name('enable-fullscreen');
     });
 
-    // Additional Exam Routes (Maintaining your structure)
-    Route::prefix('exams')->name('exams.')->group(function () {
-        Route::get('/', [MuridExamController::class, 'index'])->name('index');
-        Route::get('/active', [MuridExamController::class, 'active'])->name('active');
-        Route::get('/upcoming', [MuridExamController::class, 'upcoming'])->name('upcoming');
-        Route::get('/completed', [MuridExamController::class, 'completed'])->name('completed');
-        Route::get('/{exam}', [MuridExamController::class, 'show'])->name('show');
-        Route::get('/soal/{id}/direct', [MuridExamController::class, 'directAttempt'])->name('direct');
+    // ==================== MURID QUIZ ROUTES ====================
+    Route::prefix('quiz')->name('quiz.')->group(function () {
+        // Quiz Listing - MODIFIKASI: Langsung redirect ke room jika room terbuka
+        Route::get('/', [MuridExamController::class, 'indexQuiz'])->name('index');
+        Route::get('/active', [MuridExamController::class, 'activeQuiz'])->name('active');
+        Route::get('/upcoming', [MuridExamController::class, 'upcomingQuiz'])->name('upcoming');
+        Route::get('/completed', [MuridExamController::class, 'completedQuiz'])->name('completed');
 
-        // Exam Attempt Management
-        Route::post('/{exam}/continue', [MuridExamController::class, 'continueAttempt'])->name('continue');
-        Route::post('/{exam}/save-answer', [MuridExamController::class, 'saveAnswer'])->name('save-answer');
-        Route::post('/{exam}/auto-save', [MuridExamController::class, 'autoSave'])->name('auto-save');
-        Route::get('/{exam}/attempt/{attempt}', [MuridExamController::class, 'attempt'])->name('attempt');
-        Route::get('/{exam}/review/{attempt}', [MuridExamController::class, 'review'])->name('review');
+        // Quiz Room Management - HANYA UNTUK MURID
+        Route::get('/{quiz}/room', [MuridExamController::class, 'joinQuizRoomPage'])->name('room');
+        Route::post('/{quiz}/room/join', [MuridExamController::class, 'joinQuizRoom'])->name('join-room');
+        Route::get('/quiz/{quiz}/room/status', [MuridExamController::class, 'getQuizRoomStatus'])->name('room.status');
+        Route::post('/{quiz}/room/mark-ready', [MuridExamController::class, 'markAsReady'])->name('room.mark-ready');
+        Route::post('/{quiz}/start', [MuridExamController::class, 'startQuiz'])->name('start');
 
-        // Exam Results
-        Route::get('/{exam}/result/{attempt}', [MuridExamController::class, 'result'])->name('result');
-        Route::get('/{exam}/answers/{attempt}', [MuridExamController::class, 'answers'])->name('answers');
+        // Quiz Attempt
+        Route::get('/{quiz}/play', [MuridExamController::class, 'playQuiz'])->name('play');
+        Route::post('/{quiz}/submit', [MuridExamController::class, 'submitQuiz'])->name('submit');
+        // Route::post('/{quiz}/start', [MuridExamController::class, 'startQuiz'])->name('start');
 
-        // Security & Monitoring
-        Route::post('/{exam}/heartbeat', [MuridExamController::class, 'heartbeat'])->name('heartbeat');
-        Route::post('/{exam}/violation', [MuridExamController::class, 'logViolation'])->name('violation');
+        // Quiz Results
+        Route::get('/{quiz}/result/{attempt}', [MuridExamController::class, 'quizResult'])->name('result');
+        Route::get('/{quiz}/leaderboard', [MuridExamController::class, 'quizLeaderboard'])->name('leaderboard');
+
+        // Quiz Features
+        Route::post('/{quiz}/powerup', [MuridExamController::class, 'usePowerup'])->name('use-powerup');
+        Route::post('/{quiz}/bonus', [MuridExamController::class, 'claimBonus'])->name('claim-bonus');
+        Route::post('/{quiz}/save-progress', [MuridExamController::class, 'saveQuizProgress'])->name('save-progress');
+
+        // HAPUS ROUTE DETAIL - Siswa langsung ke room
+        // Route::get('/{quiz}/detail', [MuridExamController::class, 'showQuizDetail'])->name('detail');
     });
 });
 
@@ -317,7 +358,6 @@ Route::get('/pilihkelasmateri', function () {
 })->name('pilihkelasmateri');
 
 // ==================== FALLBACK FOR LEGACY ROUTES ====================
-// These ensure backward compatibility
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         $user = auth()->user();

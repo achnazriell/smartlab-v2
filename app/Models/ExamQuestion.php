@@ -23,10 +23,14 @@ class ExamQuestion extends Model
         'enable_mark_review',
         'randomize_choices',
         'require_all_options',
+        'order', // TAMBAHKAN INI
+        'image_path', // TAMBAHKAN JIKA ADA
+
     ];
 
     protected $casts = [
         'short_answers' => 'array',
+        'score' => 'integer',
     ];
 
     public function getQuestionSettingsForStudent()
@@ -155,5 +159,22 @@ class ExamQuestion extends Model
         }
 
         return [];
+    }
+
+    protected static function booted()
+    {
+        static::saving(function ($question) {
+            // Validasi short_answers untuk tipe IS
+            if ($question->type === 'IS') {
+                if (empty($question->short_answers)) {
+                    throw new \Exception('Jawaban singkat tidak boleh kosong untuk soal isian');
+                }
+
+                // Pastikan short_answers adalah array JSON yang valid
+                if (is_array($question->short_answers)) {
+                    $question->short_answers = json_encode(array_values($question->short_answers));
+                }
+            }
+        });
     }
 }

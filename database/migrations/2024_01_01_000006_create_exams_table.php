@@ -1,5 +1,5 @@
 <?php
-// File: 2024_01_01_000006_create_exams_system_clean.php
+// File: 2024_01_01_000006_create_exams_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->string('custom_type')->nullable(); // Untuk type LAINNYA
             $table->integer('duration'); // menit
 
-            // === TIMING ===
+            // === TIMING (optional untuk QUIZ, wajib untuk exam lain) ===
             $table->datetime('start_at')->nullable();
             $table->datetime('end_at')->nullable();
 
@@ -74,6 +74,12 @@ return new class extends Migration {
             $table->boolean('streak_bonus')->default(false);
             $table->boolean('time_bonus')->default(false);
             $table->boolean('enable_retake')->default(false);
+
+            // === ROOM SETTINGS (untuk quiz live) ===
+            $table->boolean('is_room_open')->default(false); // Ruangan dibuka untuk siswa masuk
+            $table->boolean('is_quiz_started')->default(false); // Quiz dimulai oleh guru
+            $table->datetime('quiz_started_at')->nullable(); // Waktu quiz dimulai
+            $table->integer('quiz_remaining_time')->nullable(); // Sisa waktu quiz (detik)
 
             // === STATUS ===
             $table->enum('status', ['draft', 'active', 'finished', 'inactive'])->default('draft');
@@ -179,10 +185,67 @@ return new class extends Migration {
 
             $table->timestamps();
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | QUIZ SESSIONS (untuk monitoring live quiz)
+        |--------------------------------------------------------------------------
+        */
+        Schema::create('quiz_sessions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
+
+            // === SESSION INFO ===
+            $table->string('session_code')->unique()->nullable();
+            $table->enum('session_status', ['waiting', 'active', 'paused', 'finished'])->default('waiting');
+
+            // === TIMING ===
+            $table->datetime('session_started_at')->nullable();
+            $table->datetime('session_ended_at')->nullable();
+            $table->integer('total_duration')->nullable(); // Total durasi sesi (detik)
+
+            // === STATS ===
+            $table->integer('total_students')->default(0);
+            $table->integer('students_joined')->default(0);
+            $table->integer('students_submitted')->default(0);
+
+            $table->timestamps();
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | QUIZ ROOM PARTICIPANTS (siswa yang masuk ruangan quiz)
+        |--------------------------------------------------------------------------
+        */
+        Schema::create('quiz_participants', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('quiz_session_id')->constrained('quiz_sessions')->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
+
+            // === STATUS ===
+            $table->enum('status', ['waiting', 'ready', 'started', 'submitted', 'disconnected'])->default('waiting');
+
+            // === TIMING ===
+            $table->timestamp('joined_at')->nullable();
+            $table->timestamp('ready_at')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('submitted_at')->nullable();
+
+            // === MONITORING ===
+            $table->string('ip_address')->nullable();
+            $table->text('user_agent')->nullable();
+            $table->boolean('is_present')->default(false);
+
+            $table->timestamps();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('quiz_participants');
+        Schema::dropIfExists('quiz_sessions');
         Schema::dropIfExists('exam_answers');
         Schema::dropIfExists('exam_attempts');
         Schema::dropIfExists('exam_choices');

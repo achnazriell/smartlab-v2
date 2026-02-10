@@ -173,6 +173,16 @@
                 <span
                     class="text-xs font-medium mt-1 {{ request()->is('soal') ? 'text-blue-600' : 'text-blue-700' }}">Soal</span>
             </a>
+            <a href="/quiz"
+                class="w-full flex flex-col items-center py-3 px-2 rounded-lg transition-all {{ request()->is('quiz') ? 'bg-blue-100 shadow-md border-l-4 border-blue-600' : 'hover:bg-blue-50' }}">
+                <svg class="w-6 h-6 {{ request()->is('quiz') ? 'text-blue-600' : 'text-blue-700' }}"
+                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" fill="currentColor">
+                    <path
+                        d="M448 64c106 0 192 86 192 192S554 448 448 448l-256 0C86 448 0 362 0 256S86 64 192 64l256 0zM192 176c-13.3 0-24 10.7-24 24l0 32-32 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l32 0 0 32c0 13.3 10.7 24 24 24s24-10.7 24-24l0-32 32 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-32 0 0-32c0-13.3-10.7-24-24-24zm240 96a32 32 0 1 0 0 64 32 32 0 1 0 0-64zm64-96a32 32 0 1 0 0 64 32 32 0 1 0 0-64z" />
+                </svg>
+                <span
+                    class="text-xs font-medium mt-1 {{ request()->is('quiz') ? 'text-blue-600' : 'text-blue-700' }}">Quiz</span>
+            </a>
         </nav>
     </aside>
 

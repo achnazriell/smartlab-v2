@@ -38,19 +38,16 @@
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" x-data="examForm()"
             x-init="init()">
 
-            <div class="p-6 border-b border-slate-200 transition-colors duration-300"
-                :class="examType === 'QUIZ' ? 'bg-purple-50' : 'bg-slate-50'">
-                <h2 class="text-xl font-bold font-poppins transition-colors"
-                    :class="examType === 'QUIZ' ? 'text-purple-700' : 'text-slate-800'">
-                    <span x-text="examType === 'QUIZ' ? 'Buat Quiz Interaktif' : 'Buat Ujian Baru'"></span>
+            <div class="p-6 border-b border-slate-200 transition-colors duration-300 bg-slate-50">
+                <h2 class="text-xl font-bold font-poppins text-slate-800">
+                    Buat Ujian Baru
                 </h2>
                 <p class="text-slate-500 text-sm">
-                    <span
-                        x-text="examType === 'QUIZ' ? 'Atur mode permainan interaktif.' : 'Lengkapi informasi dasar ujian.'"></span>
+                    Lengkapi informasi dasar ujian.
                 </p>
             </div>
 
-            <form action="{{ route('guru.exams.store') }}" method="POST" class="p-6 space-y-8" id="examForm">
+            <form action="{{ route('guru.exams.store') }}" method="POST" class="p-6 space-y-8" id="examForm" @submit.prevent="handleSubmit">
                 @csrf
 
                 <!-- ============= INFORMASI DASAR ============= -->
@@ -59,11 +56,11 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Judul Ujian/Quiz</label>
+                            <label class="text-sm font-semibold text-slate-700">Judul Ujian</label>
                             <input type="text" name="title" placeholder="Contoh: Ulangan Harian Matematika"
                                 value="{{ old('title') }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500"
-                                required>
+                                required x-model="title">
                         </div>
 
                         <div class="space-y-1">
@@ -75,8 +72,6 @@
                                 </option>
                                 <option value="UTS" {{ old('type') == 'UTS' ? 'selected' : '' }}>UTS</option>
                                 <option value="UAS" {{ old('type') == 'UAS' ? 'selected' : '' }}>UAS</option>
-                                <option value="QUIZ" {{ old('type') == 'QUIZ' ? 'selected' : '' }}>Quiz Interaktif
-                                </option>
                                 <option value="LAINNYA" {{ old('type') == 'LAINNYA' ? 'selected' : '' }}>Lainnya</option>
                             </select>
 
@@ -91,7 +86,8 @@
                             <label class="text-sm font-semibold text-slate-700">Mata Pelajaran</label>
                             <select name="subject_id" required
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500"
-                                x-on:change="getClassesBySubject($event.target.value)">
+                                x-on:change="getClassesBySubject($event.target.value)"
+                                x-model="subjectId">
                                 <option value="">-- Pilih Mapel --</option>
                                 @foreach ($mapels as $mapel)
                                     <option value="{{ $mapel->id }}"
@@ -133,7 +129,6 @@
                                 value="{{ old('duration', 90) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                 required>
-                            <p class="text-xs text-slate-500">Total waktu pengerjaan</p>
                         </div>
 
                         <div class="space-y-1">
@@ -364,111 +359,6 @@
                     </div>
                 </div>
 
-                <!-- ============= FITUR QUIZ (CONDITIONAL) ============= -->
-                <div x-show="examType === 'QUIZ'" x-transition class="space-y-6">
-                    <h3 class="text-lg font-semibold text-purple-700 border-b border-purple-200 pb-2">
-                        🎮 Fitur Quiz Interaktif
-                    </h3>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Waktu Per Soal (detik)</label>
-                            <input type="number" name="time_per_question" min="5" max="300"
-                                value="{{ old('time_per_question', 60) }}"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Mode Quiz</label>
-                            <select name="quiz_mode"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                                <option value="live" {{ old('quiz_mode', 'live') == 'live' ? 'selected' : '' }}>Live
-                                </option>
-                                <option value="homework" {{ old('quiz_mode') == 'homework' ? 'selected' : '' }}>Homework
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Tingkat Kesulitan</label>
-                            <select name="difficulty_level"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                                <option value="easy"
-                                    {{ old('difficulty_level', 'medium') == 'easy' ? 'selected' : '' }}>Mudah</option>
-                                <option value="medium"
-                                    {{ old('difficulty_level', 'medium') == 'medium' ? 'selected' : '' }} selected>Sedang
-                                </option>
-                                <option value="hard" {{ old('difficulty_level') == 'hard' ? 'selected' : '' }}>Sulit
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="show_leaderboard" value="1"
-                                {{ old('show_leaderboard') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Tampilkan Leaderboard
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_music" value="1"
-                                {{ old('enable_music') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Background Music
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_memes" value="1"
-                                {{ old('enable_memes') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Tampilkan Memes
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_powerups" value="1"
-                                {{ old('enable_powerups') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Power-ups & Bonus
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="randomize_questions" value="1"
-                                {{ old('randomize_questions') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Acak Soal
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="instant_feedback" value="1"
-                                {{ old('instant_feedback') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Feedback Instan
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="streak_bonus" value="1"
-                                {{ old('streak_bonus') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Bonus Streak
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="time_bonus" value="1"
-                                {{ old('time_bonus') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Bonus Waktu Cepat
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Submit Button -->
                 <div class="flex justify-end pt-4 border-t border-slate-200">
                     <button type="submit" id="submitBtn"
@@ -500,6 +390,8 @@
                 selectedSubjectId: {{ old('subject_id') ? old('subject_id') : 'null' }},
                 loadingClasses: false,
                 isSubmitting: false,
+                title: '{{ old('title', '') }}',
+                subjectId: '{{ old('subject_id', '') }}',
 
                 init() {
                     if (this.selectedSubjectId) {
@@ -516,9 +408,7 @@
                         this.toggleViolationSettings(disableViolations.checked);
                     }
 
-                    document.getElementById('examForm').addEventListener('submit', (e) => {
-                        this.handleSubmit(e);
-                    });
+                    this.setDefaultDates();
                 },
 
                 updateType(type) {
@@ -680,12 +570,28 @@
                     this.selectedSubjectId = null;
                 },
 
-                handleSubmit(e) {
+                setDefaultDates() {
+                    const now = new Date();
+                    const startInput = document.querySelector('[name="start_date"]');
+                    const endInput = document.querySelector('[name="end_date"]');
+
+                    // Set default dates only if not already set
+                    if (startInput && !startInput.value) {
+                        const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                        startInput.value = startDate.toISOString().slice(0, 16);
+                    }
+
+                    if (endInput && !endInput.value) {
+                        const endDate = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+                        endInput.value = endDate.toISOString().slice(0, 16);
+                    }
+                },
+
+                async handleSubmit(e) {
                     const form = e.target;
                     const classSelect = document.getElementById('class-select');
 
                     if (!classSelect.value) {
-                        e.preventDefault();
                         alert('Silakan pilih kelas terlebih dahulu.');
                         return;
                     }
@@ -698,32 +604,42 @@
                         const end = new Date(endDate);
 
                         if (end <= start) {
-                            e.preventDefault();
                             alert('Tanggal selesai harus setelah tanggal mulai.');
                             return;
                         }
                     }
 
                     this.isSubmitting = true;
+
+                    try {
+                        // Submit form via AJAX
+                        const formData = new FormData(form);
+
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Redirect ke halaman soal
+                            window.location.href = data.redirect || '{{ route("guru.exams.soal", ":exam_id") }}'.replace(':exam_id', data.exam_id);
+                        } else {
+                            alert(data.message || 'Gagal menyimpan pengaturan');
+                            this.isSubmitting = false;
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menyimpan');
+                        this.isSubmitting = false;
+                    }
                 }
             }
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const startInput = document.querySelector('[name="start_date"]');
-            const endInput = document.querySelector('[name="end_date"]');
-
-            // Set default dates only if not already set
-            if (startInput && !startInput.value) {
-                const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                startInput.value = startDate.toISOString().slice(0, 16);
-            }
-
-            if (endInput && !endInput.value) {
-                const endDate = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-                endInput.value = endDate.toISOString().slice(0, 16);
-            }
-        });
     </script>
 @endsection

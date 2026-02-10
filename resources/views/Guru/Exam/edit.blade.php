@@ -51,15 +51,12 @@
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" x-data="examForm()"
             x-init="init()">
 
-            <div class="p-6 border-b border-slate-200 transition-colors duration-300"
-                :class="examType === 'QUIZ' ? 'bg-purple-50' : 'bg-slate-50'">
-                <h2 class="text-xl font-bold font-poppins transition-colors"
-                    :class="examType === 'QUIZ' ? 'text-purple-700' : 'text-slate-800'">
-                    <span x-text="examType === 'QUIZ' ? 'Edit Quiz Interaktif' : 'Edit Ujian'"></span>
+            <div class="p-6 border-b border-slate-200 transition-colors duration-300 bg-slate-50">
+                <h2 class="text-xl font-bold font-poppins text-slate-800">
+                    Edit Ujian
                 </h2>
                 <p class="text-slate-500 text-sm">
-                    <span
-                        x-text="examType === 'QUIZ' ? 'Atur mode permainan interaktif.' : 'Lengkapi informasi dasar ujian.'"></span>
+                    Lengkapi informasi dasar ujian.
                 </p>
             </div>
 
@@ -73,7 +70,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Judul Ujian/Quiz</label>
+                            <label class="text-sm font-semibold text-slate-700">Judul Ujian</label>
                             <input type="text" name="title" placeholder="Contoh: Ulangan Harian Matematika"
                                 value="{{ old('title', $exam->title) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500"
@@ -91,8 +88,6 @@
                                 </option>
                                 <option value="UAS" {{ old('type', $exam->type) == 'UAS' ? 'selected' : '' }}>UAS
                                 </option>
-                                <option value="QUIZ" {{ old('type', $exam->type) == 'QUIZ' ? 'selected' : '' }}>Quiz
-                                    Interaktif</option>
                                 <option value="LAINNYA" {{ old('type', $exam->type) == 'LAINNYA' ? 'selected' : '' }}>
                                     Lainnya</option>
                             </select>
@@ -161,7 +156,7 @@
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-slate-700">Mulai</label>
                             <input type="datetime-local" name="start_date"
-                                value="{{ old('start_date', $exam->start_at ? $exam->start_at->format('Y-m-d\TH:i') : '') }}"
+                                value="{{ old('start_date', $exam->start_at ? $exam->start_at->format('Y-m-d\TH:i') : now()->addMinutes(10)->format('Y-m-d\TH:i')) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                 required>
                         </div>
@@ -169,7 +164,7 @@
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-slate-700">Selesai</label>
                             <input type="datetime-local" name="end_date"
-                                value="{{ old('end_date', $exam->end_at ? $exam->end_at->format('Y-m-d\TH:i') : '') }}"
+                                value="{{ old('end_date', $exam->end_at ? $exam->end_at->format('Y-m-d\TH:i') : now()->addHours(2)->format('Y-m-d\TH:i')) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                 required>
                         </div>
@@ -397,123 +392,6 @@
                                 value="{{ old('min_pass_grade', $exam->min_pass_grade ?? 0) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
                             <p class="text-xs text-slate-500">Nilai minimal untuk lulus</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ============= FITUR QUIZ (CONDITIONAL) ============= -->
-                <div x-show="examType === 'QUIZ'" x-transition class="space-y-6">
-                    <h3 class="text-lg font-semibold text-purple-700 border-b border-purple-200 pb-2">
-                        🎮 Fitur Quiz Interaktif
-                    </h3>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Waktu Per Soal (detik)</label>
-                            <input type="number" name="time_per_question" min="5" max="300"
-                                value="{{ old('time_per_question', $exam->time_per_question ?? 60) }}"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Mode Quiz</label>
-                            <select name="quiz_mode"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                                <option value="live"
-                                    {{ old('quiz_mode', $exam->quiz_mode ?? 'live') == 'live' ? 'selected' : '' }}>Live
-                                </option>
-                                <option value="homework"
-                                    {{ old('quiz_mode', $exam->quiz_mode) == 'homework' ? 'selected' : '' }}>Homework
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-sm font-semibold text-slate-700">Tingkat Kesulitan</label>
-                            <select name="difficulty_level"
-                                class="w-full px-4 py-2 rounded-lg border border-purple-300 focus:ring-2 focus:ring-purple-500 outline-none">
-                                <option value="easy"
-                                    {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') == 'easy' ? 'selected' : '' }}>
-                                    Mudah</option>
-                                <option value="medium"
-                                    {{ old('difficulty_level', $exam->difficulty_level ?? 'medium') == 'medium' ? 'selected' : '' }}
-                                    selected>Sedang</option>
-                                <option value="hard"
-                                    {{ old('difficulty_level', $exam->difficulty_level) == 'hard' ? 'selected' : '' }}>
-                                    Sulit</option>
-                            </select>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="show_leaderboard" value="1"
-                                {{ old('show_leaderboard', $exam->show_leaderboard) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Tampilkan Leaderboard
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_music" value="1"
-                                {{ old('enable_music', $exam->enable_music) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Background Music
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_memes" value="1"
-                                {{ old('enable_memes', $exam->enable_memes) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Tampilkan Memes
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_powerups" value="1"
-                                {{ old('enable_powerups', $exam->enable_powerups) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Power-ups & Bonus
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="randomize_questions" value="1"
-                                {{ old('randomize_questions', $exam->randomize_questions) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Acak Soal
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="instant_feedback" value="1"
-                                {{ old('instant_feedback', $exam->instant_feedback) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Feedback Instan
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="streak_bonus" value="1"
-                                {{ old('streak_bonus', $exam->streak_bonus) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Bonus Streak
-                            </label>
-                        </div>
-
-                        <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="time_bonus" value="1"
-                                {{ old('time_bonus', $exam->time_bonus) ? 'checked' : '' }}
-                                class="w-4 h-4 text-purple-600 rounded">
-                            <label class="text-sm font-medium text-slate-700 cursor-pointer">
-                                Bonus Waktu Cepat
-                            </label>
                         </div>
                     </div>
                 </div>
