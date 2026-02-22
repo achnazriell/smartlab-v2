@@ -575,7 +575,7 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Mata Pelajaran <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" name="name_subject" required
-                                    placeholder="Masukkan nama mata pelajaran"
+                                    placeholder="Masukkan Nama Mata Pelajaran"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                     value="{{ old('name_subject') }}">
                                 <p class="mt-1 text-sm text-red-500 hidden" id="addNameError"></p>
@@ -643,7 +643,7 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Mata Pelajaran <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" name="name_subject" id="editNameSubject" required
-                                    placeholder="Masukkan nama mata pelajaran"
+                                    placeholder="Masukkan Nama Mata Pelajaran"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                                 <p class="mt-1 text-sm text-red-500 hidden" id="editNameError"></p>
                             </div>

@@ -593,14 +593,14 @@
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span
                                             class="text-red-500">*</span></label>
                                     <input type="text" name="name" required
-                                        placeholder="Masukkan nama lengkap guru"
+                                        placeholder="Masukkan Nama Lengkap Guru"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                         value="{{ old('name') }}">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
                                             class="text-red-500">*</span></label>
-                                    <input type="email" name="email" required placeholder="contoh@email.com"
+                                    <input type="email" name="email" required placeholder="Masukkan Email"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                         value="{{ old('email') }}">
                                 </div>
@@ -610,7 +610,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
                                             class="text-red-500">*</span></label>
-                                    <input type="text" name="password" required placeholder="Masukkan password"
+                                    <input type="text" name="password" required placeholder="Masukkan Password"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                         value="{{ old('password') }}">
                                     <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
@@ -852,13 +852,13 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span class="text-red-500">*</span></label>
-                                            <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
+                                            <input type="text" name="name" required placeholder="Masukkan Nama Lengkap Guru"
                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                                 value="${data.name || ''}">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
-                                            <input type="email" name="email" required placeholder="contoh@email.com"
+                                            <input type="email" name="email" required placeholder="Masukkan Email"
                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                                 value="${data.email || ''}">
                                         </div>
@@ -867,7 +867,7 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label class="block text-sm font-medium text-slate-700 mb-1">Password (Kosongkan jika tidak diubah)</label>
-                                            <input type="text" name="password" placeholder="Masukkan password baru"
+                                            <input type="text" name="password" placeholder="Masukkan Password Baru"
                                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                                             <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
                                         </div>

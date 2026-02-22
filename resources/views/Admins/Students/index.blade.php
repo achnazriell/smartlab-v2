@@ -651,21 +651,21 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Murid <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="name" required placeholder="Masukkan nama lengkap murid"
+                                <input type="text" name="name" required placeholder="Masukkan Nama Lengkap Murid"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value="{{ old('name') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
                                         class="text-red-500">*</span></label>
-                                <input type="email" name="email" required placeholder="contoh@email.com"
+                                <input type="email" name="email" required placeholder="Masukkan Email"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value="{{ old('email') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="password" required placeholder="Masukkan password"
+                                <input type="text" name="password" required placeholder="Masukkan Password"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value="{{ old('password') }}">
                                 <p class="text-xs text-slate-500 mt-1">Password minimal 6 karakter</p>
@@ -744,14 +744,14 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nama Murid <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="name" required placeholder="Masukkan nama lengkap murid"
+                                <input type="text" name="name" required placeholder="Masukkan Nama Lengkap Murid"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     id="editName">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Email <span
                                         class="text-red-500">*</span></label>
-                                <input type="email" name="email" required placeholder="contoh@email.com"
+                                <input type="email" name="email" required placeholder="Masukkan Email"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     id="editEmail">
                             </div>
@@ -1117,7 +1117,7 @@
                                 Nomor Kelas Tujuan <span class="text-red-500">*</span>
                             </label>
                             <input type="number" id="move_class_number" min="1" max="20"
-                                placeholder="Contoh: 2"
+                                placeholder="Masukkan Nomor Kelas"
                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <p class="text-xs text-slate-500 mt-1">
                                 Contoh: siswa di <strong>"XII RPL 1"</strong> → masukkan <strong>2</strong> → pindah ke

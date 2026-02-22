@@ -246,14 +246,14 @@
                     <label for="add_name" class="block text-sm font-semibold text-slate-700 mb-2">Nama Jurusan <span class="text-red-500">*</span></label>
                     <input type="text" id="add_name" name="name" required
                         class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Contoh: Rekayasa Perangkat Lunak">
+                        placeholder="Masukkan Nama Jurusan">
                 </div>
 
                 <div>
                     <label for="add_code" class="block text-sm font-semibold text-slate-700 mb-2">Kode Jurusan <span class="text-red-500">*</span></label>
                     <input type="text" id="add_code" name="code" required
                         class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase"
-                        placeholder="Contoh: RPL" maxlength="10">
+                        placeholder="Masukkan Kode Jurusan" maxlength="10">
                     <p class="mt-1 text-xs text-slate-500">Kode akan otomatis diubah menjadi huruf kapital</p>
                 </div>
 

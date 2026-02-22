@@ -284,7 +284,7 @@
                     <label for="add_name" class="block text-sm font-semibold text-slate-700 mb-2">Nama Tahun Ajaran <span class="text-red-500">*</span></label>
                     <input type="text" id="add_name" name="name" required
                         class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Contoh: 2024/2025">
+                        placeholder="Masukkan Tahun Ajaran">
                     <p class="mt-1 text-xs text-slate-500">Format: YYYY/YYYY (Contoh: 2024/2025)</p>
                 </div>
 
