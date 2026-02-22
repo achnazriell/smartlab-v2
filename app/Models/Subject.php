@@ -7,75 +7,73 @@ use Illuminate\Database\Eloquent\Model;
 class Subject extends Model
 {
     protected $table = 'subjects';
-    protected $fillable = [
-        'name_subject'
-    ];
+    protected $fillable = ['name_subject'];
 
-    // Di model Subject.php
-    public function teacherClassSubjects()
+    /**
+     * Relasi ke penempatan guru mengajar
+     */
+    public function teacherAssignments()
     {
-        return $this->hasMany(TeacherClassSubject::class, 'subject_id');
+        return $this->hasMany(TeacherSubjectAssignment::class);
     }
 
-    public function classesThroughMateri()
+    /**
+     * Guru yang mengajar mata pelajaran ini (tahun ajaran aktif)
+     */
+    public function currentTeachers()
     {
-        return $this->hasManyThrough(
+        return $this->belongsToMany(
+            Teacher::class,
+            'teacher_subject_assignments',
+            'subject_id',
+            'teacher_id'
+        )->wherePivot('academic_year_id', function ($query) {
+            $query->select('id')
+                  ->from('academic_years')
+                  ->where('is_active', true)
+                  ->limit(1);
+        })->withPivot('class_id')->withTimestamps();
+    }
+
+    /**
+     * Kelas di mana mata pelajaran ini diajarkan (tahun ajaran aktif)
+     */
+    public function currentClasses()
+    {
+        return $this->belongsToMany(
             Classes::class,
-            Materi::class,
-            'subject_id', // Foreign key on Materi table
-            'id', // Foreign key on Classes table
-            'id', // Local key on Subject table
-            'class_id' // Local key on Materi table
-        );
+            'teacher_subject_assignments',
+            'subject_id',
+            'class_id'
+        )->wherePivot('academic_year_id', function ($query) {
+            $query->select('id')
+                  ->from('academic_years')
+                  ->where('is_active', true)
+                  ->limit(1);
+        })->withPivot('teacher_id')->withTimestamps();
     }
 
-    public function classesThroughTask()
-    {
-        return $this->hasManyThrough(
-            Classes::class,
-            Task::class,
-            'subject_id', // Foreign key on Task table
-            'id', // Foreign key on Classes table
-            'id', // Local key on Subject table
-            'class_id' // Local key on Task table
-        );
-    }
-
-    public function Classes()
-    {
-        return $this->hasMany(Classes::class);
-    }
-    public function materi()
+    /**
+     * Relasi ke materi
+     */
+    public function materis()
     {
         return $this->hasMany(Materi::class);
     }
 
-    public function Task()
+    /**
+     * Relasi ke tugas
+     */
+    public function tasks()
     {
         return $this->hasMany(Task::class);
     }
-    public function user()
-    {
-        return $this->hasMany(User::class);
-    }
 
-    public function teacher()
-    {
-        return $this->belongsTo(User::class, 'teacher_id');
-    }
-
+    /**
+     * Relasi ke ujian
+     */
     public function exams()
     {
         return $this->hasMany(Exam::class);
-    }
-
-    public function teachers()
-    {
-        return $this->belongsToMany(
-            \App\Models\Teacher::class,
-            'teacher_subjects',
-            'subject_id',   // FK ke subjects.id
-            'teacher_id'    // FK ke teachers.id
-        );
     }
 }

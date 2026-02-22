@@ -343,12 +343,6 @@
                                     </svg>
                                     <h3 class="text-lg font-semibold text-gray-900 mb-1">Belum Ada Quiz</h3>
                                     <p class="text-xs md:text-sm text-gray-500">Mulai dengan membuat quiz interaktif pertama Anda</p>
-                                    <div class="mt-4">
-                                        <a href="{{ route('guru.quiz.create') }}"
-                                            class="inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
-                                            Buat Quiz Pertama
-                                        </a>
-                                    </div>
                                 </td>
                             </tr>
                         @endforelse

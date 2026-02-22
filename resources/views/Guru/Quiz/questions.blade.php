@@ -361,8 +361,8 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg whitespace-nowrap">
-                            <span class="font-bold text-lg">{{ $questionCount }}</span> Soal •
-                            <span class="font-bold text-lg">{{ $totalScore }}</span> Poin
+                            <span class="font-bold text-lg" x-text="questions.length"></span> Soal •
+                            <span class="font-bold text-lg" x-text="totalPoints"></span> Poin
                         </div>
                         <button @click="showImportModal = true"
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 whitespace-nowrap">
@@ -381,29 +381,10 @@
         <div class="main-grid">
             <!-- Left Column: Question Form and List -->
             <div class="space-y-6">
-                <!-- Question Form -->
+                <!-- Question Form (PILIHAN GANDA SAJA) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Soal Baru</h2>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Soal Pilihan Ganda</h2>
 
-                    <!-- Question Type Tabs -->
-                    <div class="flex border-b border-gray-200 mb-4">
-                        <button @click="newQuestion.type = 'PG'"
-                            :class="newQuestion.type === 'PG' ?
-                                'border-b-2 border-blue-500 text-blue-600' :
-                                'text-gray-500 hover:text-gray-700'"
-                            class="flex-1 py-2 text-center font-medium text-sm sm:text-base">
-                            Pilihan Ganda
-                        </button>
-                        <button @click="newQuestion.type = 'IS'"
-                            :class="newQuestion.type === 'IS' ?
-                                'border-b-2 border-blue-500 text-blue-600' :
-                                'text-gray-500 hover:text-gray-700'"
-                            class="flex-1 py-2 text-center font-medium text-sm sm:text-base">
-                            Isian Singkat
-                        </button>
-                    </div>
-
-                    <!-- Question Input -->
                     <div class="space-y-4">
                         <!-- Question Text -->
                         <div>
@@ -426,7 +407,7 @@
                         </div>
 
                         <!-- Multiple Choice Section -->
-                        <div x-show="newQuestion.type === 'PG'" x-transition class="space-y-4">
+                        <div class="space-y-4">
                             <div class="flex justify-between items-center">
                                 <label class="block text-sm font-medium text-gray-700">Pilihan Jawaban</label>
                                 <button type="button" @click="addChoice()"
@@ -487,41 +468,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Short Answer Section -->
-                        <div x-show="newQuestion.type === 'IS'" x-transition class="space-y-4">
-                            <label class="block text-sm font-medium text-gray-700">Jawaban yang Benar</label>
-                            <div class="space-y-2">
-                                <template x-for="(answer, index) in newQuestion.short_answers" :key="index">
-                                    <div class="flex items-center gap-3">
-                                        <input type="text" x-model="newQuestion.short_answers[index]"
-                                            placeholder="Masukkan jawaban..." class="form-field flex-1">
-                                        <button type="button" @click="removeShortAnswer(index)"
-                                            :disabled="newQuestion.short_answers.length <= 1"
-                                            :class="newQuestion.short_answers.length <= 1 ? 'text-gray-400 cursor-not-allowed' :
-                                                'text-red-500 hover:text-red-700'"
-                                            class="p-1 flex-shrink-0">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </template>
-                                <button type="button" @click="addShortAnswer()"
-                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    <span>Tambah Jawaban</span>
-                                </button>
-                                <p class="text-xs text-gray-500">Siswa akan dianggap benar jika menjawab salah satu dari
-                                    jawaban di atas.</p>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Submit Button -->
@@ -537,10 +483,10 @@
                     </div>
                 </div>
 
-                <!-- Question List -->
+                <!-- Question List (hanya PG yang ditampilkan) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">Daftar Soal</h2>
+                        <h2 class="text-lg font-semibold text-gray-800">Daftar Soal (Pilihan Ganda)</h2>
                         <span class="text-sm text-gray-600" x-text="questions.length + ' soal'"></span>
                     </div>
 
@@ -568,12 +514,8 @@
                                                     Soal <span x-text="index + 1"></span>
                                                 </span>
                                                 <span
-                                                    :class="question.type === 'PG' ?
-                                                        'bg-blue-100 text-blue-800' :
-                                                        'bg-blue-100 text-blue-800'"
-                                                    class="text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
-                                                    <span
-                                                        x-text="question.type === 'PG' ? 'Pilihan Ganda' : 'Isian Singkat'"></span>
+                                                    class="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
+                                                    Pilihan Ganda
                                                 </span>
                                                 <span
                                                     class="bg-yellow-100 text-yellow-800 text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
@@ -609,9 +551,8 @@
                                     </div>
 
                                     <!-- Multiple Choice Answers -->
-                                    <div x-show="question.type === 'PG'" class="space-y-2">
-                                        <template x-for="(choice, choiceIndex) in question.choices"
-                                            :key="choice.id">
+                                    <div class="space-y-2">
+                                        <template x-for="(choice, choiceIndex) in question.choices" :key="choice.id">
                                             <div class="flex items-center gap-3">
                                                 <div :class="choice.is_correct ?
                                                     'bg-green-100 border-green-300 text-green-800' :
@@ -631,20 +572,6 @@
                                                 </span>
                                             </div>
                                         </template>
-                                    </div>
-
-                                    <!-- Short Answers -->
-                                    <div x-show="question.type === 'IS'" class="space-y-2">
-                                        <p class="text-sm font-medium text-gray-700">Jawaban yang diterima:</p>
-                                        <div class="flex flex-wrap gap-2">
-                                            <template x-for="(answer, answerIndex) in question.short_answers"
-                                                :key="answerIndex">
-                                                <span
-                                                    class="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded break-all">
-                                                    <span x-text="answer"></span>
-                                                </span>
-                                            </template>
-                                        </div>
                                     </div>
                                 </div>
                             </template>
@@ -687,7 +614,7 @@
                     </div>
                 </div>
 
-                <!-- Statistics -->
+                <!-- Statistics (hanya PG) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik</h3>
                     <div class="space-y-4">
@@ -711,20 +638,10 @@
                             </div>
                             <div class="progress-bar-container">
                                 <div class="progress-bar-fill bg-green-500"
-                                    :style="'width: ' + Math.min((totalPoints / 500) * 100, 100) + '%'"></div>
+                                    :style="'width: ' + Math.min((totalPoints / 1000) * 100, 100) + '%'"></div>
                             </div>
                             <div class="text-xs text-gray-500 mt-1">
-                                Maksimal 500 poin
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="text-center p-3 bg-blue-50 rounded-lg">
-                                <span class="block text-sm text-gray-600">PG</span>
-                                <span class="block text-2xl font-bold text-blue-600" x-text="pgCount">0</span>
-                            </div>
-                            <div class="text-center p-3 bg-green-50 rounded-lg">
-                                <span class="block text-sm text-gray-600">Isian</span>
-                                <span class="block text-2xl font-bold text-green-600" x-text="isCount">0</span>
+                                Maksimal 1000 poin
                             </div>
                         </div>
                     </div>
@@ -779,13 +696,13 @@
             </div>
         </div>
 
-        <!-- Import Modal -->
+        <!-- Import Modal (hanya PG) -->
         <div x-show="showImportModal" x-transition.opacity class="custom-modal-backdrop"
             @click.self="showImportModal = false">
             <div class="custom-modal" style="max-width: 600px;">
                 <div class="custom-modal-header">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800">Import Soal</h3>
+                        <h3 class="text-lg font-semibold text-gray-800">Import Soal Pilihan Ganda</h3>
                         <button @click="showImportModal = false" class="text-gray-400 hover:text-gray-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -814,7 +731,7 @@
                             </button>
                         </div>
 
-                        <!-- Import from Exam -->
+                        <!-- Import from Exam (hanya PG) -->
                         <div x-show="importMode === 'from_exam'" x-transition class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Quiz</label>
@@ -830,7 +747,7 @@
                             </div>
 
                             <div x-show="selectedImportQuiz && importPreview.length > 0" class="space-y-3">
-                                <h4 class="text-sm font-medium text-gray-700">Preview Soal:</h4>
+                                <h4 class="text-sm font-medium text-gray-700">Preview Soal (hanya Pilihan Ganda):</h4>
                                 <div class="import-preview">
                                     <template x-for="(question, index) in importPreview" :key="index">
                                         <div class="import-preview-item" :class="{ 'selected': question.selected }">
@@ -839,9 +756,9 @@
                                                     class="mt-1 text-blue-600 focus:ring-blue-500">
                                                 <div class="flex-1">
                                                     <div class="flex items-center gap-2 mb-1">
-                                                        <span class="text-xs font-medium px-2 py-0.5 rounded"
-                                                            :class="question.type === 'PG' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
-                                                            <span x-text="question.type === 'PG' ? 'PG' : 'IS'"></span>
+                                                        <span
+                                                            class="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                                            PG
                                                         </span>
                                                         <span class="text-xs text-gray-500">
                                                             <span x-text="question.score"></span> poin
@@ -852,10 +769,13 @@
                                                     <div x-show="question.choices" class="mt-1">
                                                         <p class="text-xs text-gray-600">Pilihan:</p>
                                                         <div class="flex flex-wrap gap-1 mt-1">
-                                                            <template x-for="(choice, cIndex) in question.choices" :key="cIndex">
+                                                            <template x-for="(choice, cIndex) in question.choices"
+                                                                :key="cIndex">
                                                                 <span class="text-xs px-2 py-0.5 rounded"
-                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'">
-                                                                    <span x-text="String.fromCharCode(65 + cIndex)"></span>.
+                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' :
+                                                                        'bg-gray-100 text-gray-600'">
+                                                                    <span
+                                                                        x-text="String.fromCharCode(65 + cIndex)"></span>.
                                                                     <span x-text="choice.text"></span>
                                                                 </span>
                                                             </template>
@@ -868,7 +788,8 @@
                                 </div>
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="text-gray-600">
-                                        Terpilih: <span x-text="selectedImportCount"></span> dari <span x-text="importPreview.length"></span> soal
+                                        Terpilih: <span x-text="selectedImportCount"></span> dari <span
+                                            x-text="importPreview.length"></span> soal
                                     </span>
                                     <button @click="selectAllImportQuestions(true)"
                                         class="text-blue-600 hover:text-blue-800 text-sm">
@@ -879,39 +800,48 @@
 
                             <div x-show="selectedImportQuiz && !importPreview.length" class="bg-yellow-50 p-4 rounded-lg">
                                 <p class="text-sm text-yellow-700">
-                                    Quiz ini tidak memiliki soal yang dapat diimport.
+                                    Quiz ini tidak memiliki soal Pilihan Ganda yang dapat diimport.
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Import from File -->
+                        <!-- Import from File (hanya PG) -->
                         <div x-show="importMode === 'from_file'" x-transition class="space-y-4">
-                            <div class="import-section"
-                                 @dragover.prevent="handleDragOver($event)"
-                                 @dragleave.prevent="handleDragLeave($event)"
-                                 @drop.prevent="handleFileDrop($event)"
-                                 :class="{ 'dragover': isDragging }">
+                            <div class="import-section" @dragover.prevent="handleDragOver($event)"
+                                @dragleave.prevent="handleDragLeave($event)" @drop.prevent="handleFileDrop($event)"
+                                :class="{ 'dragover': isDragging }">
                                 <div class="text-center">
-                                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                        </path>
                                     </svg>
                                     <p class="text-sm text-gray-600 mb-2">
                                         Drag & drop file Excel/CSV di sini atau
                                     </p>
                                     <label for="file-upload" class="cursor-pointer">
-                                        <span class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
+                                        <span
+                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
                                             Pilih File
                                         </span>
-                                        <input id="file-upload" type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="handleFileSelect($event)">
+                                        <input id="file-upload" type="file" accept=".xlsx,.xls,.csv" class="hidden"
+                                            @change="handleFileSelect($event)">
                                     </label>
                                     <p class="text-xs text-gray-500 mt-3">
                                         Format yang didukung: Excel (.xlsx, .xls), CSV
                                     </p>
-                                    <p class="text-xs text-gray-500">
-                                        Template dapat diunduh <a href="#" class="text-blue-600 hover:underline">di sini</a>
-                                    </p>
                                 </div>
+                            </div>
+
+                            <div x-show="fileUploadLoading" class="text-center py-4">
+                                <svg class="w-8 h-8 text-blue-600 animate-spin mx-auto" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                <p class="text-sm text-gray-600 mt-2">Mengupload dan memproses file...</p>
                             </div>
 
                             <div x-show="fileImportPreview.length > 0" class="space-y-3">
@@ -922,9 +852,9 @@
                                             <div class="flex items-start gap-3">
                                                 <div class="flex-1">
                                                     <div class="flex items-center gap-2 mb-1">
-                                                        <span class="text-xs font-medium px-2 py-0.5 rounded"
-                                                            :class="question.type === 'PG' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
-                                                            <span x-text="question.type === 'PG' ? 'PG' : 'IS'"></span>
+                                                        <span
+                                                            class="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                                            PG
                                                         </span>
                                                         <span class="text-xs text-gray-500">
                                                             <span x-text="question.score"></span> poin
@@ -932,14 +862,19 @@
                                                     </div>
                                                     <p class="text-sm text-gray-800" x-text="question.question"></p>
                                                     <div x-show="question.choices" class="mt-2 space-y-1">
-                                                        <template x-for="(choice, cIndex) in question.choices" :key="cIndex">
+                                                        <template x-for="(choice, cIndex) in question.choices"
+                                                            :key="cIndex">
                                                             <div class="flex items-center gap-2 text-xs">
-                                                                <span class="w-6 h-6 flex items-center justify-center rounded-full"
-                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'">
+                                                                <span
+                                                                    class="w-6 h-6 flex items-center justify-center rounded-full"
+                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' :
+                                                                        'bg-gray-100 text-gray-600'">
                                                                     <span x-text="String.fromCharCode(65 + cIndex)"></span>
                                                                 </span>
-                                                                <span :class="choice.is_correct ? 'text-green-700 font-medium' : 'text-gray-600'"
-                                                                      x-text="choice.text"></span>
+                                                                <span
+                                                                    :class="choice.is_correct ? 'text-green-700 font-medium' :
+                                                                        'text-gray-600'"
+                                                                    x-text="choice.text"></span>
                                                             </div>
                                                         </template>
                                                     </div>
@@ -957,27 +892,26 @@
                 </div>
                 <div class="custom-modal-footer">
                     <button @click="showImportModal = false"
-                            class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
+                        class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                         Batal
                     </button>
-                    <button @click="importQuestions()"
-                            :disabled="!canImport"
-                            :class="!canImport ?
-                                'bg-gray-400 cursor-not-allowed' :
-                                'bg-blue-600 hover:bg-blue-700 cursor-pointer'"
-                            class="px-4 py-2 text-white rounded-lg font-medium">
+                    <button @click="importQuestions()" :disabled="!canImport"
+                        :class="!canImport ?
+                            'bg-gray-400 cursor-not-allowed' :
+                            'bg-blue-600 hover:bg-blue-700 cursor-pointer'"
+                        class="px-4 py-2 text-white rounded-lg font-medium">
                         Import Soal
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Edit Modal -->
+        <!-- Edit Modal (PG ONLY) -->
         <div x-show="showEditModal" x-transition.opacity class="custom-modal-backdrop" @click.self="cancelEdit()">
             <div class="custom-modal" style="max-width: 800px;">
                 <div class="custom-modal-header">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800">Edit Soal</h3>
+                        <h3 class="text-lg font-semibold text-gray-800">Edit Soal Pilihan Ganda</h3>
                         <button @click="cancelEdit()" class="text-gray-400 hover:text-gray-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -988,24 +922,6 @@
                 </div>
                 <div class="custom-modal-content">
                     <div class="space-y-4">
-                        <!-- Question Type Tabs -->
-                        <div class="flex border-b border-gray-200">
-                            <button @click="editingQuestion.type = 'PG'"
-                                :class="editingQuestion.type === 'PG' ?
-                                    'border-b-2 border-blue-500 text-blue-600' :
-                                    'text-gray-500 hover:text-gray-700'"
-                                class="flex-1 py-2 text-center font-medium">
-                                Pilihan Ganda
-                            </button>
-                            <button @click="editingQuestion.type = 'IS'"
-                                :class="editingQuestion.type === 'IS' ?
-                                    'border-b-2 border-blue-500 text-blue-600' :
-                                    'text-gray-500 hover:text-gray-700'"
-                                class="flex-1 py-2 text-center font-medium">
-                                Isian Singkat
-                            </button>
-                        </div>
-
                         <!-- Question Text -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan</label>
@@ -1016,16 +932,18 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Poin</label>
-                                <input type="number" x-model="editingQuestion.score" min="1" max="100" class="form-field">
+                                <input type="number" x-model="editingQuestion.score" min="1" max="100"
+                                    class="form-field">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Penjelasan (Opsional)</label>
-                                <input type="text" x-model="editingQuestion.explanation" placeholder="Penjelasan jawaban..." class="form-field">
+                                <input type="text" x-model="editingQuestion.explanation"
+                                    placeholder="Penjelasan jawaban..." class="form-field">
                             </div>
                         </div>
 
                         <!-- Multiple Choice Section -->
-                        <div x-show="editingQuestion.type === 'PG'" x-transition class="space-y-4">
+                        <div class="space-y-4">
                             <div class="flex justify-between items-center">
                                 <label class="block text-sm font-medium text-gray-700">Pilihan Jawaban</label>
                                 <button type="button" @click="addChoiceToEdit()"
@@ -1064,7 +982,8 @@
                                             :class="editingQuestion.choices.length <= 2 ? 'text-gray-400 cursor-not-allowed' :
                                                 'text-red-500 hover:text-red-700'"
                                             class="p-1 flex-shrink-0">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
                                                 </path>
@@ -1086,46 +1005,14 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Short Answer Section -->
-                        <div x-show="editingQuestion.type === 'IS'" x-transition class="space-y-4">
-                            <label class="block text-sm font-medium text-gray-700">Jawaban yang Benar</label>
-                            <div class="space-y-2">
-                                <template x-for="(answer, index) in editingQuestion.short_answers" :key="index">
-                                    <div class="flex items-center gap-3">
-                                        <input type="text" x-model="editingQuestion.short_answers[index]"
-                                            placeholder="Masukkan jawaban..." class="form-field flex-1">
-                                        <button type="button" @click="removeShortAnswerFromEdit(index)"
-                                            :disabled="editingQuestion.short_answers.length <= 1"
-                                            :class="editingQuestion.short_answers.length <= 1 ? 'text-gray-400 cursor-not-allowed' :
-                                                'text-red-500 hover:text-red-700'"
-                                            class="p-1 flex-shrink-0">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </template>
-                                <button type="button" @click="addShortAnswerToEdit()"
-                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    <span>Tambah Jawaban</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="custom-modal-footer">
-                    <button @click="cancelEdit()" class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
+                    <button @click="cancelEdit()"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
                         Batal
                     </button>
-                    <button @click="updateQuestion()"
+                    <button @click="updateQuestionApi()"
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
                         Update Soal
                     </button>
@@ -1133,7 +1020,7 @@
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal -->
+        <!-- Delete Confirmation Modal (sama) -->
         <div x-show="showDeleteModal" x-transition.opacity class="custom-modal-backdrop" @click.self="cancelDelete()">
             <div class="custom-modal">
                 <div class="custom-modal-header">
@@ -1184,11 +1071,12 @@
     <script>
         function quizQuestionCreator() {
             return {
-                // State
+                // ==================== STATE ====================
+                // Hanya menyimpan soal PG, IS akan difilter di init()
                 questions: @json($questionsData),
                 newQuestion: {
                     id: null,
-                    type: 'PG',
+                    type: 'PG', // fixed
                     question: '',
                     score: 1,
                     explanation: '',
@@ -1212,8 +1100,7 @@
                             text: '',
                             is_correct: false
                         }
-                    ],
-                    short_answers: []
+                    ]
                 },
                 editingQuestion: null,
                 editingIndex: null,
@@ -1227,68 +1114,37 @@
                 fileImportPreview: [],
                 selectedFile: null,
                 isDragging: false,
+                fileUploadLoading: false,
                 isSaving: false,
                 isFinalizing: false,
                 deleteIndex: null,
                 deleteQuestionText: '',
 
-                // Computed Properties
+                // ==================== COMPUTED ====================
                 get totalPoints() {
                     return this.questions.reduce((sum, q) => sum + parseInt(q.score), 0);
                 },
-                get pgCount() {
-                    return this.questions.filter(q => q.type === 'PG').length;
-                },
-                get isCount() {
-                    return this.questions.filter(q => q.type === 'IS').length;
-                },
                 get hasCorrectAnswer() {
-                    if (this.newQuestion.type !== 'PG') return true;
                     return this.newQuestion.choices.some(c => c.is_correct);
                 },
                 get hasCorrectAnswerInEdit() {
-                    if (!this.editingQuestion) return false;
-                    if (this.editingQuestion.type !== 'PG') return true;
-                    return this.editingQuestion.choices.some(c => c.is_correct);
+                    return this.editingQuestion?.choices?.some(c => c.is_correct) ?? false;
                 },
                 get isQuestionValid() {
-                    // Validasi pertanyaan
                     if (!this.newQuestion.question.trim()) return false;
                     if (this.newQuestion.score < 1) return false;
-
-                    // Validasi berdasarkan tipe
-                    if (this.newQuestion.type === 'PG') {
-                        // Minimal 2 pilihan, minimal 1 benar, semua pilihan harus ada teks
-                        if (this.newQuestion.choices.length < 2) return false;
-                        if (!this.newQuestion.choices.some(c => c.is_correct)) return false;
-                        if (this.newQuestion.choices.some(c => !c.text.trim())) return false;
-                    } else if (this.newQuestion.type === 'IS') {
-                        // Minimal 1 jawaban
-                        if (this.newQuestion.short_answers.length < 1) return false;
-                        if (this.newQuestion.short_answers.some(a => !a.trim())) return false;
-                    }
-
+                    if (this.newQuestion.choices.length < 2) return false;
+                    if (!this.newQuestion.choices.some(c => c.is_correct)) return false;
+                    if (this.newQuestion.choices.some(c => !c.text.trim())) return false;
                     return true;
                 },
                 get isEditQuestionValid() {
                     if (!this.editingQuestion) return false;
-
-                    // Validasi pertanyaan
                     if (!this.editingQuestion.question.trim()) return false;
                     if (this.editingQuestion.score < 1) return false;
-
-                    // Validasi berdasarkan tipe
-                    if (this.editingQuestion.type === 'PG') {
-                        // Minimal 2 pilihan, minimal 1 benar, semua pilihan harus ada teks
-                        if (this.editingQuestion.choices.length < 2) return false;
-                        if (!this.editingQuestion.choices.some(c => c.is_correct)) return false;
-                        if (this.editingQuestion.choices.some(c => !c.text.trim())) return false;
-                    } else if (this.editingQuestion.type === 'IS') {
-                        // Minimal 1 jawaban
-                        if (this.editingQuestion.short_answers.length < 1) return false;
-                        if (this.editingQuestion.short_answers.some(a => !a.trim())) return false;
-                    }
-
+                    if (this.editingQuestion.choices.length < 2) return false;
+                    if (!this.editingQuestion.choices.some(c => c.is_correct)) return false;
+                    if (this.editingQuestion.choices.some(c => !c.text.trim())) return false;
                     return true;
                 },
                 get canImport() {
@@ -1303,15 +1159,21 @@
                     return this.importPreview.filter(q => q.selected).length;
                 },
 
-                // Methods
+                // ==================== INIT ====================
                 init() {
-                    console.log('Quiz Question Creator initialized');
-                    console.log('Initial questions:', this.questions);
-                    console.log('Exam ID: {{ $quiz->id }}');
-                    console.log('CSRF Token: {{ csrf_token() }}');
+                    this.questions = this.questions.filter(q => q.type === 'PG');
+                    console.log('Alpine initialized, questions:', this.questions.length);
                 },
 
-                // Choice Management
+                showDeleteModal(index, questionText) {
+                    console.log('Opening delete modal for index:', index);
+                    this.deleteIndex = index;
+                    this.deleteQuestionText = questionText.length > 100 ?
+                        questionText.substring(0, 100) + '...' : questionText;
+                    this.showDeleteModal = true;
+                },
+
+                // ==================== CHOICE MANAGEMENT ====================
                 addChoice() {
                     this.newQuestion.choices.push({
                         id: this.newQuestion.choices.length + 1,
@@ -1319,30 +1181,18 @@
                         is_correct: false
                     });
                 },
-
                 removeChoice(index) {
                     if (this.newQuestion.choices.length > 2) {
                         this.newQuestion.choices.splice(index, 1);
                     }
                 },
-
                 setCorrectChoice(index) {
                     this.newQuestion.choices.forEach((choice, i) => {
                         choice.is_correct = i === index;
                     });
                 },
 
-                addShortAnswer() {
-                    this.newQuestion.short_answers.push('');
-                },
-
-                removeShortAnswer(index) {
-                    if (this.newQuestion.short_answers.length > 1) {
-                        this.newQuestion.short_answers.splice(index, 1);
-                    }
-                },
-
-                // Edit Choice Management
+                // ==================== EDIT CHOICE MANAGEMENT ====================
                 addChoiceToEdit() {
                     this.editingQuestion.choices.push({
                         id: this.editingQuestion.choices.length + 1,
@@ -1350,62 +1200,68 @@
                         is_correct: false
                     });
                 },
-
                 removeChoiceFromEdit(index) {
                     if (this.editingQuestion.choices.length > 2) {
                         this.editingQuestion.choices.splice(index, 1);
                     }
                 },
-
                 setCorrectChoiceInEdit(index) {
                     this.editingQuestion.choices.forEach((choice, i) => {
                         choice.is_correct = i === index;
                     });
                 },
 
-                addShortAnswerToEdit() {
-                    this.editingQuestion.short_answers.push('');
-                },
-
-                removeShortAnswerFromEdit(index) {
-                    if (this.editingQuestion.short_answers.length > 1) {
-                        this.editingQuestion.short_answers.splice(index, 1);
-                    }
-                },
-
-                // Question Management
-                addQuestion() {
+                // ==================== TAMBAH SOAL ====================
+                async addQuestion() {
                     if (!this.isQuestionValid) {
                         showAlert('warning', 'Perhatian!', 'Harap lengkapi semua field yang diperlukan!');
                         return;
                     }
 
-                    // Create question object
-                    const question = {
-                        id: Date.now(), // Temporary ID for frontend
-                        type: this.newQuestion.type,
-                        question: this.newQuestion.question.trim(),
-                        score: parseInt(this.newQuestion.score),
-                        explanation: this.newQuestion.explanation.trim(),
-                        choices: this.newQuestion.type === 'PG' ? [...this.newQuestion.choices.map(c => ({
-                            ...c,
-                            text: c.text.trim()
-                        }))] : [],
-                        short_answers: this.newQuestion.type === 'IS' ?
-                            this.newQuestion.short_answers.map(a => a.trim()).filter(a => a) : []
-                    };
+                    const url = `/guru/quiz/{{ $quiz->id }}/question`; // route baru
 
-                    this.questions.push(question);
-                    this.resetNewQuestion();
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: 'PG',
+                                question: this.newQuestion.question.trim(),
+                                score: parseInt(this.newQuestion.score),
+                                explanation: this.newQuestion.explanation?.trim() || '',
+                                choices: this.newQuestion.choices
+                                    .map(c => ({
+                                        text: c.text.trim(),
+                                        is_correct: c.is_correct
+                                    }))
+                                    .filter(c => c.text !== '')
+                            })
+                        });
 
-                    showAlert('success', 'Berhasil!', 'Soal berhasil ditambahkan ke daftar.');
+                        const data = await response.json();
 
-                    setTimeout(() => {
-                        const questionList = document.querySelector('.question-list-container');
-                        if (questionList) {
-                            questionList.scrollTop = questionList.scrollHeight;
+                        if (data.success) {
+                            // Tambahkan soal ke daftar dengan ID dari server
+                            this.questions.push(data.question);
+                            this.resetNewQuestion();
+                            showAlert('success', 'Berhasil!', 'Soal berhasil ditambahkan dan disimpan.');
+
+                            // Scroll ke daftar soal
+                            setTimeout(() => {
+                                const questionList = document.querySelector('.question-list-container');
+                                if (questionList) questionList.scrollTop = questionList.scrollHeight;
+                            }, 100);
+                        } else {
+                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan saat menyimpan soal.');
                         }
-                    }, 100);
+                    } catch (error) {
+                        console.error('Error adding question:', error);
+                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
+                    }
                 },
 
                 resetNewQuestion() {
@@ -1435,108 +1291,167 @@
                                 text: '',
                                 is_correct: false
                             }
-                        ],
-                        short_answers: []
+                        ]
                     };
                 },
 
+                // ==================== EDIT SOAL ====================
                 editQuestion(index) {
                     const question = this.questions[index];
+                    // Cegah edit soal yang bukan PG (tidak mungkin karena sudah difilter)
+                    if (question.type !== 'PG') {
+                        showAlert('warning', 'Tidak dapat diedit', 'Soal ini bukan Pilihan Ganda.');
+                        return;
+                    }
                     this.editingIndex = index;
 
-                    // Deep copy the question for editing
-                    this.editingQuestion = JSON.parse(JSON.stringify(question));
-
-                    // Ensure choices and short_answers arrays exist
-                    if (this.editingQuestion.type === 'PG' && !this.editingQuestion.choices) {
-                        this.editingQuestion.choices = [];
-                    }
-                    if (this.editingQuestion.type === 'IS' && !this.editingQuestion.short_answers) {
-                        this.editingQuestion.short_answers = [];
-                    }
+                    // Deep clone dengan validasi choices
+                    this.editingQuestion = {
+                        id: question.id,
+                        type: question.type,
+                        question: question.question,
+                        score: parseInt(question.score),
+                        explanation: question.explanation || '',
+                        choices: (question.choices && question.choices.length > 0) ?
+                            question.choices.map(c => ({
+                                id: c.id || Date.now() + Math.random(),
+                                text: c.text || '',
+                                is_correct: !!c.is_correct
+                            })) : [{
+                                    id: Date.now() + 1,
+                                    text: '',
+                                    is_correct: false
+                                },
+                                {
+                                    id: Date.now() + 2,
+                                    text: '',
+                                    is_correct: false
+                                }
+                            ]
+                    };
 
                     this.showEditModal = true;
-
-                    // Focus on question textarea
                     setTimeout(() => {
-                        const textarea = this.$el.querySelector('#editModal textarea');
+                        const textarea = document.querySelector('.custom-modal textarea');
                         if (textarea) textarea.focus();
                     }, 100);
                 },
-
-                updateQuestion() {
-                    if (!this.isEditQuestionValid) {
-                        showAlert('warning', 'Perhatian!', 'Harap lengkapi semua field yang diperlukan!');
-                        return;
-                    }
-
-                    // Update the question in the array
-                    this.questions[this.editingIndex] = {
-                        ...this.editingQuestion,
-                        question: this.editingQuestion.question.trim(),
-                        score: parseInt(this.editingQuestion.score),
-                        explanation: this.editingQuestion.explanation ? this.editingQuestion.explanation.trim() : '',
-                        choices: this.editingQuestion.type === 'PG' ?
-                            this.editingQuestion.choices.map(c => ({
-                                ...c,
-                                text: c.text.trim()
-                            })) : [],
-                        short_answers: this.editingQuestion.type === 'IS' ?
-                            this.editingQuestion.short_answers.map(a => a.trim()).filter(a => a) : []
-                    };
-
-                    this.cancelEdit();
-                    showAlert('success', 'Berhasil!', 'Soal berhasil diperbarui.');
-                },
-
                 cancelEdit() {
                     this.editingQuestion = null;
                     this.editingIndex = null;
                     this.showEditModal = false;
                 },
 
-                showDeleteModal(index, questionText) {
-                    this.deleteIndex = index;
-                    this.deleteQuestionText = questionText.length > 100 ?
-                        questionText.substring(0, 100) + '...' : questionText;
-                    this.showDeleteModal = true;
+                // ==================== UPDATE SOAL VIA API ====================
+                async updateQuestionApi() {
+                    if (!this.isEditQuestionValid) {
+                        showAlert('warning', 'Perhatian!', 'Harap lengkapi semua field yang diperlukan!');
+                        return;
+                    }
+                    const question = this.editingQuestion;
+                    const url = `/guru/quiz/{{ $quiz->id }}/questions/${question.id}`; // ← tanpa /update
+                    try {
+                        const response = await fetch(url, {
+                            method: 'PUT', // ← method PUT
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: 'PG',
+                                question: question.question.trim(),
+                                score: parseInt(question.score),
+                                explanation: question.explanation?.trim() || '',
+                                choices: question.choices
+                                    .map(c => ({
+                                        text: c.text.trim(),
+                                        is_correct: c.is_correct
+                                    }))
+                                    .filter(c => c.text !== '')
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            this.questions[this.editingIndex] = data.question;
+                            this.cancelEdit();
+                            showAlert('success', 'Berhasil!', 'Soal berhasil diperbarui.');
+                        } else {
+                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan');
+                        }
+                    } catch (error) {
+                        console.error('Update error:', error);
+                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
+                    }
                 },
+
+                // ==================== HAPUS SOAL ====================
 
                 cancelDelete() {
                     this.deleteIndex = null;
                     this.deleteQuestionText = '';
                     this.showDeleteModal = false;
                 },
-
                 confirmDelete() {
-                    if (this.deleteIndex !== null) {
-                        this.questions.splice(this.deleteIndex, 1);
-                        showAlert('success', 'Berhasil!', 'Soal berhasil dihapus.');
-                        this.cancelDelete();
-                    }
+                    if (this.deleteIndex === null) return;
+                    const question = this.questions[this.deleteIndex];
+                    this.deleteQuestionApi(question.id, this.deleteIndex);
                 },
-
-                // Import Management
-                async loadImportPreview() {
-                    if (!this.selectedImportQuiz) {
-                        this.importPreview = [];
-                        return;
-                    }
-
+                async deleteQuestionApi(questionId, index) {
+                    const url = `/guru/quiz/{{ $quiz->id }}/questions/${questionId}`;
                     try {
-                        const response = await fetch(`/guru/quiz/import-preview/${this.selectedImportQuiz}`, {
+                        const response = await fetch(url, {
+                            method: 'DELETE',
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                 'Accept': 'application/json'
                             }
                         });
+                        const data = await response.json();
+                        if (data.success) {
+                            this.questions.splice(index, 1);
+                            this.cancelDelete();
+                            showAlert('success', 'Berhasil!', 'Soal berhasil dihapus.');
+                        } else {
+                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan');
+                        }
+                    } catch (error) {
+                        console.error('Delete error:', error);
+                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
+                    }
+                },
 
+                // ==================== IMPORT DARI QUIZ LAIN (PG SAJA) ====================
+                async loadImportPreview() {
+                    if (!this.selectedImportQuiz) {
+                        this.importPreview = [];
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`/guru/quiz/${this.selectedImportQuiz}/questions-data`, {
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
                         if (response.ok) {
                             const data = await response.json();
-                            this.importPreview = data.questions.map(q => ({
-                                ...q,
-                                selected: true
-                            }));
+                            if (data.success && data.questions) {
+                                // Hanya tampilkan soal PG
+                                this.importPreview = data.questions
+                                    .filter(q => q.type === 'PG')
+                                    .map(q => ({
+                                        ...q,
+                                        selected: true
+                                    }));
+                                showAlert('success', 'Berhasil!',
+                                    `Berhasil memuat ${this.importPreview.length} soal PG.`);
+                            } else {
+                                this.importPreview = [];
+                                showAlert('error', 'Error!', data.message || 'Gagal memuat preview soal.');
+                            }
                         } else {
                             this.importPreview = [];
                             showAlert('error', 'Error!', 'Gagal memuat preview soal.');
@@ -1547,115 +1462,106 @@
                         showAlert('error', 'Error!', 'Terjadi kesalahan saat memuat preview.');
                     }
                 },
-
                 selectAllImportQuestions(select) {
                     this.importPreview.forEach(q => q.selected = select);
                 },
 
-                // File Import Methods
+                // ==================== IMPORT DARI FILE (PG) ====================
                 handleDragOver(event) {
                     event.preventDefault();
                     this.isDragging = true;
                 },
-
                 handleDragLeave(event) {
                     event.preventDefault();
                     this.isDragging = false;
                 },
-
                 handleFileDrop(event) {
                     event.preventDefault();
                     this.isDragging = false;
-
-                    const files = event.dataTransfer.files;
-                    if (files.length > 0) {
-                        this.processFile(files[0]);
+                    if (event.dataTransfer.files.length > 0) {
+                        this.uploadFile(event.dataTransfer.files[0]);
                     }
                 },
-
                 handleFileSelect(event) {
-                    const files = event.target.files;
-                    if (files.length > 0) {
-                        this.processFile(files[0]);
+                    if (event.target.files.length > 0) {
+                        this.uploadFile(event.target.files[0]);
                     }
                 },
-
-                async processFile(file) {
-                    // Validasi file
+                async uploadFile(file) {
                     const validExtensions = ['.xlsx', '.xls', '.csv'];
                     const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-
                     if (!validExtensions.includes(fileExt)) {
                         showAlert('error', 'Error!', 'Format file tidak didukung. Gunakan Excel atau CSV.');
                         return;
                     }
-
-                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    if (file.size > 5 * 1024 * 1024) {
                         showAlert('error', 'Error!', 'Ukuran file terlalu besar. Maksimal 5MB.');
                         return;
                     }
 
-                    try {
-                        // Simulasi parsing file
-                        // Di implementasi nyata, kirim ke server untuk parsing
-                        this.fileImportPreview = [
-                            {
-                                type: 'PG',
-                                question: 'Contoh soal dari file?',
-                                score: 10,
-                                choices: [
-                                    { text: 'Pilihan A', is_correct: false },
-                                    { text: 'Pilihan B', is_correct: true },
-                                    { text: 'Pilihan C', is_correct: false },
-                                    { text: 'Pilihan D', is_correct: false }
-                                ]
-                            },
-                            {
-                                type: 'IS',
-                                question: 'Ibukota Indonesia adalah?',
-                                score: 5,
-                                short_answers: ['Jakarta', 'DKI Jakarta']
-                            }
-                        ];
+                    this.fileUploadLoading = true;
+                    this.fileImportPreview = [];
 
-                        showAlert('info', 'Berhasil!', `Berhasil membaca ${this.fileImportPreview.length} soal dari file.`);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('_token', '{{ csrf_token() }}');
+
+                    try {
+                        const response = await fetch('{{ route('guru.quiz.questions.import', $quiz->id) }}', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            // Hanya ambil soal PG dari response
+                            this.fileImportPreview = data.questions.filter(q => q.type === 'PG');
+                            showAlert('success', 'Berhasil!',
+                                `Berhasil membaca ${this.fileImportPreview.length} soal PG dari file.`);
+                        } else {
+                            showAlert('error', 'Gagal!', data.message || 'Gagal memproses file.');
+                        }
                     } catch (error) {
-                        console.error('Error processing file:', error);
-                        showAlert('error', 'Error!', 'Gagal membaca file. Pastikan format sesuai template.');
+                        console.error('Upload error:', error);
+                        showAlert('error', 'Kesalahan!', 'Gagal mengupload file.');
+                    } finally {
+                        this.fileUploadLoading = false;
                     }
                 },
 
+                // ==================== IMPORT QUESTIONS (EKSEKUSI) ====================
                 async importQuestions() {
                     let questionsToImport = [];
-
                     if (this.importMode === 'from_exam') {
                         questionsToImport = this.importPreview
                             .filter(q => q.selected)
                             .map(q => ({
-                                type: q.type,
+                                type: 'PG',
                                 question: q.question,
                                 score: q.score,
                                 explanation: q.explanation || '',
-                                choices: q.choices || [],
-                                short_answers: q.short_answers || []
+                                choices: q.choices || []
                             }));
                     } else if (this.importMode === 'from_file') {
                         questionsToImport = this.fileImportPreview;
                     }
 
                     if (questionsToImport.length === 0) {
-                        showAlert('warning', 'Perhatian!', 'Tidak ada soal yang dipilih untuk diimport.');
+                        showAlert('warning', 'Perhatian!', 'Tidak ada soal PG yang dipilih untuk diimport.');
                         return;
                     }
 
-                    // Check if adding these questions will exceed the limit
                     const totalAfterImport = this.questions.length + questionsToImport.length;
                     if (totalAfterImport > 50) {
-                        showAlert('error', 'Error!', `Maksimal 50 soal. Anda akan memiliki ${totalAfterImport} soal setelah import.`);
+                        showAlert('error', 'Error!',
+                            `Maksimal 50 soal. Anda akan memiliki ${totalAfterImport} soal setelah import.`);
                         return;
                     }
 
-                    // Add questions to the list
                     questionsToImport.forEach(q => {
                         this.questions.push({
                             id: Date.now() + Math.random(),
@@ -1663,72 +1569,60 @@
                         });
                     });
 
-                    showAlert('success', 'Berhasil!', `Berhasil mengimport ${questionsToImport.length} soal.`);
+                    showAlert('success', 'Berhasil!', `Berhasil mengimport ${questionsToImport.length} soal PG.`);
                     this.showImportModal = false;
-
-                    // Reset import state
                     this.selectedImportQuiz = '';
                     this.importPreview = [];
                     this.fileImportPreview = [];
                     this.selectedFile = null;
                 },
 
+                // ==================== SIMPAN SEMUA SOAL (BULK) ====================
                 async saveQuestions() {
                     if (this.questions.length === 0) {
                         showAlert('warning', 'Perhatian!', 'Belum ada soal untuk disimpan!');
                         return;
                     }
-
                     this.isSaving = true;
                     showAlert('info', 'Menyimpan...', 'Sedang menyimpan soal ke server...');
 
                     try {
-                        const formattedQuestions = this.questions.map(q => {
-                            const questionData = {
-                                question: q.question,
-                                type: q.type,
-                                score: parseInt(q.score),
-                                explanation: q.explanation || null
-                            };
-
-                            if (q.type === 'PG') {
-                                questionData.choices = q.choices
-                                    .map((c, index) => ({
-                                        text: c.text.trim(),
-                                        is_correct: c.is_correct === true || c.is_correct === 1 || c.is_correct === '1'
-                                    }))
-                                    .filter(c => c.text !== '');
-
+                        const formattedQuestions = this.questions
+                            .filter(q => q.type === 'PG') // hanya kirim PG
+                            .map(q => {
+                                const questionData = {
+                                    question: q.question,
+                                    type: 'PG',
+                                    score: parseInt(q.score),
+                                    explanation: q.explanation || null,
+                                    choices: q.choices
+                                        .map(c => ({
+                                            text: c.text.trim(),
+                                            is_correct: c.is_correct
+                                        }))
+                                        .filter(c => c.text !== '')
+                                };
                                 if (questionData.choices.length < 2) {
-                                    throw new Error(`Soal "${q.question.substring(0, 50)}..." harus memiliki minimal 2 pilihan jawaban`);
+                                    throw new Error(
+                                        `Soal "${q.question.substring(0, 50)}..." harus memiliki minimal 2 pilihan jawaban`
+                                    );
                                 }
-
                                 if (!questionData.choices.some(c => c.is_correct)) {
-                                    throw new Error(`Soal "${q.question.substring(0, 50)}..." harus memiliki jawaban yang benar`);
+                                    throw new Error(
+                                        `Soal "${q.question.substring(0, 50)}..." harus memiliki jawaban yang benar`
+                                    );
                                 }
-                            } else if (q.type === 'IS') {
-                                questionData.short_answers = q.short_answers
-                                    .map(a => a.trim())
-                                    .filter(a => a !== '');
-
-                                if (questionData.short_answers.length < 1) {
-                                    throw new Error(`Soal "${q.question.substring(0, 50)}..." harus memiliki minimal 1 jawaban singkat`);
-                                }
-                            }
-
-                            return questionData;
-                        }).filter(q => {
-                            if (!q.question.trim()) return false;
-                            return true;
-                        });
+                                return questionData;
+                            });
 
                         if (formattedQuestions.length === 0) {
-                            showAlert('warning', 'Perhatian!', 'Tidak ada soal yang valid untuk disimpan!');
+                            showAlert('warning', 'Perhatian!', 'Tidak ada soal PG yang valid untuk disimpan!');
                             this.isSaving = false;
                             return;
                         }
 
-                        const response = await fetch('{{ route("guru.quiz.questions.store", $quiz->id) }}', {
+                        // ✅ FIX: Tambahkan parameter quiz.id ke route store
+                        const response = await fetch('{{ route('guru.quiz.questions.store', $quiz->id) }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1752,23 +1646,23 @@
 
                         if (data.success) {
                             if (data.questions) {
-                                this.questions = data.questions.map((q, index) => ({
-                                    id: q.id || Date.now() + index,
-                                    question: q.question,
-                                    type: q.type,
-                                    score: q.score,
-                                    explanation: q.explanation,
-                                    choices: q.choices ? q.choices.map((c, cIndex) => ({
-                                        id: c.id || cIndex,
-                                        text: c.text,
-                                        is_correct: c.is_correct === true || c.is_correct === 1 || c.is_correct === '1'
-                                    })) : [],
-                                    short_answers: q.short_answers || []
-                                }));
+                                this.questions = data.questions
+                                    .filter(q => q.type === 'PG')
+                                    .map((q, index) => ({
+                                        id: q.id || Date.now() + index,
+                                        question: q.question,
+                                        type: 'PG',
+                                        score: q.score,
+                                        explanation: q.explanation,
+                                        choices: q.choices ? q.choices.map((c, cIndex) => ({
+                                            id: c.id || cIndex,
+                                            text: c.text,
+                                            is_correct: c.is_correct === true || c.is_correct ===
+                                                1 || c.is_correct === '1'
+                                        })) : []
+                                    }));
                             }
-
                             showAlert('success', 'Berhasil!', data.message || 'Soal berhasil disimpan!');
-
                             window.scrollTo({
                                 top: 0,
                                 behavior: 'smooth'
@@ -1788,33 +1682,32 @@
                     }
                 },
 
+                // ==================== PREVIEW ====================
                 previewQuiz() {
                     if (this.questions.length === 0) {
                         showAlert('warning', 'Perhatian!', 'Belum ada soal untuk dipreview!');
                         return;
                     }
-
                     this.saveQuestions().then(() => {
-                        window.location.href = '{{ route("guru.quiz.preview", $quiz->id) }}';
+                        window.location.href = '{{ route('guru.quiz.preview', $quiz->id) }}';
                     });
                 },
 
+                // ==================== FINALIZE / PUBLISH ====================
                 async finalizeQuiz() {
                     if (this.questions.length === 0) {
                         showAlert('warning', 'Perhatian!', 'Minimal harus ada 1 soal sebelum mempublish quiz!');
                         return;
                     }
-
-                    if (!confirm('Apakah Anda yakin ingin mempublikasikan quiz ini? Quiz akan aktif dan dapat diakses oleh siswa.')) {
+                    if (!confirm(
+                            'Apakah Anda yakin ingin mempublikasikan quiz ini? Quiz akan aktif dan dapat diakses oleh siswa.'
+                        )) {
                         return;
                     }
-
                     this.isFinalizing = true;
-
                     try {
                         await this.saveQuestions();
-
-                        const response = await fetch('{{ route("guru.quiz.finalize", $quiz->id) }}', {
+                        const response = await fetch('{{ route('guru.quiz.finalize', $quiz->id) }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1825,13 +1718,11 @@
                                 action: 'publish'
                             })
                         });
-
                         const data = await response.json();
-
                         if (data.success) {
                             showAlert('success', 'Berhasil!', data.message);
                             setTimeout(() => {
-                                window.location.href = data.redirect || '{{ route("guru.quiz.index") }}';
+                                window.location.href = data.redirect || '{{ route('guru.quiz.index') }}';
                             }, 1500);
                         } else {
                             showAlert('error', 'Gagal!', data.message || 'Gagal mempublish quiz');
@@ -1856,12 +1747,10 @@
             });
         });
 
-        // Fungsi showAlert
+        // Fungsi showAlert (sama)
         function showAlert(type, title, message, duration = 5000) {
             const existingAlert = document.querySelector('.custom-alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
+            if (existingAlert) existingAlert.remove();
 
             const alertTypes = {
                 success: {
@@ -1885,7 +1774,6 @@
                     bgColor: 'bg-blue-50'
                 }
             };
-
             const alertType = alertTypes[type] || alertTypes.info;
 
             const alertDiv = document.createElement('div');
@@ -1916,14 +1804,8 @@
                     </div>
                 </div>
             `;
-
             document.body.appendChild(alertDiv);
-
-            setTimeout(() => {
-                if (alertDiv.parentElement) {
-                    alertDiv.remove();
-                }
-            }, duration);
+            setTimeout(() => alertDiv.remove(), duration);
         }
 
         // Debug mode
@@ -1934,11 +1816,8 @@
             debugBtn.onclick = function() {
                 const app = document.querySelector('[x-data="quizQuestionCreator()"]').__x.$data;
                 console.log('Current State:', app);
-                console.log('Questions:', app.questions);
-                console.log('New Question:', app.newQuestion);
             };
             document.body.appendChild(debugBtn);
-
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 debugBtn.classList.remove('hidden');
             }

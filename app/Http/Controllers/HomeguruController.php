@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicYear;
 use App\Models\Classes;
 use App\Models\Student;
 use App\Models\Task;
 use App\Models\Teacher;
-use App\Models\TeacherClass;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -34,28 +34,45 @@ class HomeguruController extends Controller
 
         $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
 
-        // Ambil semua kelas yang diajar oleh guru ini
-        $teacherClasses = TeacherClass::with([
-            'classes.studentList.user',
-            'subjects'
-        ])
-            ->where('teacher_id', $teacher->id)
+        // Ambil tahun ajaran aktif
+        $activeAcademicYear = AcademicYear::active()->first();
+
+        // Ambil semua assignment guru di tahun ajaran aktif
+        $assignments = $teacher->assignments()
+            ->with(['class', 'subject'])
+            ->when($activeAcademicYear, function ($q) use ($activeAcademicYear) {
+                $q->where('academic_year_id', $activeAcademicYear->id);
+            })
             ->get();
 
+        // Kelompokkan berdasarkan kelas
+        $classesData = [];
+        foreach ($assignments as $assignment) {
+            $classId = $assignment->class_id;
+            if (!isset($classesData[$classId])) {
+                $classesData[$classId] = [
+                    'class' => $assignment->class,
+                    'subjects' => [],
+                ];
+            }
+            $classesData[$classId]['subjects'][] = $assignment->subject->name_subject;
+        }
+
         // Batasi untuk tampilan data kelas (hanya 3 kelas)
-        $limitedTeacherClasses = $teacherClasses->take(3);
+        $limitedClasses = array_slice($classesData, 0, 3);
 
-        $totalKelas = $teacherClasses->count();
+        $totalKelas = count($classesData);
 
-        // Hitung total siswa UNIK yang diajar oleh guru ini
+        // Hitung total siswa UNIK yang diajar oleh guru ini di tahun ajaran aktif
         $totalSiswa = 0;
         $studentIds = [];
 
-        foreach ($teacherClasses as $tc) {
-            if (!$tc->classes || !$tc->classes->studentList) continue;
+        foreach ($assignments as $assignment) {
+            if (!$assignment->class) continue;
 
-            foreach ($tc->classes->studentList as $student) {
-                // Pastikan siswa tidak dihitung dua kali
+            // Ambil siswa dari kelas tersebut melalui currentStudents (relasi di model Classes)
+            $students = $assignment->class->currentStudents; // sudah difilter tahun ajaran aktif
+            foreach ($students as $student) {
                 if (!in_array($student->id, $studentIds)) {
                     $studentIds[] = $student->id;
                     $totalSiswa++;
@@ -65,16 +82,11 @@ class HomeguruController extends Controller
 
         $kelasData = [];
 
-        foreach ($limitedTeacherClasses as $tc) {
-            if (!$tc->classes) continue;
-
-            $class = $tc->classes;
-            $jumlahSiswa = $class->studentList->count();
-
+        foreach ($limitedClasses as $item) {
             $kelasData[] = [
-                'kelas' => $class->name_class,
-                'mapel' => $tc->subjects->pluck('name_subject')->toArray(),
-                'jumlah_siswa' => $jumlahSiswa,
+                'kelas' => $item['class']->name_class,
+                'mapel' => $item['subjects'],
+                'jumlah_siswa' => $item['class']->currentStudents->count(),
             ];
         }
 
@@ -99,7 +111,8 @@ class HomeguruController extends Controller
             'kelasData',
             'tugasBerjalan',
             'tugasDinilai',
-            'tugasLewat'
+            'tugasLewat',
+            'teacher'
         ));
     }
 
@@ -111,13 +124,8 @@ class HomeguruController extends Controller
             return response()->json(['message' => 'Kelas tidak ditemukan'], 404);
         }
 
-        $students = User::whereHas('class', function ($query) use ($classId) {
-            $query->where('classes.id', $classId);
-        })
-            ->whereHas('roles', function ($query) {
-                $query->where('name', 'Murid');
-            })
-            ->get();
+        // Ambil siswa di kelas ini (tahun ajaran aktif)
+        $students = $class->currentStudents()->with('user')->get();
 
         if ($request->ajax()) {
             return view('partials.studentList', compact('students'))->render();
@@ -131,13 +139,37 @@ class HomeguruController extends Controller
         $user = auth()->user();
         $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
 
-        $teacherClasses = TeacherClass::with([
-            'classes.studentList.user',
-            'subjects'
-        ])
-            ->where('teacher_id', $teacher->id)
-            ->paginate(9); // 👈 pagination biar rapi
+        $activeAcademicYear = AcademicYear::active()->first();
 
-        return view('Guru.kelas.index', compact('teacherClasses'));
+        // Ambil assignment dengan pagination
+        $assignments = $teacher->assignments()
+            ->with(['class', 'subject'])
+            ->when($activeAcademicYear, function ($q) use ($activeAcademicYear) {
+                $q->where('academic_year_id', $activeAcademicYear->id);
+            })
+            ->paginate(9);
+
+        // Kelompokkan per kelas untuk view
+        $teacherClasses = [];
+        foreach ($assignments as $assignment) {
+            $classId = $assignment->class_id;
+            if (!isset($teacherClasses[$classId])) {
+                $teacherClasses[$classId] = (object)[
+                    'classes' => $assignment->class,
+                    'subjects' => [],
+                ];
+            }
+            $teacherClasses[$classId]->subjects[] = $assignment->subject;
+        }
+
+        // Ubah ke collection untuk pagination (agak tricky, lebih baik query sendiri)
+        // Alternatif: buat pagination manual atau query distinct kelas dulu.
+        // Untuk sementara, kita gunakan pagination dari assignments, lalu kelompokkan.
+        // Namun karena kita ingin per kelas, lebih baik query distinct kelas dari assignments.
+        // Tapi kita akan tetap menggunakan pagination dari assignments, lalu di view kita loop assignments dan group.
+        // Di view sebelumnya mungkin menggunakan $teacherClasses->each, kita sesuaikan.
+
+        // Kita kirim $assignments saja, dan di view kita kelompokkan.
+        return view('Guru.kelas.index', compact('assignments'));
     }
 }

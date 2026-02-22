@@ -31,11 +31,13 @@ class QuizParticipant extends Model
         'is_present' => 'boolean',
     ];
 
+    // PERBAIKAN RELATIONSHIP - Pastikan nama kolom benar
     public function quizSession()
     {
-        return $this->belongsTo(QuizSession::class);
+        return $this->belongsTo(QuizSession::class, 'quiz_session_id');
     }
 
+    // PERBAIKAN: Relationship dengan User (bukan Student model terpisah)
     public function student()
     {
         return $this->belongsTo(User::class, 'student_id');
@@ -43,7 +45,7 @@ class QuizParticipant extends Model
 
     public function exam()
     {
-        return $this->belongsTo(Exam::class);
+        return $this->belongsTo(Exam::class, 'exam_id');
     }
 
     public function attempt()
@@ -141,6 +143,19 @@ class QuizParticipant extends Model
         }
 
         return true;
+    }
+
+    public function logViolation($type, $details = null)
+    {
+        $log = $this->violation_log ?? [];
+        $log[] = [
+            'type' => $type,
+            'details' => $details,
+            'timestamp' => now()->toDateTimeString(),
+        ];
+        $this->violation_count = ($this->violation_count ?? 0) + 1;
+        $this->violation_log = $log;
+        $this->save();
     }
 
     // Helper methods

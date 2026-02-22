@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Imports\TeacherImport;
+use App\Models\AcademicYear;
 use App\Models\Classes;
 use App\Models\Subject;
 use App\Models\Teacher;
-use App\Models\TeacherClass;
+use App\Models\TeacherSubjectAssignment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -28,11 +29,20 @@ class TeacherController extends Controller
         $sort = $request->input('sort', 'newest');
         $per_page = $request->input('per_page', 10);
 
+        // Ambil tahun ajaran aktif
+        $activeAcademicYear = AcademicYear::active()->first();
+
         // Query dasar untuk guru
         $query = User::with([
             'teacher',
-            'teacher.teacherClasses.classes',
-            'teacher.teacherClasses.subjects'
+            'teacher.assignments' => function ($q) use ($activeAcademicYear) {
+                // Hanya tampilkan assignment tahun ajaran aktif
+                if ($activeAcademicYear) {
+                    $q->where('academic_year_id', $activeAcademicYear->id);
+                }
+            },
+            'teacher.assignments.class',
+            'teacher.assignments.subject'
         ])
             ->whereHas('roles', function ($q) {
                 $q->where('name', 'Guru');
@@ -40,6 +50,7 @@ class TeacherController extends Controller
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Admin');
             });
+
 
         // 🔍 SEARCH
         if ($search) {
@@ -54,8 +65,11 @@ class TeacherController extends Controller
 
         // 🎯 FILTER BY CLASS
         if ($class_filter) {
-            $query->whereHas('teacher.teacherClasses.classes', function ($q) use ($class_filter) {
-                $q->where('classes.id', $class_filter);
+            $query->whereHas('teacher.assignments', function ($q) use ($class_filter, $activeAcademicYear) {
+                $q->where('class_id', $class_filter);
+                if ($activeAcademicYear) {
+                    $q->where('academic_year_id', $activeAcademicYear->id);
+                }
             });
         }
 
@@ -86,20 +100,34 @@ class TeacherController extends Controller
         // Hitung statistik sebelum pagination
         $totalTeachers = $query->clone()->count();
 
-        // Guru aktif = punya teacherClasses
+        // Guru aktif = punya assignments di tahun ajaran aktif
         $activeTeachers = User::whereHas('roles', function ($q) {
             $q->where('name', 'Guru');
         })
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'Admin');
             })
-            ->whereHas('teacher.teacherClasses')
+            ->whereHas('teacher.assignments', function ($q) use ($activeAcademicYear) {
+                if ($activeAcademicYear) {
+                    $q->where('academic_year_id', $activeAcademicYear->id);
+                }
+            })
             ->count();
 
         $inactiveTeachers = $totalTeachers - $activeTeachers;
 
-        // Pagination
-        $teachers = $query->paginate($per_page)->withQueryString();
+        $teachers = $query->paginate($per_page);
+
+        // Ambil tahun ajaran aktif, jika tidak ada set null
+        $activeYear = AcademicYear::active()->first();
+        $activeYearId = $activeYear ? $activeYear->id : null;
+
+        // Tambahkan flag is_active pada setiap teacher
+        foreach ($teachers as $teacher) {
+            $teacher->is_active = $teacher->teacher && $activeYearId && $teacher->teacher->assignments()
+                ->where('academic_year_id', $activeYearId)
+                ->exists();
+        }
 
         $classes = Classes::all();
         $subjects = Subject::all(); // Semua mapel yang sudah dibuat
@@ -132,7 +160,7 @@ class TeacherController extends Controller
                 new ValidNIPGuru,
                 'unique:teachers,nip',
             ],
-            'sapaan' => 'nullable|string|max:50',
+            // 'sapaan' dihapus
             'selected_classes' => 'required|json',
         ], [
             'password.regex' => 'Password tidak boleh mengandung spasi',
@@ -144,6 +172,12 @@ class TeacherController extends Controller
         $selectedClasses = json_decode($request->selected_classes, true);
         if (!is_array($selectedClasses) || empty($selectedClasses)) {
             return back()->with('error', 'Harap pilih minimal satu kelas')->withInput();
+        }
+
+        // Ambil tahun ajaran aktif
+        $activeAcademicYear = AcademicYear::active()->first();
+        if (!$activeAcademicYear) {
+            return back()->with('error', 'Tahun ajaran aktif belum ditentukan. Hubungi admin.')->withInput();
         }
 
         DB::beginTransaction();
@@ -158,27 +192,27 @@ class TeacherController extends Controller
 
             $user->assignRole('Guru');
 
-            // 2️⃣ BUAT TEACHER
+            // 2️⃣ BUAT TEACHER (tanpa sapaan)
             $teacher = Teacher::create([
                 'user_id' => $user->id,
                 'nip' => $request->nip,
-                'sapaan' => $request->sapaan,
+                // 'sapaan' dihapus
             ]);
 
-            // 3️⃣ BUAT TEACHER CLASSES DAN SUBJECTS
+            // 3️⃣ BUAT TEACHER SUBJECT ASSIGNMENTS
             foreach ($selectedClasses as $classId) {
                 if (!empty($classId)) {
-                    $teacherClass = TeacherClass::create([
-                        'teacher_id' => $teacher->id,
-                        'classes_id' => $classId,
-                    ]);
-
-                    // Sync subjects jika ada
                     $subjectKey = "classes_{$classId}_subject_ids";
-                    if ($request->has($subjectKey)) {
-                        $subjectIds = $request->input($subjectKey);
-                        if (is_array($subjectIds) && !empty($subjectIds)) {
-                            $teacherClass->subjects()->sync($subjectIds);
+                    $subjectIds = $request->input($subjectKey, []);
+
+                    if (is_array($subjectIds) && !empty($subjectIds)) {
+                        foreach ($subjectIds as $subjectId) {
+                            TeacherSubjectAssignment::create([
+                                'teacher_id' => $teacher->id,
+                                'subject_id' => $subjectId,
+                                'class_id' => $classId,
+                                'academic_year_id' => $activeAcademicYear->id,
+                            ]);
                         }
                     }
                 }
@@ -195,26 +229,21 @@ class TeacherController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(Teacher $teacher)
     {
-        $teacher = User::with([
-            'teacher',
-            'teacher.teacherClasses.classes',
-            'teacher.teacherClasses.subjects'
-        ])->findOrFail($id);
+        $user = $teacher->user; // langsung ambil user dari relasi
 
-        // Transform data untuk response JSON
         $data = [
-            'id' => $teacher->id,
-            'name' => $teacher->name,
-            'email' => $teacher->email,
-            'teacher' => $teacher->teacher,
-            'teacherClasses' => $teacher->teacher ? $teacher->teacher->teacherClasses->map(function ($tc) {
+            'id'          => $user->id,
+            'name'        => $user->name,
+            'email'       => $user->email,
+            'nip'         => $teacher->nip,
+            'assignments' => $teacher->assignments->map(function ($assignment) {
                 return [
-                    'classes_id' => $tc->classes_id,
-                    'subjects' => $tc->subjects
+                    'class_id'   => $assignment->class_id,
+                    'subject_id' => $assignment->subject_id,
                 ];
-            }) : []
+            })->values()->toArray(),
         ];
 
         return response()->json($data);
@@ -223,20 +252,19 @@ class TeacherController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Teacher $teacher)
     {
-        $user = User::findOrFail($id);
+        $user = $teacher->user; // ambil user dari teacher
 
         $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
+            'email' => 'required|email|unique:users,email,' . $user->id,
             'nip' => [
                 'nullable',
                 'string',
                 new ValidNIPGuru,
-                Rule::unique('teachers', 'nip')->ignore($user->teacher->id ?? null),
+                Rule::unique('teachers', 'nip')->ignore($teacher->id),
             ],
-            'sapaan' => 'nullable|string|max:50',
             'selected_classes' => 'required|json',
         ];
 
@@ -250,10 +278,14 @@ class TeacherController extends Controller
             'nip.unique' => 'NIP sudah digunakan',
         ]);
 
-        // Parse selected classes JSON
         $selectedClasses = json_decode($request->selected_classes, true);
         if (!is_array($selectedClasses) || empty($selectedClasses)) {
             return back()->with('error', 'Harap pilih minimal satu kelas')->withInput();
+        }
+
+        $activeAcademicYear = AcademicYear::active()->first();
+        if (!$activeAcademicYear) {
+            return back()->with('error', 'Tahun ajaran aktif belum ditentukan. Hubungi admin.')->withInput();
         }
 
         DB::beginTransaction();
@@ -261,37 +293,34 @@ class TeacherController extends Controller
             // Update user
             $user->name = $request->name;
             $user->email = $request->email;
-
             if ($request->filled('password')) {
                 $user->password = Hash::make($request->password);
                 $user->plain_password = $request->password;
             }
-
             $user->save();
 
             // Update teacher
-            $teacher = Teacher::where('user_id', $user->id)->firstOrFail();
             $teacher->nip = $request->nip;
-            $teacher->sapaan = $request->sapaan;
             $teacher->save();
 
-            // Hapus semua relasi sebelumnya
-            $teacher->teacherClasses()->delete();
+            // Hapus assignment sebelumnya (hanya tahun ajaran aktif)
+            TeacherSubjectAssignment::where('teacher_id', $teacher->id)
+                ->where('academic_year_id', $activeAcademicYear->id)
+                ->delete();
 
-            // Buat relasi baru
+            // Buat assignment baru
             foreach ($selectedClasses as $classId) {
                 if (!empty($classId)) {
-                    $teacherClass = TeacherClass::create([
-                        'teacher_id' => $teacher->id,
-                        'classes_id' => $classId,
-                    ]);
-
-                    // Sync subjects jika ada
                     $subjectKey = "classes_{$classId}_subject_ids";
-                    if ($request->has($subjectKey)) {
-                        $subjectIds = $request->input($subjectKey);
-                        if (is_array($subjectIds) && !empty($subjectIds)) {
-                            $teacherClass->subjects()->sync($subjectIds);
+                    $subjectIds = $request->input($subjectKey, []);
+                    if (is_array($subjectIds) && !empty($subjectIds)) {
+                        foreach ($subjectIds as $subjectId) {
+                            TeacherSubjectAssignment::create([
+                                'teacher_id' => $teacher->id,
+                                'subject_id' => $subjectId,
+                                'class_id' => $classId,
+                                'academic_year_id' => $activeAcademicYear->id,
+                            ]);
                         }
                     }
                 }
@@ -321,41 +350,36 @@ class TeacherController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(Teacher $teacher)
     {
-        $user = User::findOrFail($id);
-
-        // Hanya hapus guru (role)
-        if (!$user->hasRole('Guru')) {
-            return back()->with('error', 'User ini bukan guru.');
-        }
+        $user = $teacher->user;
 
         DB::beginTransaction();
         try {
-            // Hapus relasi teacher_classes terlebih dahulu
-            if ($user->teacher) {
-                $user->teacher->teacherClasses()->delete();
-                $user->teacher->delete();
-            }
-
-            // Hapus role guru
+            // Hapus assignments
+            $teacher->assignments()->delete();
+            // Hapus teacher
+            $teacher->delete();
+            // Hapus user dan role
             $user->removeRole('Guru');
-
-            // Hapus user
             $user->delete();
 
             DB::commit();
-            return back()->with('success', 'Guru berhasil dihapus.');
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Guru berhasil dihapus.']);
+            }
+
+            return redirect()->route('teachers.index')->with('success', 'Guru berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal menghapus guru: ' . $e->getMessage());
+            $msg = 'Gagal menghapus guru: ' . $e->getMessage();
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 500);
+            }
+            return back()->with('error', $msg);
         }
     }
-
-    /**
-     * Import teachers from Excel/CSV
-     */
-// 🔄 GANTI BAGIAN IMPORT PADA TeacherController.php
 
     /**
      * Import teachers from Excel/CSV
@@ -400,7 +424,6 @@ class TeacherController extends Controller
         }
     }
 
-
     /**
      * Download import template
      */
@@ -443,28 +466,19 @@ class TeacherController extends Controller
     /**
      * Get teacher detail for quick view
      */
-    public function detail($id)
+    public function detail(Teacher $teacher)
     {
-        $teacher = Teacher::with([
-            'teacherClasses.classes',
-            'teacherClasses.subjects'
-        ])->findOrFail($id);
+        $teacher->load(['assignments.class', 'assignments.subject']);
 
-        $data = $teacher->teacherClasses
-            ->map(function ($tc) {
-                return [
-                    'class' => $tc->classes->name_class ?? '-',
-                    'subjects' => $tc->subjects->pluck('name_subject')->toArray(),
-                ];
-            });
+        $data = $teacher->assignments->groupBy('class_id')->map(function ($items) {
+            return [
+                'class'    => $items->first()->class->name_class ?? '-',
+                'subjects' => $items->pluck('subject.name_subject')->toArray(),
+            ];
+        })->values();
 
         return response()->json($data);
     }
-
-    /**
-     * Get subjects by class ID (API endpoint)
-     */
-
 
     /**
      * Export filtered data

@@ -11,64 +11,54 @@ class Teacher extends Model
         'nip',
     ];
 
-    // 🔹 RELASI KE USER
+    // Relasi ke user
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
 
-    public function exams()
+    // Relasi ke teacher_subject_assignments (mengajar)
+    public function assignments()
     {
-        // BENAR: hasMany dengan foreign key 'teacher_id'
-        return $this->hasMany(Exam::class, 'teacher_id');
+        return $this->hasMany(TeacherSubjectAssignment::class);
     }
 
-    public function teacherClasses()
+    // Ambil mata pelajaran yang diajar melalui assignments (dengan tahun ajaran tertentu)
+    public function subjectsTaughtInAcademicYear($academicYearId = null)
     {
-        return $this->hasMany(TeacherClass::class);
-    }
-
-    // 🔹 RELASI KELAS (teacher_classes)
-    public function classes()
-    {
-        return $this->belongsToMany(
-            Classes::class,
-            'teacher_classes',
-            'teacher_id',
-            relatedPivotKey: 'classes_id'
-        );
-    }
-
-    // app/Models/Teacher.php
-    public function subjects()
-    {
-        return $this->belongsToMany(
-            \App\Models\Subject::class,
-            'teacher_subjects',
+        $query = $this->belongsToMany(
+            Subject::class,
+            'teacher_subject_assignments',
             'teacher_id',
             'subject_id'
-        );
+        )->withPivot('class_id', 'academic_year_id');
+
+        if ($academicYearId) {
+            $query->wherePivot('academic_year_id', $academicYearId);
+        }
+
+        return $query;
     }
 
-
-    // app/Models/Teacher.php
-    public function getSapaanAttribute(): ?string
+    // Relasi ke kelas melalui assignments
+    public function classesTaughtInAcademicYear($academicYearId = null)
     {
-        if (empty($this->NIP)) {
-            return null;
+        $query = $this->belongsToMany(
+            Classes::class,
+            'teacher_subject_assignments',
+            'teacher_id',
+            'class_id'
+        )->withPivot('subject_id', 'academic_year_id');
+
+        if ($academicYearId) {
+            $query->wherePivot('academic_year_id', $academicYearId);
         }
 
-        $nip = trim((string) $this->NIP);
-
-        // pastikan minimal digit ke-15 ada
-        if (strlen($nip) < 15) {
-            return null;
-        }
-
-        return match ($nip[14]) {
-            '1' => 'Pak',
-            '2' => 'Bu',
-            default => null,
-        };
+        return $query;
     }
+
+    
+    // (Opsional) hapus relasi lama jika masih ada
+    // public function teacherClasses() { ... } // sebaiknya dihapus/diadaptasi
+    // public function subjects() { ... }       // digantikan subjectsTaught...
 }

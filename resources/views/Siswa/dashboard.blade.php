@@ -20,7 +20,7 @@
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden min-h-[180px] sm:min-h-[200px]">
                     <img src="{{asset('image/banner dashboard siswa.webp')}}" alt="dashboard1" class="absolute inset-0 w-full h-full object-cover">
                     <div class="relative z-10 p-5 sm:p-8 flex flex-col justify-center h-full">
-                        <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">
+                        <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold  text-gray-800 mb-2">
                             Selamat Datang, {{ Auth::User()->name }}!
                         </h2>
                         @if (!empty($class))

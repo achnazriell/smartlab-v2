@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicYear;
 use App\Models\Classes;
 use App\Models\Subject;
 use App\Models\User;
@@ -48,9 +49,13 @@ class HomeController extends Controller
 
         $totals = $muridPerTahun->pluck('total')->toArray();
 
-        $guruPerMapel = DB::table('teacher_subjects')
-            ->join('subjects', 'teacher_subjects.subject_id', '=', 'subjects.id')
-            ->select('subjects.name_subject', DB::raw('COUNT(DISTINCT teacher_subjects.teacher_id) as total'))
+        // Ambil tahun ajaran aktif (untuk chart bisa semua, atau filter)
+        $activeAcademicYear = AcademicYear::active()->first();
+
+        // Guru per mapel (menggunakan teacher_subject_assignments)
+        $guruPerMapel = DB::table('teacher_subject_assignments')
+            ->join('subjects', 'teacher_subject_assignments.subject_id', '=', 'subjects.id')
+            ->select('subjects.name_subject', DB::raw('COUNT(DISTINCT teacher_subject_assignments.teacher_id) as total'))
             ->groupBy('subjects.name_subject')
             ->get();
 

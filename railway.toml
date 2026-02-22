@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm run build"
+buildCommand = "npm install && npm run build"
 startCommand = "php artisan serve --host=0.0.0.0 --port=8080"
 
 [build.environment]
@@ -9,7 +9,8 @@ PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
 
 [deploy]
-preDeployCommand = "php artisan migrate:fresh --seed --force"
+# RESET DATABASE + JALANKAN SEEDER
+preDeployCommand = "php artisan config:cache && php artisan migrate:fresh --seed --force"
 
 [[services]]
 type = "web"

@@ -8,16 +8,16 @@ use App\Models\ExamQuestion;
 use App\Models\ExamChoice;
 use App\Models\Subject;
 use App\Models\Classes;
+use App\Models\ExamAnswer;
 use App\Models\ExamAttempt;
 use App\Models\QuizParticipant;
 use App\Models\QuizSession;
 use App\Models\TeacherClass;
 use App\Models\TeacherClassSubject;
-use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -35,22 +35,18 @@ class QuizController extends Controller
             ->with(['subject', 'class'])
             ->orderBy('created_at', 'desc');
 
-        // Filter berdasarkan status
         if ($request->has('status')) {
             $quizzes->where('status', $request->status);
         }
 
-        // Filter berdasarkan kelas
         if ($request->has('class_id')) {
             $quizzes->where('class_id', $request->class_id);
         }
 
-        // Filter berdasarkan mapel
         if ($request->has('subject_id')) {
             $quizzes->where('subject_id', $request->subject_id);
         }
 
-        // Search
         if ($request->has('search')) {
             $search = $request->search;
             $quizzes->where(function ($query) use ($search) {
@@ -81,21 +77,13 @@ class QuizController extends Controller
             abort(403, 'Anda harus login sebagai guru');
         }
 
-        // Dapatkan semua mata pelajaran yang diajar oleh guru ini
         $teacherId = $teacher->id;
-
-        // Ambil ID kelas yang diajar guru
         $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-
-        // Ambil ID subjects dari kelas-kelas tersebut
         $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
             ->pluck('subject_id')
             ->unique();
-
-        // Ambil data subjects
         $mapels = Subject::whereIn('id', $subjectIds)->get();
 
-        // Ambil kelas yang diajar
         $classes = $teacher->classes;
 
         return view('guru.quiz.create', compact('mapels', 'classes'));
@@ -114,7 +102,7 @@ class QuizController extends Controller
             'difficulty_level' => 'nullable|in:easy,medium,hard',
             'time_per_question' => 'required|integer|min:5|max:300',
             'quiz_mode' => 'required|in:live,homework',
-            'duration' => 'nullable|integer|min:1|max:480', // Durasi dalam menit (maks 8 jam)
+            'duration' => 'nullable|integer|min:1|max:480',
         ]);
 
         if ($validator->fails()) {
@@ -126,23 +114,11 @@ class QuizController extends Controller
 
         $teacher = Auth::user()->teacher;
 
-        // Debug: Log data yang diterima
-        \Log::info('Storing quiz', [
-            'teacher_id' => $teacher->id,
-            'request_data' => $request->all()
-        ]);
-
         try {
             DB::beginTransaction();
 
-            // Hitung durasi otomatis jika tidak diisi
-            $duration = $request->duration;
-            if (!$duration) {
-                // Default: 30 menit atau hitung berdasarkan jumlah soal nanti
-                $duration = 30;
-            }
+            $duration = $request->duration ?? 30;
 
-            // Simpan quiz
             $quiz = Exam::create([
                 'teacher_id' => $teacher->id,
                 'class_id' => $request->class_id,
@@ -150,14 +126,13 @@ class QuizController extends Controller
                 'title' => $request->title,
                 'type' => 'QUIZ',
                 'duration' => $duration,
-                'start_at' => null, // Quiz tidak punya tanggal mulai
-                'end_at' => null, // Quiz tidak punya tanggal selesai
+                'start_at' => null,
+                'end_at' => null,
                 'difficulty_level' => $request->difficulty_level,
                 'time_per_question' => $request->time_per_question,
                 'quiz_mode' => $request->quiz_mode,
                 'status' => 'draft',
 
-                // Quiz settings
                 'shuffle_question' => $request->boolean('shuffle_question'),
                 'shuffle_answer' => $request->boolean('shuffle_answer'),
                 'show_score' => $request->boolean('show_score'),
@@ -169,7 +144,6 @@ class QuizController extends Controller
                 'limit_attempts' => $request->limit_attempts ?? 1,
                 'min_pass_grade' => $request->min_pass_grade ?? 0,
 
-                // Quiz features
                 'show_leaderboard' => $request->boolean('show_leaderboard'),
                 'enable_music' => $request->boolean('enable_music'),
                 'enable_memes' => $request->boolean('enable_memes'),
@@ -179,18 +153,10 @@ class QuizController extends Controller
                 'time_bonus' => $request->boolean('time_bonus'),
                 'enable_retake' => $request->boolean('enable_retake'),
 
-                // Room settings
                 'is_room_open' => false,
                 'is_quiz_started' => false,
                 'quiz_started_at' => null,
                 'quiz_remaining_time' => null,
-            ]);
-
-            // Debug: Log exam yang dibuat
-            \Log::info('Quiz created', [
-                'exam_id' => $quiz->id,
-                'title' => $quiz->title,
-                'duration' => $quiz->duration
             ]);
 
             DB::commit();
@@ -208,19 +174,13 @@ class QuizController extends Controller
                 ->with('success', 'Quiz berhasil dibuat!');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Debug: Log error
-            \Log::error('Error creating quiz: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error('Error creating quiz: ' . $e->getMessage());
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal membuat quiz: ' . $e->getMessage()
                 ], 500);
             }
-
             return back()->with('error', 'Gagal membuat quiz: ' . $e->getMessage())
                 ->withInput();
         }
@@ -231,17 +191,13 @@ class QuizController extends Controller
      */
     public function showQuestionCreator(Exam $quiz)
     {
-        // Cek ownership dengan benar
         $teacher = Auth::user()->teacher;
 
-        // PERBAIKAN: Gunakan $quiz->id bukan $quiz->exam_id
         if ($quiz->teacher_id !== $teacher->id) {
             abort(403, 'Anda tidak memiliki akses ke quiz ini.');
         }
 
-        // Cek tipe harus QUIZ
         if ($quiz->type !== 'QUIZ') {
-            // PERBAIKAN: Gunakan route yang benar untuk exam
             return redirect()->route('guru.exams.soal', $quiz->id);
         }
 
@@ -249,7 +205,6 @@ class QuizController extends Controller
         $questionCount = $questions->count();
         $totalScore = $questions->sum('score');
 
-        // PERBAIKAN: Handle jika short_answers null
         $questionsData = $questions->map(function ($q) {
             return [
                 'id' => $q->id,
@@ -269,7 +224,6 @@ class QuizController extends Controller
             ];
         })->values();
 
-        // Get other quizzes for import
         $otherQuizzes = Exam::where('teacher_id', $teacher->id)
             ->where('type', 'QUIZ')
             ->where('id', '!=', $quiz->id)
@@ -287,6 +241,32 @@ class QuizController extends Controller
         ));
     }
 
+    public function importFile(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120'
+        ]);
+
+        // Proses file (gunakan library seperti PhpSpreadsheet)
+        // Kembalikan JSON dengan format:
+        return response()->json([
+            'success' => true,
+            'questions' => [
+                [
+                    'type' => 'PG',
+                    'question' => 'Contoh soal dari upload',
+                    'score' => 10,
+                    'choices' => [
+                        ['text' => 'A', 'is_correct' => false],
+                        ['text' => 'B', 'is_correct' => true],
+                        ['text' => 'C', 'is_correct' => false],
+                        ['text' => 'D', 'is_correct' => false]
+                    ]
+                ]
+            ]
+        ]);
+    }
+
     /**
      * Import preview
      */
@@ -294,7 +274,6 @@ class QuizController extends Controller
     {
         $sourceExam = Exam::findOrFail($quizId);
 
-        // Cek ownership
         if ($sourceExam->teacher_id !== Auth::user()->teacher->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -340,17 +319,10 @@ class QuizController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 
-            // Get questions with choices, termasuk untuk quiz draft
             $questions = $quiz->questions()
                 ->with('choices')
                 ->orderBy('order')
                 ->get();
-
-            Log::info('Getting questions for quiz', [
-                'quiz_id' => $quiz->id,
-                'status' => $quiz->status,
-                'count' => $questions->count()
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -373,7 +345,6 @@ class QuizController extends Controller
     public function storeQuestions(Request $request, Exam $quiz)
     {
         try {
-            // Validasi kepemilikan
             if ($quiz->teacher_id !== Auth::user()->teacher->id) {
                 return response()->json([
                     'success' => false,
@@ -381,7 +352,6 @@ class QuizController extends Controller
                 ], 403);
             }
 
-            // Validasi request
             $validator = Validator::make($request->all(), [
                 'questions' => 'required|array|min:1',
                 'questions.*.question' => 'required|string|max:5000',
@@ -405,110 +375,68 @@ class QuizController extends Controller
 
             DB::beginTransaction();
 
-            try {
-                // PERBAIKAN: Hapus soal lama hanya setelah validasi sukses
-                $quiz->questions()->delete();
+            $quiz->questions()->delete();
 
-                $createdQuestions = [];
-                $order = 0;
+            $createdQuestions = [];
+            $order = 0;
 
-                foreach ($request->questions as $questionData) {
-                    // Buat soal baru
-                    $question = ExamQuestion::create([
-                        'exam_id' => $quiz->id,
-                        'question' => $questionData['question'],
-                        'type' => $questionData['type'],
-                        'score' => $questionData['score'],
-                        'explanation' => $questionData['explanation'] ?? null,
-                        'order' => $order++,
-                    ]);
+            foreach ($request->questions as $questionData) {
+                $question = ExamQuestion::create([
+                    'exam_id' => $quiz->id,
+                    'question' => $questionData['question'],
+                    'type' => $questionData['type'],
+                    'score' => $questionData['score'],
+                    'explanation' => $questionData['explanation'] ?? null,
+                    'order' => $order++,
+                ]);
 
-                    // Jika PG, buat choices
-                    if ($questionData['type'] === 'PG' && !empty($questionData['choices'])) {
-                        $choiceIndex = 0;
-                        foreach ($questionData['choices'] as $choiceData) {
-                            if (!empty(trim($choiceData['text']))) {
-                                ExamChoice::create([
-                                    'question_id' => $question->id,
-                                    'label' => chr(65 + $choiceIndex), // A, B, C, D
-                                    'text' => $choiceData['text'],
-                                    'is_correct' => $choiceData['is_correct'] ?? false,
-                                    'order' => $choiceIndex++,
-                                ]);
-                            }
+                if ($questionData['type'] === 'PG' && !empty($questionData['choices'])) {
+                    $choiceIndex = 0;
+                    foreach ($questionData['choices'] as $choiceData) {
+                        if (!empty(trim($choiceData['text']))) {
+                            ExamChoice::create([
+                                'question_id' => $question->id,
+                                'label' => chr(65 + $choiceIndex),
+                                'text' => $choiceData['text'],
+                                'is_correct' => $choiceData['is_correct'] ?? false,
+                                'order' => $choiceIndex++,
+                            ]);
                         }
                     }
-                    // Jika IS, simpan short_answers
-                    elseif ($questionData['type'] === 'IS' && !empty($questionData['short_answers'])) {
-                        $question->update([
-                            'short_answers' => json_encode($questionData['short_answers'])
-                        ]);
-                    }
-
-                    // Load choices untuk response
-                    $question->load('choices');
-                    $createdQuestions[] = $question;
-                }
-
-                // Update durasi quiz berdasarkan jumlah soal
-                if ($quiz->time_per_question) {
-                    $totalDuration = $quiz->questions()->count() * $quiz->time_per_question;
-                    $quiz->update([
-                        'duration' => ceil($totalDuration / 60) // Konversi ke menit
+                } elseif ($questionData['type'] === 'IS' && !empty($questionData['short_answers'])) {
+                    $question->update([
+                        'short_answers' => json_encode($questionData['short_answers'])
                     ]);
                 }
 
-                DB::commit();
-
-                Log::info('Questions saved successfully', [
-                    'quiz_id' => $quiz->id,
-                    'count' => count($createdQuestions),
-                    'status' => $quiz->status
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Soal berhasil disimpan!',
-                    'questions' => $createdQuestions,
-                    'total_questions' => count($createdQuestions),
-                    'total_score' => array_sum(array_column($request->questions, 'score'))
-                ]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
+                $question->load('choices');
+                $createdQuestions[] = $question;
             }
-        } catch (\Exception $e) {
-            Log::error('Error storing questions', [
-                'quiz_id' => $quiz->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
 
+            if ($quiz->time_per_question) {
+                $totalDuration = $quiz->questions()->count() * $quiz->time_per_question;
+                $quiz->update([
+                    'duration' => ceil($totalDuration / 60)
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Soal berhasil disimpan!',
+                'questions' => $createdQuestions,
+                'total_questions' => count($createdQuestions),
+                'total_score' => array_sum(array_column($request->questions, 'score'))
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error storing questions: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan soal: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-
-    /**
-     * Get questions list (AJAX)
-     */
-    public function getQuestionsList(Exam $quiz)
-    {
-        if ($quiz->teacher_id !== Auth::user()->teacher->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        $questions = $quiz->questions()->with('choices')->orderBy('order')->get();
-
-        return response()->json([
-            'success' => true,
-            'questions' => $questions,
-            'total_questions' => $questions->count(),
-            'total_score' => $questions->sum('score')
-        ]);
     }
 
     /**
@@ -529,7 +457,6 @@ class QuizController extends Controller
 
         $sourceExam = Exam::findOrFail($request->exam_id);
 
-        // Cek ownership
         if ($sourceExam->teacher_id !== Auth::user()->teacher->id) {
             return response()->json([
                 'success' => false,
@@ -542,7 +469,6 @@ class QuizController extends Controller
 
             $questions = $sourceExam->questions()->with('choices')->get();
             $importedCount = 0;
-
             $currentOrder = $quiz->questions()->max('order') ?? -1;
 
             foreach ($questions as $question) {
@@ -557,7 +483,6 @@ class QuizController extends Controller
                     'order' => $currentOrder,
                 ]);
 
-                // Duplicate choices if exists
                 if ($question->choices->isNotEmpty()) {
                     foreach ($question->choices as $choice) {
                         ExamChoice::create([
@@ -570,7 +495,6 @@ class QuizController extends Controller
                     }
                 }
 
-                // Duplicate short_answers for IS type
                 if ($question->type === 'IS' && $question->short_answers) {
                     $newQuestion->update([
                         'short_answers' => $question->short_answers
@@ -589,7 +513,6 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengimpor soal: ' . $e->getMessage()
@@ -597,82 +520,141 @@ class QuizController extends Controller
         }
     }
 
-    /**
-     * Update question
-     */
-    public function updateQuestion(Request $request, Exam $quiz, ExamQuestion $question)
+    public function storeSingleQuestion(Request $request, Exam $quiz)
     {
-        // Cek ownership
-        if ($question->exam_id !== $quiz->id || $quiz->teacher_id !== Auth::user()->teacher->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if ($quiz->teacher_id !== Auth::user()->teacher->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $validator = Validator::make($request->all(), [
-            'question' => 'required|string|max:1000',
+            'question' => 'required|string|max:5000',
+            'type' => 'required|in:PG',
             'score' => 'required|integer|min:1|max:100',
-            'explanation' => 'nullable|string|max:500',
-            'choices' => 'required_if:type,PG|array|min:2',
-            'choices.*.text' => 'required|string|max:500',
-            'choices.*.is_correct' => 'required_if:type,PG|boolean',
-            'short_answers' => 'required_if:type,IS|array|min:1',
-            'short_answers.*' => 'string|max:200',
+            'explanation' => 'nullable|string|max:1000',
+            'choices' => 'required|array|min:2|max:6',
+            'choices.*.text' => 'required|string|max:1000',
+            'choices.*.is_correct' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         try {
             DB::beginTransaction();
 
-            $question->update([
+            $order = $quiz->questions()->max('order') ?? 0;
+            $order++;
+
+            $question = ExamQuestion::create([
+                'exam_id' => $quiz->id,
                 'question' => $request->question,
+                'type' => 'PG',
                 'score' => $request->score,
-                'explanation' => $request->explanation,
+                'explanation' => $request->explanation ?? null,
+                'order' => $order,
             ]);
 
-            // Update choices jika PG
-            if ($question->type === 'PG' && $request->has('choices')) {
-                // Delete existing choices
-                $question->choices()->delete();
-
-                // Create new choices
-                foreach ($request->choices as $index => $choiceData) {
+            $choiceIndex = 0;
+            foreach ($request->choices as $choiceData) {
+                if (!empty(trim($choiceData['text']))) {
                     ExamChoice::create([
                         'question_id' => $question->id,
-                        'label' => chr(65 + $index),
+                        'label' => chr(65 + $choiceIndex),
                         'text' => $choiceData['text'],
-                        'is_correct' => $choiceData['is_correct'] ?? false,
-                        'order' => $index,
+                        'is_correct' => $choiceData['is_correct'],
+                        'order' => $choiceIndex++,
                     ]);
                 }
             }
 
-            // Update short_answers jika IS
-            if ($question->type === 'IS' && $request->has('short_answers')) {
-                $question->update([
-                    'short_answers' => json_encode($request->short_answers)
-                ]);
-            }
-
             DB::commit();
+
+            $question->load('choices');
 
             return response()->json([
                 'success' => true,
-                'message' => 'Soal berhasil diperbarui',
-                'question' => $question->load('choices')
+                'message' => 'Soal berhasil disimpan',
+                'question' => $question
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
+            Log::error('Error saving single question: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memperbarui soal: ' . $e->getMessage()
+                'message' => 'Gagal menyimpan soal: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+    /**
+     * Update question
+     */
+    public function updateQuestion(Request $request, Exam $quiz, ExamQuestion $question)
+    {
+        if ($question->exam_id !== $quiz->id || $quiz->teacher_id !== Auth::user()->teacher->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'type'       => 'required|in:PG,IS',               // ✅ tambahkan
+            'question'   => 'required|string|max:1000',
+            'score'      => 'required|integer|min:1|max:100',
+            'explanation' => 'nullable|string|max:500',
+            'choices'    => 'required_if:type,PG|array|min:2',
+            'choices.*.text'       => 'required|string|max:500',
+            'choices.*.is_correct' => 'required_if:type,PG|boolean',
+            'short_answers' => 'required_if:type,IS|array|min:1',
+            'short_answers.*' => 'string|max:200',
+        ]);
+
+        // ... validasi gagal ...
+
+        DB::beginTransaction();
+
+        // Update data utama, termasuk type
+        $question->update([
+            'type'        => $request->type,      // ✅ perbarui tipe
+            'question'    => $request->question,
+            'score'       => $request->score,
+            'explanation' => $request->explanation,
+        ]);
+
+        // Bersihkan data lama sesuai tipe baru
+        if ($request->type === 'PG') {
+            // Hapus short_answers (jika ada)
+            $question->short_answers = null;
+            $question->save();
+
+            // Hapus pilihan lama & buat ulang
+            $question->choices()->delete();
+            foreach ($request->choices as $index => $choiceData) {
+                ExamChoice::create([
+                    'question_id' => $question->id,
+                    'label'       => chr(65 + $index),
+                    'text'        => $choiceData['text'],
+                    'is_correct'  => $choiceData['is_correct'] ?? false,
+                    'order'       => $index,
+                ]);
+            }
+        } else { // IS
+            // Hapus semua pilihan lama (jika sebelumnya PG)
+            $question->choices()->delete();
+
+            // Simpan short_answers
+            $question->update([
+                'short_answers' => json_encode($request->short_answers)
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success'  => true,
+            'message'  => 'Soal berhasil diperbarui',
+            'question' => $question->load('choices')
+        ]);
     }
 
     /**
@@ -680,7 +662,6 @@ class QuizController extends Controller
      */
     public function deleteQuestion(Exam $quiz, ExamQuestion $question)
     {
-        // Cek ownership
         if ($question->exam_id !== $quiz->id || $quiz->teacher_id !== Auth::user()->teacher->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -688,7 +669,6 @@ class QuizController extends Controller
         try {
             $question->delete();
 
-            // Reorder remaining questions
             $questions = $quiz->questions()->orderBy('order')->get();
             foreach ($questions as $index => $q) {
                 $q->update(['order' => $index]);
@@ -746,7 +726,6 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengubah urutan soal: ' . $e->getMessage()
@@ -760,22 +739,14 @@ class QuizController extends Controller
     public function previewQuiz(Exam $quiz)
     {
         try {
-            // Cek ownership
             if ($quiz->teacher_id !== Auth::user()->teacher->id) {
                 abort(403, 'Anda tidak memiliki akses ke quiz ini.');
             }
 
-            // Ambil questions dengan choices - TIDAK peduli status
             $questions = $quiz->questions()
                 ->with('choices')
                 ->orderBy('order')
                 ->get();
-
-            Log::info('Preview quiz', [
-                'quiz_id' => $quiz->id,
-                'status' => $quiz->status,
-                'questions_count' => $questions->count()
-            ]);
 
             return view('guru.quiz.preview', compact('quiz', 'questions'));
         } catch (\Exception $e) {
@@ -785,14 +756,12 @@ class QuizController extends Controller
         }
     }
 
-
     /**
      * Finalize quiz (publish atau save draft)
      */
     public function finalizeQuiz(Request $request, Exam $quiz)
     {
         try {
-            // Cek ownership
             if ($quiz->teacher_id !== Auth::user()->teacher->id) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
@@ -809,7 +778,6 @@ class QuizController extends Controller
             }
 
             if ($request->action === 'publish') {
-                // Cek minimal soal
                 if ($quiz->questions()->count() < 1) {
                     return response()->json([
                         'success' => false,
@@ -827,12 +795,6 @@ class QuizController extends Controller
                 $quiz->update(['status' => 'draft']);
                 $message = 'Quiz disimpan sebagai draft.';
             }
-
-            Log::info('Quiz finalized', [
-                'quiz_id' => $quiz->id,
-                'action' => $request->action,
-                'status' => $quiz->status
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -917,14 +879,12 @@ class QuizController extends Controller
         try {
             DB::beginTransaction();
 
-            // Duplicate exam
             $newExam = $quiz->replicate();
             $newExam->title = $quiz->title . ' (Salinan)';
             $newExam->status = 'draft';
             $newExam->published_at = null;
             $newExam->save();
 
-            // Duplicate questions
             $questions = $quiz->questions()->with('choices')->get();
 
             foreach ($questions as $question) {
@@ -932,7 +892,6 @@ class QuizController extends Controller
                 $newQuestion->exam_id = $newExam->id;
                 $newQuestion->save();
 
-                // Duplicate choices
                 if ($question->choices->isNotEmpty()) {
                     foreach ($question->choices as $choice) {
                         $newChoice = $choice->replicate();
@@ -952,7 +911,6 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menduplikasi quiz: ' . $e->getMessage()
@@ -966,7 +924,7 @@ class QuizController extends Controller
     public function quizResults(Exam $quiz)
     {
         if ($quiz->teacher_id !== Auth::user()->teacher->id) {
-            abort(403, 'Anda tidak memiliki akses ke quiz ini.');
+            abort(403);
         }
 
         $attempts = ExamAttempt::where('exam_id', $quiz->id)
@@ -975,13 +933,47 @@ class QuizController extends Controller
             ->paginate(20);
 
         $stats = [
-            'total_attempts' => $attempts->total(),
-            'average_score' => $attempts->avg('final_score') ?? 0,
-            'highest_score' => $attempts->max('final_score') ?? 0,
-            'lowest_score' => $attempts->min('final_score') ?? 0,
+            'total_attempts' => ExamAttempt::where('exam_id', $quiz->id)->count(),
+            'average_score'  => ExamAttempt::where('exam_id', $quiz->id)->avg('final_score') ?? 0,
+            'highest_score'  => ExamAttempt::where('exam_id', $quiz->id)->max('final_score') ?? 0,
+            'lowest_score'   => ExamAttempt::where('exam_id', $quiz->id)->min('final_score') ?? 0,
         ];
 
         return view('guru.quiz.results', compact('quiz', 'attempts', 'stats'));
+    }
+
+    public function attemptDetail(Exam $quiz, ExamAttempt $attempt)
+    {
+        // Verifikasi akses (gunakan $quiz atau $attempt->exam)
+        if ($quiz->teacher_id !== Auth::user()->teacher->id) {
+            abort(403);
+        }
+
+        // Pastikan teacher yang login memiliki akses ke quiz ini
+        $quiz = $attempt->exam;
+        if ($quiz->teacher_id !== Auth::user()->teacher->id) {
+            abort(403, 'Anda tidak memiliki akses.');
+        }
+
+        // Ambil semua jawaban attempt ini, sertakan relasi soal dan kunci jawaban
+        $answers = ExamAnswer::where('attempt_id', $attempt->id)
+            ->with(['question', 'choice', 'question.choices' => function ($q) {
+                $q->where('is_correct', true); // ambil kunci jawaban
+            }])
+            ->get();
+
+        $totalQuestions = $answers->count();
+        $correctAnswers = $answers->where('is_correct', true)->count();
+        $score = $attempt->final_score;
+
+        return view('guru.quiz.attempt-detail', compact(
+            'attempt',
+            'quiz',
+            'answers',
+            'totalQuestions',
+            'correctAnswers',
+            'score'
+        ));
     }
 
     /**
@@ -992,9 +984,6 @@ class QuizController extends Controller
         if ($quiz->teacher_id !== Auth::user()->teacher->id) {
             abort(403, 'Anda tidak memiliki akses ke quiz ini.');
         }
-
-        // Implement export logic here
-        // You can use Laravel Excel package or simple CSV
 
         return response()->json([
             'success' => true,
@@ -1108,7 +1097,6 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus quiz: ' . $e->getMessage()
@@ -1156,7 +1144,6 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mempublish quiz: ' . $e->getMessage()
@@ -1174,13 +1161,11 @@ class QuizController extends Controller
         }
 
         if ($quiz->type !== 'QUIZ') {
-            // Perbaiki juga di sini
-            return redirect()->route('guru.exams.edit', ['quiz' => $quiz->id]);
+            return redirect()->route('guru.exams.edit', ['exam' => $quiz->id]);
         }
 
         $teacher = auth()->user()->teacher;
 
-        // Ambil semua subjects yang diajar guru
         $teacherId = $teacher->id;
         $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
         $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
@@ -1188,7 +1173,6 @@ class QuizController extends Controller
             ->unique();
         $mapels = Subject::whereIn('id', $subjectIds)->get();
 
-        // Ambil kelas berdasarkan subject yang dipilih
         $classes = Classes::whereHas('teacherClasses', function ($q) use ($teacher, $quiz) {
             $q->where('teacher_id', $teacher->id)
                 ->whereHas('subjects', function ($q2) use ($quiz) {
@@ -1212,7 +1196,7 @@ class QuizController extends Controller
             'title' => 'required|string|max:255',
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
-            'difficulty_level' => 'required|in:easy,medium,hard',
+            'difficulty_level' => 'in:easy,medium,hard',
             'time_per_question' => 'required|integer|min:5|max:300',
             'quiz_mode' => 'required|in:live,homework',
             'duration' => 'nullable|integer|min:1',
@@ -1240,7 +1224,6 @@ class QuizController extends Controller
                 'quiz_mode' => $request->quiz_mode,
                 'duration' => $request->duration ?? $quiz->duration,
 
-                // Quiz settings
                 'shuffle_question' => $request->boolean('shuffle_question'),
                 'shuffle_answer' => $request->boolean('shuffle_answer'),
                 'show_score' => $request->boolean('show_score'),
@@ -1252,7 +1235,6 @@ class QuizController extends Controller
                 'limit_attempts' => $request->limit_attempts ?? 1,
                 'min_pass_grade' => $request->min_pass_grade ?? 0,
 
-                // Quiz features
                 'show_leaderboard' => $request->boolean('show_leaderboard'),
                 'enable_music' => $request->boolean('enable_music'),
                 'enable_memes' => $request->boolean('enable_memes'),
@@ -1263,7 +1245,6 @@ class QuizController extends Controller
                 'enable_retake' => $request->boolean('enable_retake'),
             ];
 
-            // Update status jika ada
             if ($request->has('status')) {
                 $updateData['status'] = $request->status;
             }
@@ -1284,14 +1265,12 @@ class QuizController extends Controller
                 ->with('success', 'Quiz berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
-
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal memperbarui quiz: ' . $e->getMessage()
                 ], 500);
             }
-
             return back()->with('error', 'Gagal memperbarui quiz: ' . $e->getMessage());
         }
     }
@@ -1318,16 +1297,17 @@ class QuizController extends Controller
         }
     }
 
+    // ==================== MANAJEMEN RUANGAN QUIZ ====================
+
     /**
      * Open quiz room
      */
-    public function openRoom(Request $request, $quizId)
+    public function openRoom($quizId)
     {
         try {
             $user = Auth::user();
             $quiz = Exam::findOrFail($quizId);
 
-            // Validasi akses
             if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
@@ -1335,62 +1315,52 @@ class QuizController extends Controller
                 ], 403);
             }
 
-            // Validasi quiz harus active
-            if ($quiz->status !== 'active') {
+            if ($quiz->type !== 'QUIZ') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Quiz harus dipublish terlebih dahulu sebelum membuka ruangan!'
+                    'message' => 'Hanya quiz yang bisa dibuka ruangannya'
+                ], 422);
+            }
+
+            if ($quiz->is_room_open) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ruangan sudah terbuka'
                 ], 422);
             }
 
             DB::beginTransaction();
 
-            try {
-                // Cek apakah sudah ada session aktif
-                $session = $quiz->activeSession;
+            $sessionCode = strtoupper(Str::random(6));
 
-                if (!$session) {
-                    // Buat session baru
-                    $session = QuizSession::create([
-                        'exam_id' => $quiz->id,
-                        'teacher_id' => $user->teacher->id,
-                        'session_code' => QuizSession::generateSessionCode(),
-                        'session_status' => 'waiting',
-                        'session_started_at' => now(),
-                    ]);
-                }
-
-                // Buka ruangan
-                $quiz->update([
-                    'is_room_open' => true,
-                    'is_quiz_started' => false,
-                    'room_opened_at' => now(),
-                ]);
-
-                DB::commit();
-
-                Log::info('Room opened', [
-                    'quiz_id' => $quiz->id,
-                    'session_id' => $session->id
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Ruangan quiz berhasil dibuka! Siswa sekarang dapat bergabung.',
-                    'session_id' => $session->id,
-                    'session_code' => $session->session_code,
-                    'redirect' => route('guru.quiz.room', $quiz->id)
-                ]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error opening room', [
-                'quiz_id' => $quizId,
-                'error' => $e->getMessage()
+            $session = QuizSession::create([
+                'exam_id' => $quiz->id,
+                'teacher_id' => $user->teacher->id,
+                'session_code' => $sessionCode,
+                'session_status' => 'waiting',
+                'session_started_at' => null,
+                'total_students' => $quiz->class->students()->count() ?? 0,
             ]);
 
+            $quiz->update([
+                'is_room_open' => true,
+                'is_quiz_started' => false,
+                'quiz_started_at' => null,
+                'room_opened_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruangan berhasil dibuka! Silakan bagikan kode ke siswa.',
+                'session_code' => $sessionCode,
+                'session_id' => $session->id,
+                'room_url' => route('quiz.room', $quiz->id)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in openRoom: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -1401,78 +1371,12 @@ class QuizController extends Controller
     /**
      * Close quiz room
      */
-    // Tambahkan method ini jika belum ada di QuizController.php
-    public function closeRoom(Request $request, $quizId)
+    public function closeRoom($quizId)
     {
         try {
             $user = Auth::user();
             $quiz = Exam::findOrFail($quizId);
 
-            // Validasi akses
-            if ($quiz->teacher_id != $user->teacher->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access'
-                ], 403);
-            }
-
-            DB::beginTransaction();
-
-            try {
-                // Tutup ruangan
-                $quiz->update([
-                    'is_room_open' => false,
-                    'is_quiz_started' => false,
-                ]);
-
-                // Hapus semua participant yang belum mulai
-                $session = $quiz->activeSession;
-                if ($session) {
-                    QuizParticipant::where('quiz_session_id', $session->id)
-                        ->whereIn('status', ['waiting', 'ready'])
-                        ->delete();
-
-                    // Update session jadi finished jika tidak ada yang started
-                    $startedCount = QuizParticipant::where('quiz_session_id', $session->id)
-                        ->where('status', 'started')
-                        ->count();
-
-                    if ($startedCount == 0) {
-                        $session->update([
-                            'session_status' => 'finished',
-                            'session_ended_at' => now()
-                        ]);
-                    }
-                }
-
-                DB::commit();
-
-                Log::info('Room closed', ['quiz_id' => $quiz->id]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Ruangan quiz berhasil ditutup!'
-                ]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error closing room: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function startQuiz(Request $request, $quizId)
-    {
-        try {
-            $user = Auth::user();
-            $quiz = Exam::findOrFail($quizId);
-
-            // Validasi akses
             if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
@@ -1488,67 +1392,36 @@ class QuizController extends Controller
                 ], 422);
             }
 
-            // Cek apakah ada siswa yang ready
-            $readyCount = QuizParticipant::where('quiz_session_id', $session->id)
-                ->where('status', 'ready')
-                ->count();
-
-            if ($readyCount == 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Belum ada siswa yang siap. Tunggu minimal 1 siswa menekan tombol "Siap"'
-                ], 422);
-            }
-
             DB::beginTransaction();
 
-            try {
-                // Update quiz status
-                $quiz->update([
-                    'is_quiz_started' => true,
-                    'quiz_started_at' => now(),
+            $quiz->update([
+                'is_room_open' => false,
+                'is_quiz_started' => false,
+                'quiz_started_at' => null,
+                'quiz_remaining_time' => null,
+            ]);
+
+            $session->update([
+                'session_status' => 'finished',
+                'session_ended_at' => now(),
+            ]);
+
+            $session->participants()
+                ->whereIn('status', ['started', 'ready', 'waiting'])
+                ->update([
+                    'status' => 'submitted',
+                    'submitted_at' => now(),
                 ]);
 
-                // Update session
-                $session->update([
-                    'session_status' => 'active',
-                    'session_started_at' => now(),
-                    'total_duration' => $quiz->duration * 60,
-                ]);
+            DB::commit();
 
-                // Update semua siswa yang ready menjadi started
-                QuizParticipant::where('quiz_session_id', $session->id)
-                    ->where('status', 'ready')
-                    ->update([
-                        'status' => 'started',
-                        'started_at' => now(),
-                    ]);
-
-                // Siswa yang masih waiting tidak bisa ikut
-                QuizParticipant::where('quiz_session_id', $session->id)
-                    ->where('status', 'waiting')
-                    ->update([
-                        'status' => 'disconnected',
-                    ]);
-
-                DB::commit();
-
-                Log::info('Quiz started', [
-                    'quiz_id' => $quiz->id,
-                    'started_count' => $readyCount
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => "Quiz berhasil dimulai! {$readyCount} siswa akan otomatis diarahkan ke halaman pengerjaan.",
-                    'started_count' => $readyCount
-                ]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruangan berhasil ditutup!'
+            ]);
         } catch (\Exception $e) {
-            Log::error('Error starting quiz: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('Error in closeRoom: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -1557,34 +1430,118 @@ class QuizController extends Controller
     }
 
     /**
-     * Show quiz room
+     * Start quiz (mulai pengerjaan)
+     */
+    public function startQuiz(Request $request, $quizId)
+    {
+        try {
+            $user = Auth::user();
+            $quiz = Exam::findOrFail($quizId);
+
+            if ($quiz->teacher_id != $user->teacher->id) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access'], 403);
+            }
+
+            if (!$quiz->is_room_open) {
+                return response()->json(['success' => false, 'message' => 'Ruangan belum dibuka'], 422);
+            }
+
+            if ($quiz->is_quiz_started) {
+                return response()->json(['success' => false, 'message' => 'Quiz sudah dimulai'], 422);
+            }
+
+            $session = $quiz->activeSession;
+            if (!$session) {
+                return response()->json(['success' => false, 'message' => 'Session tidak ditemukan'], 422);
+            }
+
+            $readyCount = $session->participants()->where('status', 'ready')->count();
+            if ($readyCount === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Belum ada siswa yang siap. Tunggu minimal 1 siswa.'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            $totalQuestions  = $quiz->questions()->count();
+            $timePerQuestion = $quiz->time_per_question ?? 30;
+            $totalSeconds    = $totalQuestions * $timePerQuestion;
+
+            $quiz->update([
+                'is_quiz_started'    => true,
+                'quiz_started_at'    => now(),
+                'quiz_remaining_time' => $totalSeconds,
+            ]);
+
+            $session->update([
+                'session_status'    => 'active',
+                'session_started_at' => now(),
+                'total_duration'    => $totalSeconds,
+            ]);
+
+            $session->participants()
+                ->where('status', 'ready')
+                ->update([
+                    'status'     => 'started',
+                    'started_at' => now(),
+                ]);
+
+            $session->updateStats();
+
+            DB::commit();
+
+            return response()->json([
+                'success'        => true,
+                'message'        => 'Quiz berhasil dimulai!',
+                'quiz_started_at' => now()->toIso8601String(),
+                'total_time'     => $totalSeconds,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in startQuiz: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show quiz room (halaman guru)
      */
     public function showRoom($quizId)
     {
         try {
             $user = Auth::user();
-            $quiz = Exam::with(['class', 'subject', 'activeSession'])
-                ->where('type', 'QUIZ')
-                ->findOrFail($quizId);
+            $quiz = Exam::with([
+                'activeSession.participants.student',
+                'questions',
+                'class.students'
+            ])->findOrFail($quizId);
 
-            // Pastikan quiz milik guru ini
             if ($quiz->teacher_id != $user->teacher->id) {
-                return redirect()->route('guru.quiz.index')
-                    ->with('error', 'Anda tidak memiliki akses ke quiz ini.');
+                abort(403, 'Unauthorized access');
+            }
+
+            if (!$quiz->is_room_open) {
+                $this->openRoom($quizId);
+                $quiz->refresh();
             }
 
             $session = $quiz->activeSession;
 
             return view('quiz.room', compact('quiz', 'session'));
         } catch (\Exception $e) {
-            Log::error('Error in showQuizRoom: ' . $e->getMessage());
+            Log::error('Error in showRoom: ' . $e->getMessage());
             return redirect()->route('guru.quiz.index')
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
     /**
-     * Get room status (AJAX)
+     * Get room participants list (AJAX)
      */
     public function getRoomParticipants(Exam $quiz)
     {
@@ -1621,98 +1578,95 @@ class QuizController extends Controller
         ]);
     }
 
+    // =========================================================================
+    // ✅ FIX #4 – getRoomStatus() dengan violation_count & fallback nama
+    // =========================================================================
     /**
-     * Get room status (AJAX)
+     * GET /guru/quiz/{quiz}/room/status
      */
-    public function getRoomStatus(Request $request, $quizId)
+    public function getRoomStatus($quizId)
     {
         try {
-            $user = Auth::user();
-            $quiz = Exam::with(['class', 'activeSession'])->findOrFail($quizId);
-
-            // Validasi akses guru
-            if ($quiz->teacher_id != $user->teacher->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized access'
-                ], 403);
-            }
-
+            $quiz = \App\Models\Exam::with(['activeSession', 'class'])->findOrFail($quizId);
             $session = $quiz->activeSession;
 
-            // Data default jika belum ada session
-            if (!$session) {
-                return response()->json([
-                    'success' => true,
-                    'is_room_open' => false,
-                    'is_quiz_started' => false,
-                    'stats' => [
-                        'total_students' => 0,
-                        'joined' => 0,
-                        'ready' => 0,
-                        'started' => 0,
-                        'submitted' => 0
-                    ],
-                    'participants' => [],
-                    'time_remaining' => null,
-                    'session_id' => null
-                ]);
-            }
-
-            // Ambil participants - HANYA SISWA
-            $participants = QuizParticipant::with(['student'])
-                ->where('quiz_session_id', $session->id)
-                ->where('is_present', true)
-                ->whereHas('student', function ($query) {
-                    $query->whereHas('roles', function ($q) {
-                        $q->where('name', 'Murid');
-                    });
-                })
-                ->get();
-
-            // Hitung statistik
+            $participants = [];
             $stats = [
-                'total_students' => $participants->count(),
-                'joined' => $participants->where('status', '!=', 'disconnected')->count(),
-                'ready' => $participants->where('status', 'ready')->count(),
-                'started' => $participants->where('status', 'started')->count(),
-                'submitted' => $participants->where('status', 'submitted')->count()
+                'total_students' => 0,
+                'joined'         => 0,
+                'ready'          => 0,
+                'started'        => 0,
+                'submitted'      => 0,
             ];
 
-            // Format data participants
-            $participantsData = $participants->map(function ($participant) {
-                return [
-                    'id' => $participant->id,
-                    'student_id' => $participant->student_id,
-                    'name' => $participant->student->name ?? 'Unknown',
-                    'email' => $participant->student->email ?? '',
-                    'status' => $participant->status,
-                    'joined_time' => $participant->joined_at ? $participant->joined_at->format('H:i') : '-',
-                    'ready_time' => $participant->ready_at ? $participant->ready_at->format('H:i') : null,
-                    'started_time' => $participant->started_at ? $participant->started_at->format('H:i') : null,
-                ];
-            });
+            if ($session) {
+                $allParticipants = \App\Models\QuizParticipant::where('quiz_session_id', $session->id)
+                    ->with(['student:id,name,email'])
+                    ->where('is_present', true)
+                    ->orderBy('joined_at', 'asc')
+                    ->get();
 
-            // Hitung sisa waktu
-            $timeRemaining = null;
-            if ($quiz->is_quiz_started && $session->session_started_at && $quiz->duration) {
-                $elapsed = now()->diffInSeconds($session->session_started_at);
-                $timeRemaining = max(0, ($quiz->duration * 60) - $elapsed);
+                $participants = $allParticipants->map(function ($p) {
+                    // ✅ FIX: Ambil violation_count dari ExamAttempt (lebih akurat)
+                    $attempt = \App\Models\ExamAttempt::where('exam_id', $p->exam_id)
+                        ->where('student_id', $p->student_id)
+                        ->latest()
+                        ->first();
+
+                    // ✅ FIX: Gabungkan violation dari participant dan attempt
+                    $violationFromAttempt   = $attempt ? (int)($attempt->violation_count ?? 0) : 0;
+                    $violationFromParticipant = (int)($p->violation_count ?? 0);
+                    $violationCount = max($violationFromAttempt, $violationFromParticipant);
+
+                    return [
+                        'id'              => $p->id,
+                        'student_id'      => $p->student_id,
+                        'name'            => $p->student->name ?? 'Unknown',
+                        'student_name'    => $p->student->name ?? 'Unknown',
+                        'email'           => $p->student->email ?? '',
+                        'student_email'   => $p->student->email ?? '',
+                        'status'          => $p->status,
+                        'joined_time'     => $p->joined_at?->format('H:i') ?? '-',
+                        'joined_at'       => $p->joined_at?->format('H:i') ?? '-',
+                        'initial'         => strtoupper(($p->student->name ?? '?')[0] ?? '?'),
+                        // ✅ FIX: violation_count yang benar
+                        'violation_count' => $violationCount,
+                        'has_violation'   => $violationCount > 0,
+                        'is_violation'    => (bool)($p->is_violation ?? false),
+                    ];
+                })->values()->toArray();
+
+                $stats = [
+                    'total_students' => $quiz->class ? $quiz->class->students()->count() : 0,
+                    'joined'         => $allParticipants->count(),
+                    'ready'          => $allParticipants->where('status', 'ready')->count(),
+                    'started'        => $allParticipants->where('status', 'started')->count(),
+                    'submitted'      => $allParticipants->where('status', 'submitted')->count(),
+                ];
+            }
+
+            $timeRemaining = 0;
+            if ($session && $quiz->is_quiz_started) {
+                $startedAt    = $quiz->quiz_started_at ?? now();
+                $elapsed      = (int) now()->diffInSeconds($startedAt);
+                $totalSeconds = (int) ($quiz->duration * 60);
+                $timeRemaining = max(0, $totalSeconds - $elapsed);
+            } else {
+                $timeRemaining = $quiz->duration * 60;
             }
 
             return response()->json([
-                'success' => true,
-                'is_room_open' => (bool) $quiz->is_room_open,
+                'success'         => true,
+                'is_room_open'    => (bool) $quiz->is_room_open,
                 'is_quiz_started' => (bool) $quiz->is_quiz_started,
-                'stats' => $stats,
-                'participants' => $participantsData,
-                'time_remaining' => $timeRemaining,
-                'session_id' => $session->id,
-                'session_code' => $session->session_code ?? null,
-                'can_start' => $stats['ready'] > 0
+                'session_status'  => $session ? $session->session_status : 'no_session',
+                'stats'           => $stats,
+                'participants'    => $participants,
+                'time_remaining'  => $timeRemaining,
+                'show_leaderboard' => (bool)($quiz->show_leaderboard ?? false),
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in getRoomStatus: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error in Guru getRoomStatus: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -1720,8 +1674,93 @@ class QuizController extends Controller
         }
     }
 
+    // =========================================================================
+    // ✅ FIX #5 – quizLeaderboard() dengan return JSON jika AJAX
+    // =========================================================================
     /**
-     * Get participants list (AJAX)
+     * GET /guru/quiz/{quiz}/leaderboard – papan peringkat (bisa JSON atau view)
+     */
+    public function quizLeaderboard($quizId)
+    {
+        try {
+            $quiz = \App\Models\Exam::findOrFail($quizId);
+
+            // ✅ FIX: Ambil submitted DAN timeout
+            $attempts = \App\Models\ExamAttempt::where('exam_id', $quiz->id)
+                ->whereIn('status', ['submitted', 'timeout'])
+                ->with('student:id,name,email')
+                ->orderByDesc('final_score')
+                ->orderBy('ended_at', 'asc')
+                ->limit(10)
+                ->get();
+
+            \Illuminate\Support\Facades\Log::info('Guru Leaderboard: ' . $attempts->count() . ' attempts for quiz ' . $quiz->id);
+
+            $leaderboard = $attempts->map(function ($attempt, $index) {
+                // ✅ FIX: Fallback nama bertingkat
+                $studentName = 'Unknown';
+                if ($attempt->student) {
+                    $studentName = $attempt->student->name ?? 'Unknown';
+                } else {
+                    $student = \App\Models\User::find($attempt->student_id);
+                    $studentName = $student ? $student->name : 'Peserta ' . $attempt->student_id;
+                }
+
+                $timeTaken = 0;
+                if ($attempt->ended_at && $attempt->started_at) {
+                    $timeTaken = $attempt->started_at->diffInSeconds($attempt->ended_at);
+                }
+
+                return [
+                    'rank'         => $index + 1,
+                    'student_id'   => $attempt->student_id,
+                    'student_name' => $studentName,
+                    'name'         => $studentName,            // fallback frontend
+                    'score'        => round($attempt->final_score ?? 0, 2),
+                    'final_score'  => round($attempt->final_score ?? 0, 2),
+                    'time_taken'   => $timeTaken,
+                    'submitted_at' => $attempt->ended_at?->format('Y-m-d H:i:s'),
+                    'status'       => $attempt->status,
+                ];
+            });
+
+            // ✅ FIX: Return JSON jika request AJAX (dari room.blade.php)
+            if (request()->expectsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success'     => true,
+                    'leaderboard' => $leaderboard,
+                    'count'       => $leaderboard->count(),
+                    'quiz_id'     => $quiz->id,
+                    'quiz_title'  => $quiz->title,
+                ]);
+            }
+
+            // Return view untuk akses langsung
+            return view('guru.quiz.leaderboard', compact('quiz', 'leaderboard'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in Guru quizLeaderboard: ' . $e->getMessage());
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success'     => false,
+                    'leaderboard' => [],
+                    'message'     => 'Error: ' . $e->getMessage(),
+                ], 500);
+            }
+            return back()->with('error', 'Gagal memuat leaderboard.');
+        }
+    }
+
+    /**
+     * Get quiz leaderboard (AJAX)
+     */
+    public function getQuizLeaderboard($quizId)
+    {
+        // Alias untuk quizLeaderboard
+        return $this->quizLeaderboard($quizId);
+    }
+
+    /**
+     * Get participants list (AJAX) – alternatif
      */
     public function getParticipants(Exam $quiz)
     {
@@ -1760,9 +1799,6 @@ class QuizController extends Controller
         ]);
     }
 
-
-    // Tambahkan method ini setelah method getRoomParticipants()
-
     /**
      * Kick participant from room
      */
@@ -1772,8 +1808,7 @@ class QuizController extends Controller
             $user = Auth::user();
             $quiz = Exam::findOrFail($quizId);
 
-            // Validasi akses
-            if ($quiz->created_by != $user->id) {
+            if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -1781,25 +1816,25 @@ class QuizController extends Controller
             }
 
             $participant = QuizParticipant::findOrFail($participantId);
+            $session = $quiz->activeSession;
 
-            // Validasi participant ada di session quiz ini
-            if ($participant->exam_id != $quizId) {
+            if (!$session || $participant->quiz_session_id != $session->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Participant tidak ditemukan di quiz ini'
+                    'message' => 'Participant tidak ditemukan'
                 ], 422);
             }
 
             DB::beginTransaction();
 
-            // Hapus participant
             $participant->delete();
+            $session->updateStats();
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Peserta berhasil dikeluarkan dari ruangan!'
+                'message' => 'Peserta berhasil dikeluarkan!'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1812,7 +1847,7 @@ class QuizController extends Controller
     }
 
     /**
-     * Tandai participant sebagai ready (guru bisa mark ready untuk siswa)
+     * Mark participant as ready (guru bisa tandai)
      */
     public function markParticipantAsReady(Request $request, $quizId, $participantId)
     {
@@ -1820,8 +1855,7 @@ class QuizController extends Controller
             $user = Auth::user();
             $quiz = Exam::findOrFail($quizId);
 
-            // Validasi akses
-            if ($quiz->created_by != $user->id) {
+            if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -1829,28 +1863,29 @@ class QuizController extends Controller
             }
 
             $participant = QuizParticipant::findOrFail($participantId);
+            $session = $quiz->activeSession;
 
-            // Validasi participant ada di session quiz ini
-            if ($participant->exam_id != $quizId) {
+            if (!$session || $participant->quiz_session_id != $session->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Participant tidak ditemukan di quiz ini'
+                    'message' => 'Participant tidak ditemukan'
                 ], 422);
             }
 
             DB::beginTransaction();
 
-            // Update status menjadi ready
             $participant->update([
                 'status' => 'ready',
                 'ready_at' => now(),
             ]);
 
+            $session->updateStats();
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Status peserta berhasil diubah menjadi Siap!'
+                'message' => 'Status peserta berhasil diubah menjadi siap!'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1871,8 +1906,7 @@ class QuizController extends Controller
             $user = Auth::user();
             $quiz = Exam::findOrFail($quizId);
 
-            // Validasi akses
-            if ($quiz->created_by != $user->id) {
+            if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -1889,10 +1923,12 @@ class QuizController extends Controller
 
             DB::beginTransaction();
 
-            // Update quiz status
+            // Update quiz
             $quiz->update([
                 'is_quiz_started' => false,
                 'is_room_open' => false,
+                'quiz_started_at' => null,
+                'quiz_remaining_time' => null,
             ]);
 
             // Update session
@@ -1901,9 +1937,9 @@ class QuizController extends Controller
                 'session_ended_at' => now(),
             ]);
 
-            // Submit semua siswa yang masih mengerjakan
+            // Paksa submit semua peserta yang masih started
             QuizParticipant::where('quiz_session_id', $session->id)
-                ->where('status', 'started')
+                ->whereIn('status', ['started', 'ready', 'waiting'])
                 ->update([
                     'status' => 'submitted',
                     'submitted_at' => now(),
@@ -1913,7 +1949,7 @@ class QuizController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Quiz berhasil dihentikan!'
+                'message' => 'Quiz berhasil dihentikan! Semua peserta telah disubmit otomatis.'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

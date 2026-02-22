@@ -9,6 +9,8 @@ use App\Http\Requests\StoreClassesRequest;
 use App\Http\Requests\UpdateClassesRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ClassesImport;
+use App\Models\Department;
+use Dotenv\Validator;
 
 class ClassesController extends Controller
 {
@@ -83,26 +85,40 @@ class ClassesController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreClassesRequest $request)
+    public function store(Request $request)
     {
-        // Gabungkan angkatan dan nama kelas dengan spasi
-        $nameClass = trim($request->input('name_class.0') . ' ' . $request->input('name_class.1'));
+        $request->validate([
+            'grade' => 'required|in:X,XI,XII',
+            'department_id' => 'nullable|exists:departments,id',
+            'class_number' => 'required|integer|min:1',
+            'description' => 'nullable|string',
+        ], [
+            'grade.required' => 'Angkatan wajib dipilih',
+            'class_number.required' => 'Nomor kelas wajib diisi',
+            'class_number.integer' => 'Nomor kelas harus angka',
+        ]);
 
-        // Check for duplicate
+        // Generate name_class
+        $department = Department::find($request->department_id);
+        $departmentName = $department ? $department->name : '';
+        // Ambil kode jurusan atau nama? Kita gunakan kode atau nama? Sesuai permintaan: setelah grade, jurusan (misal "RPL") lalu nomor.
+        // Bisa menggunakan kode jurusan atau nama singkat. Kita gunakan kode jurusan jika ada.
+        $deptCode = $department ? $department->code : '';
+        $nameClass = trim($request->grade . ' ' . $deptCode . ' ' . $request->class_number);
+
+        // Check duplicate
         $exists = Classes::where('name_class', $nameClass)->exists();
         if ($exists) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['name_class' => 'Kelas dengan nama ini sudah ada']);
+            return redirect()->back()->withInput()->withErrors(['name_class' => 'Kelas dengan nama ini sudah ada']);
         }
 
         Classes::create([
             'name_class' => $nameClass,
-            'description' => $request->input('description', null),
+            'description' => $request->description,
+            'department_id' => $request->department_id,
         ]);
 
-        return redirect()->route('classes.index')
-            ->with('success', 'Kelas ' . $nameClass . ' berhasil ditambahkan');
+        return redirect()->route('classes.index')->with('success', 'Kelas ' . $nameClass . ' berhasil ditambahkan');
     }
 
     /**
@@ -129,18 +145,19 @@ class ClassesController extends Controller
     public function edit($id)
     {
         $class = Classes::findOrFail($id);
-
-        // Pisahkan nama kelas menjadi angkatan dan nama
-        $nameParts = explode(' ', $class->name_class, 2);
-        $angkatan = $nameParts[0] ?? '';
-        $namaKelas = $nameParts[1] ?? '';
+        // Pisahkan nama kelas: misal "XII RPL 3" -> grade "XII", deptCode "RPL", classNumber 3
+        $parts = explode(' ', $class->name_class);
+        $grade = $parts[0] ?? '';
+        $deptCode = $parts[1] ?? '';
+        $classNumber = isset($parts[2]) ? (int)$parts[2] : 1; // default 1 jika tidak ada
 
         return response()->json([
             'success' => true,
             'data' => [
                 'id' => $class->id,
-                'angkatan' => $angkatan,
-                'nama_kelas' => $namaKelas,
+                'grade' => $grade,
+                'department_id' => $class->department_id,
+                'class_number' => $classNumber,
                 'description' => $class->description,
             ]
         ]);
@@ -149,34 +166,47 @@ class ClassesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateClassesRequest $request, $id)
+    public function update(Request $request, $id)
     {
-        $nameClassCombined = trim($request->input('name_class.0') . ' ' . $request->input('name_class.1'));
-        $class = Classes::find($id);
+        $class = Classes::findOrFail($id);
 
-        if (!$class) {
-            return redirect()->route('classes.index')->with('error', 'Data kelas tidak ditemukan.');
-        }
-
-        // Check for duplicate (excluding current class)
-        $exists = Classes::where('name_class', $nameClassCombined)
-            ->where('id', '!=', $id)
-            ->exists();
-
-        if ($exists) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['name_class' => 'Kelas dengan nama ini sudah ada']);
-        }
-
-        // Update data kelas
-        $class->update([
-            'name_class' => $nameClassCombined,
-            'description' => $request->input('description', null),
+        $request->validate( [
+            'grade' => 'required|in:X,XI,XII',
+            'department_id' => 'nullable|exists:departments,id',
+            'class_number' => 'required|integer|min:1',
+            'description' => 'nullable|string',
         ]);
 
-        return redirect()->route('classes.index')
-            ->with('success', 'Kelas ' . $nameClassCombined . ' berhasil diperbarui');
+        $department = Department::find($request->department_id);
+        $deptCode = $department ? $department->code : '';
+        $nameClass = trim($request->grade . ' ' . $deptCode . ' ' . $request->class_number);
+
+        // Check duplicate excluding current
+        $exists = Classes::where('name_class', $nameClass)->where('id', '!=', $id)->exists();
+        if ($exists) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kelas dengan nama ini sudah ada'
+                ], 422);
+            }
+            return redirect()->back()->withInput()->withErrors(['name_class' => 'Kelas dengan nama ini sudah ada']);
+        }
+
+        $class->update([
+            'name_class' => $nameClass,
+            'description' => $request->description,
+            'department_id' => $request->department_id,
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Kelas berhasil diperbarui'
+            ]);
+        }
+
+        return redirect()->route('classes.index')->with('success', 'Kelas ' . $nameClass . ' berhasil diperbarui');
     }
 
     /**

@@ -1,227 +1,377 @@
 @extends('layouts.app')
 
+@section('title', 'Dashboard Admin - Smart Lab')
+@section('page-title', 'Dashboard')
+
 @section('content')
-    <!-- Modern dashboard with improved layout and styling -->
-    <div class="p-6 space-y-6">
-        <!-- Welcome section with modern gradient design -->
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white relative overflow-hidden">
-            <div class="absolute inset-0 bg-black opacity-5"></div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between">
-                    <div class="space-y-2">
-                        <h1 class="text-3xl font-bold font-poppins">Selamat Datang, {{ Auth::user()->name }}!</h1>
-                        <p class="text-blue-100 text-lg">Siap untuk mengelola data sekolah hari ini?</p>
-                    </div>
-                    <div class="hidden lg:block">
-                        <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+<div class="p-6 space-y-6">
+
+    {{-- ===== WELCOME BANNER ===== --}}
+    <div class="relative bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-2xl p-6 text-white overflow-hidden shadow-lg">
+        <div class="absolute -right-12 -top-12 w-52 h-52 bg-white/10 rounded-full"></div>
+        <div class="absolute -right-4 -bottom-16 w-40 h-40 bg-white/5 rounded-full"></div>
+        <div class="relative z-10 flex items-center justify-between">
+            <div>
+                <p class="text-blue-200 text-sm bg-gradie font-medium">{{ now()->translatedFormat('l, d F Y') }}</p>
+                <h1 class="text-2xl font-bold font-poppins mt-0.5">Selamat Datang, {{ Auth::user()->name }}!</h1>
+                <p class="text-blue-100 text-sm mt-1">Pantau dan kelola data sekolah dari satu tempat.</p>
             </div>
-        </div>
-
-        <!-- Statistics cards with modern design -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Guru Card -->
-            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="space-y-1">
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Guru</p>
-                        <p class="text-3xl font-bold text-slate-900">{{ $totalGuru ?? 0 }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="#2563EB"
-                            stroke="currentColor"
-                            viewBox="0 0 640 640"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
-                            <path
-                                d="M192 144C222.9 144 248 118.9 248 88C248 57.1 222.9 32 192 32C161.1 32 136 57.1 136 88C136 118.9 161.1 144 192 144zM176 576L176 416C176 407.2 183.2 400 192 400C200.8 400 208 407.2 208 416L208 576C208 593.7 222.3 608 240 608C257.7 608 272 593.7 272 576L272 240L400 240C417.7 240 432 225.7 432 208C432 190.3 417.7 176 400 176L384 176L384 128L576 128L576 320L384 320L384 288L320 288L320 336C320 362.5 341.5 384 368 384L592 384C618.5 384 640 362.5 640 336L640 112C640 85.5 618.5 64 592 64L368 64C341.5 64 320 85.5 320 112L320 176L197.3 176C151.7 176 108.8 197.6 81.7 234.2L14.3 324.9C3.8 339.1 6.7 359.1 20.9 369.7C35.1 380.3 55.1 377.3 65.7 363.1L112 300.7L112 576C112 593.7 126.3 608 144 608C161.7 608 176 593.7 176 576z" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Siswa Card -->
-            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="space-y-1">
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</p>
-                        <p class="text-3xl font-bold text-slate-900">{{ $totalMurid ?? 0 }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Kelas Card -->
-            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="space-y-1">
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Kelas</p>
-                        <p class="text-3xl font-bold text-slate-900">{{ $totalClasses ?? 0 }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Mata Pelajaran Card -->
-            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="space-y-1">
-                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Mapel</p>
-                        <p class="text-3xl font-bold text-slate-900">{{ $totalSubjects ?? 0 }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main statistical chart section only -->
-        <div class="grid grid-cols-1 gap-6">
-            <!-- Data Siswa Chart -->
-            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between mb-8">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-900 font-poppins tracking-tight">Pertumbuhan Siswa</h3>
-                        <p class="text-sm text-slate-500">Statistik jumlah siswa per tahun akademik</p>
-                    </div>
-                    <div class="flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                        <div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
-                        <span class="text-xs font-bold text-slate-600 uppercase">Jumlah Siswa</span>
-                    </div>
-                </div>
-
-                <div id="bar-chart" class="h-[350px]"></div>
+            <div class="hidden md:flex w-16 h-16 bg-white/20 rounded-2xl items-center justify-center flex-shrink-0">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
             </div>
         </div>
     </div>
 
-    <style>
-        /* Custom scrollbar styling for a cleaner look */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-            width: 4px;
-        }
+    {{-- ===== STAT CARDS ===== --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ route('teachers.index') }}"
+            class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Guru</p>
+                    <p class="text-3xl font-bold text-slate-900 mt-1 group-hover:text-blue-600 transition-colors">{{ $totalGuru ?? 0 }}</p>
+                    <p class="text-xs text-blue-500 mt-1.5 font-medium">Lihat semua →</p>
+                </div>
+                <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition-colors">
+                    <svg class="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
+        <a href="{{ route('students.index') }}"
+            class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Siswa</p>
+                    <p class="text-3xl font-bold text-slate-900 mt-1 group-hover:text-blue-600 transition-colors">{{ $totalMurid ?? 0 }}</p>
+                    <p class="text-xs text-blue-500 mt-1.5 font-medium">Lihat semua →</p>
+                </div>
+                <div class="w-11 h-11 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition-colors">
+                    <svg class="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
+        <a href="{{ route('classes.index') }}"
+            class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Kelas</p>
+                    <p class="text-3xl font-bold text-slate-900 mt-1 group-hover:text-blue-600 transition-colors">{{ $totalClasses ?? 0 }}</p>
+                    <p class="text-xs text-blue-500 mt-1.5 font-medium">Lihat semua →</p>
+                </div>
+                <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition-colors">
+                    <svg class="w-5 h-5 text-emerald-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-    </style>
+        <a href="{{ route('subject.index') }}"
+            class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Mapel</p>
+                    <p class="text-3xl font-bold text-slate-900 mt-1 group-hover:text-blue-600 transition-colors">{{ $totalSubjects ?? 0 }}</p>
+                    <p class="text-xs text-blue-500 mt-1.5 font-medium">Lihat semua →</p>
+                </div>
+                <div class="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition-colors">
+                    <svg class="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const totals = {!! json_encode($totals) !!}
+    {{-- ===== BAR CHART – full width ===== --}}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 font-poppins">Pertumbuhan Siswa per Tahun</h3>
+                <p class="text-sm text-slate-400 mt-0.5">Jumlah siswa terdaftar berdasarkan tahun pendaftaran</p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                <span>Jumlah Siswa</span>
+            </div>
+        </div>
+        <div id="bar-chart-wrap" class="w-full" style="height: 300px;">
+            <div id="bar-chart" style="width:100%; height:100%;"></div>
+        </div>
+    </div>
 
-            const chartConfig = {
-                series: [{
-                    name: "Total Siswa",
-                    data: totals,
-                }],
+    {{-- ===== BOTTOM ROW: Donut + Mini Cards ===== --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {{-- Donut: Guru per Mapel --}}
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div class="mb-5">
+                <h3 class="text-base font-bold text-slate-900 font-poppins">Distribusi Guru per Mapel</h3>
+                <p class="text-sm text-slate-400 mt-0.5">Jumlah guru yang mengajar tiap mata pelajaran</p>
+            </div>
+            <div id="donut-chart-wrap" class="w-full" style="height: 280px;">
+                <div id="donut-chart" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+
+        {{-- Right column: 3 summary cards stacked --}}
+        <div class="flex flex-col gap-4">
+
+            {{-- Rasio Siswa per Kelas --}}
+            @php
+                $totalStudents = $totalMurid ?? 0;
+                $totalCls      = $totalClasses ?? 0;
+                $ratio         = $totalCls > 0 ? round($totalStudents / $totalCls, 1) : 0;
+                $ratioPct      = min(100, $ratio > 0 ? round(($ratio / 40) * 100) : 0);
+            @endphp
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex-1">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Rata-rata Siswa / Kelas</p>
+                        <p class="text-3xl font-bold text-slate-900 mt-0.5">{{ $ratio }}</p>
+                    </div>
+                    <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2.5">
+                    <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-700" style="width: {{ $ratioPct }}%"></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-1.5">Kapasitas ideal: 30–40 siswa/kelas</p>
+            </div>
+
+            {{-- Kelas per Angkatan --}}
+            @php
+                use App\Models\Classes;
+                $gradeX   = Classes::where('name_class', 'like', 'X %')->count();
+                $gradeXI  = Classes::where('name_class', 'like', 'XI %')->count();
+                $gradeXII = Classes::where('name_class', 'like', 'XII %')->count();
+                $maxG     = max($gradeX, $gradeXI, $gradeXII, 1);
+            @endphp
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex-1">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Kelas per Angkatan</p>
+                <div class="space-y-3">
+                    @foreach([['Kelas X', $gradeX, $maxG], ['Kelas XI', $gradeXI, $maxG], ['Kelas XII', $gradeXII, $maxG]] as [$lbl, $val, $max])
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-semibold text-slate-600 w-14 shrink-0">{{ $lbl }}</span>
+                        <div class="flex-1 bg-slate-100 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-700"
+                                style="width: {{ $max > 0 ? round(($val/$max)*100) : 0 }}%"></div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-900 w-5 text-right shrink-0">{{ $val }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Guru vs Mapel --}}
+            @php
+                $totalG   = $totalGuru ?? 0;
+                $mapelCnt = count((array)($mapelLabels ?? []));
+                $avgGuru  = $mapelCnt > 0 ? round($totalG / $mapelCnt, 1) : 0;
+            @endphp
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex-1">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Rata-rata Guru / Mapel</p>
+                <p class="text-3xl font-bold text-slate-900 mb-3">{{ $avgGuru }}</p>
+                <div class="flex items-center gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-blue-600 rounded-full shrink-0"></div>
+                        <span class="text-slate-600 text-xs">{{ $totalG }} guru</span>
+                    </div>
+                    <div class="text-slate-300">•</div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-slate-200 rounded-full shrink-0"></div>
+                        <span class="text-slate-600 text-xs">{{ $mapelCnt }} mapel</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const totals      = {!! json_encode($totals ?? []) !!};
+    const mapelLabels = {!! json_encode(array_slice((array)($mapelLabels ?? []), 0, 7)) !!};
+    const mapelTotals = {!! json_encode(array_slice((array)($mapelTotals ?? []), 0, 7)) !!};
+
+    // Derive year labels from count of data points
+    const currentYear = new Date().getFullYear();
+    const yearLabels  = totals.map((_, i) => String(currentYear - totals.length + 1 + i));
+    const maxVal      = totals.length ? Math.max(...totals) : 10;
+
+    // ── BAR CHART ───────────────────────────────────────────────────────
+    const barEl = document.getElementById('bar-chart');
+    if (barEl && typeof ApexCharts !== 'undefined') {
+        const bar = new ApexCharts(barEl, {
+            series: [{ name: 'Total Siswa', data: totals.length ? totals : [0] }],
+            chart: {
+                type: 'bar',
+                height: '100%',
+                width: '100%',
+                toolbar: { show: false },
+                fontFamily: 'Inter, sans-serif',
+                animations: { enabled: true, easing: 'easeinout', speed: 700 },
+                redrawOnParentResize: true,
+                redrawOnWindowResize: true,
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: v => v > 0 ? v : '',
+                style: { fontSize: '11px', fontWeight: '700', colors: ['#fff'] },
+                background: { enabled: false },
+                offsetY: -2,
+            },
+            colors: ['#2563eb'],
+            plotOptions: {
+                bar: {
+                    columnWidth: '50%',
+                    borderRadius: 7,
+                    borderRadiusApplication: 'end',
+                },
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shade: 'light',
+                    type: 'vertical',
+                    gradientToColors: ['#93c5fd'],
+                    stops: [0, 100],
+                    opacityFrom: 1,
+                    opacityTo: 0.85,
+                },
+            },
+            xaxis: {
+                categories: yearLabels.length ? yearLabels : ['—'],
+                labels: { style: { colors: '#94a3b8', fontSize: '12px', fontWeight: 500 } },
+                axisBorder: { show: false },
+                axisTicks:  { show: false },
+            },
+            yaxis: {
+                min: 0,
+                max: maxVal + Math.max(Math.ceil(maxVal * 0.18), 2),
+                tickAmount: 5,
+                labels: {
+                    style: { colors: '#94a3b8', fontSize: '12px' },
+                    formatter: v => Number.isInteger(v) ? v : Math.round(v),
+                },
+            },
+            grid: {
+                borderColor: '#f1f5f9',
+                strokeDashArray: 4,
+                xaxis: { lines: { show: false } },
+                padding: { left: 4, right: 4, top: 4, bottom: 0 },
+            },
+            tooltip: {
+                theme: 'light',
+                y: { formatter: v => v + ' Siswa' },
+            },
+        });
+        bar.render();
+
+        // Reflow on resize
+        let t1;
+        window.addEventListener('resize', () => {
+            clearTimeout(t1);
+            t1 = setTimeout(() => bar.updateOptions({}), 250);
+        });
+    }
+
+    // ── DONUT CHART ─────────────────────────────────────────────────────
+    const donutEl = document.getElementById('donut-chart');
+    if (donutEl) {
+        if (typeof ApexCharts !== 'undefined' && mapelLabels.length > 0) {
+            const donut = new ApexCharts(donutEl, {
+                series: mapelTotals,
                 chart: {
-                    type: "bar",
-                    height: 320,
-                    toolbar: {
-                        show: false,
-                    },
-                    fontFamily: "Inter, sans-serif",
+                    type: 'donut',
+                    height: '100%',
+                    width: '100%',
+                    toolbar: { show: false },
+                    fontFamily: 'Inter, sans-serif',
+                    animations: { enabled: true, speed: 700 },
+                    redrawOnParentResize: true,
+                    redrawOnWindowResize: true,
+                },
+                labels: mapelLabels,
+                colors: ['#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe'],
+                legend: {
+                    position: 'bottom',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    labels: { colors: '#475569' },
+                    markers: { width: 9, height: 9, radius: 3 },
+                    itemMargin: { horizontal: 8, vertical: 3 },
                 },
                 dataLabels: {
-                    enabled: false,
+                    enabled: true,
+                    formatter: v => v.toFixed(1) + '%',
+                    style: { fontSize: '11px', fontWeight: '700', colors: ['#fff'] },
+                    dropShadow: { enabled: false },
                 },
-                colors: ["#2563eb"],
                 plotOptions: {
-                    bar: {
-                        columnWidth: "50%",
-                        borderRadius: 4,
-                    },
-                },
-                xaxis: {
-                    categories: ['2024', '2025', '2026', '2027', '2028'],
-                    labels: {
-                        style: {
-                            colors: "#64748b",
-                            fontSize: "12px",
-                            fontFamily: "Inter, sans-serif",
-                            fontWeight: 500,
-                        },
-                    },
-                    axisBorder: {
-                        show: false,
-                    },
-                    axisTicks: {
-                        show: false,
-                    },
-                },
-                yaxis: {
-                    min: 0,
-                    max: Math.max(...totals) + 5,
-                    labels: {
-                        style: {
-                            colors: "#64748b",
-                            fontSize: "12px",
-                            fontFamily: "Inter, sans-serif",
-                            fontWeight: 500,
+                    pie: {
+                        donut: {
+                            size: '60%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total Guru',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    color: '#64748b',
+                                    formatter: () => mapelTotals.reduce((a, b) => a + b, 0),
+                                },
+                            },
                         },
                     },
                 },
-                grid: {
-                    show: true,
-                    borderColor: "#f1f5f9",
-                    strokeDashArray: 4,
-                    padding: {
-                        left: 20,
-                        right: 20,
-                        top: 0,
-                    },
-                },
-                fill: {
-                    opacity: 1,
-                },
+                stroke: { width: 0 },
                 tooltip: {
-                    theme: "light",
-                    y: {
-                        formatter: function(val) {
-                            return val + " Siswa"
-                        },
-                    },
+                    theme: 'light',
+                    y: { formatter: v => v + ' Guru' },
                 },
-            };
+            });
+            donut.render();
 
-            if (document.getElementById("bar-chart") && typeof ApexCharts !== 'undefined') {
-                const chart = new ApexCharts(document.getElementById("bar-chart"), chartConfig);
-                chart.render();
-            }
-        });
-    </script>
+            let t2;
+            window.addEventListener('resize', () => {
+                clearTimeout(t2);
+                t2 = setTimeout(() => donut.updateOptions({}), 250);
+            });
+        } else {
+            donutEl.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                    <svg class="w-12 h-12 mb-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <p class="text-sm">Belum ada data mapel</p>
+                </div>`;
+        }
+    }
+});
+</script>
+
+<style>
+/* Force ApexCharts SVG to always fill its wrapper */
+#bar-chart   > .apexcharts-canvas,
+#donut-chart > .apexcharts-canvas { width: 100% !important; }
+
+#bar-chart   > .apexcharts-canvas > svg,
+#donut-chart > .apexcharts-canvas > svg { width: 100% !important; }
+</style>
 @endsection

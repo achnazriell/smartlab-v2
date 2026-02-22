@@ -50,7 +50,7 @@
         </div>
         <!-- Improved banner with better responsive layout -->
         <div class="banner-container mb-8">
-            <img src="image/banner mapel.svg" alt="banner mapel" class="w-full">
+            <img src="image/banner mapel.webp" alt="banner mapel" class="w-full">
 
             <div class="absolute inset-0 flex flex-col justify-center items-center p-5 sm:p-8">
                 <p class="span-nama">Hai, {{ Auth::user()->name }}</p>

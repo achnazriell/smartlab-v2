@@ -193,442 +193,90 @@
                     </div>
                 </div>
             @endif
-            {{-- File: resources/views/components/teacher-import-alert.blade.php --}}
-            {{-- Letakkan di bagian atas view Admins/Teachers/index.blade.php --}}
 
+            <!-- Import stats (include component jika ada) -->
             @if (session('import_stats'))
-                @php
-                    $stats = session('import_stats');
-                    $status = session('import_status', 'info');
-                @endphp
-
-                <div class="mb-6 animate-fade-in">
-                    <div class="space-y-4">
-
-                        {{-- Header Ringkasan --}}
-                        <div
-                            class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center space-x-3">
-                                    @if ($status === 'warning' || !empty($stats['error_list']) || $stats['skipped'] > 0)
-                                        <div class="bg-amber-100 p-2 rounded-lg">
-                                            <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                                    clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                    @elseif($stats['success'] > 0)
-                                        <div class="bg-green-100 p-2 rounded-lg">
-                                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                    clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                    @else
-                                        <div class="bg-blue-100 p-2 rounded-lg">
-                                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                                    clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                    @endif
-
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-slate-800">Hasil Import Data Guru</h3>
-                                        <p class="text-sm text-slate-600 mt-1">Total <span
-                                                class="font-semibold">{{ $stats['processed_rows'] }}</span> data diproses
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Statistik Ringkas --}}
-                            <div class="flex flex-wrap gap-2">
-                                @if ($stats['success'] > 0)
-                                    <span
-                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700">
-                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        {{ $stats['success'] }} Berhasil
-                                    </span>
-                                @endif
-
-                                @if ($stats['skipped'] > 0)
-                                    <span
-                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700">
-                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        {{ $stats['skipped'] }} Dilewati
-                                    </span>
-                                @endif
-
-                                @if ($stats['errors'] > 0)
-                                    <span
-                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-700">
-                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        {{ $stats['errors'] }} Error
-                                    </span>
-                                @endif
-
-                                @if ($stats['new_classes'] > 0)
-                                    <span
-                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z">
-                                            </path>
-                                        </svg>
-                                        {{ $stats['new_classes'] }} Kelas Baru
-                                    </span>
-                                @endif
-
-                                @if ($stats['new_subjects'] > 0)
-                                    <span
-                                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
-                                        <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z">
-                                            </path>
-                                        </svg>
-                                        {{ $stats['new_subjects'] }} Mapel Baru
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        {{-- Data Berhasil --}}
-                        @if (!empty($stats['success_data']))
-                            <div class="border border-green-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div
-                                    class="bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 border-b border-green-200">
-                                    <h4 class="font-semibold text-green-800 flex items-center">
-                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
-                                            <path fill-rule="evenodd"
-                                                d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        Data Berhasil Diimport
-                                        <span
-                                            class="ml-2 bg-green-200 text-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['success'] }}
-                                            guru</span>
-                                    </h4>
-                                </div>
-                                <div class="max-h-80 overflow-y-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
-                                            <tr>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                                                    No</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Nama</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Email</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                                                    NIP</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                                                    Kelas</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                                                    Mapel</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            @foreach (array_slice($stats['success_data'], 0, 50) as $index => $item)
-                                                <tr class="hover:bg-green-50 transition-colors duration-150">
-                                                    <td
-                                                        class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">
-                                                        {{ $index + 1 }}</td>
-                                                    <td
-                                                        class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        {{ $item['nama'] }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
-                                                        {{ $item['email'] }}</td>
-                                                    <td
-                                                        class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-mono">
-                                                        {{ $item['nip'] ?? '-' }}</td>
-                                                    <td class="px-4 py-3 text-sm text-blue-600">
-                                                        {{ $item['kelas'] ?? '-' }}
-                                                    </td>
-                                                    <td class="px-4 py-3 text-sm text-indigo-600">
-                                                        {{ $item['mapel'] ?? '-' }}
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-
-                                    @if (count($stats['success_data']) > 50)
-                                        <div
-                                            class="bg-gradient-to-r from-gray-50 to-green-50 px-4 py-3 border-t border-gray-200">
-                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
-                                                <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                                                        clip-rule="evenodd"></path>
-                                                </svg>
-                                                dan <strong
-                                                    class="mx-1">{{ count($stats['success_data']) - 50 }}</strong> data
-                                                lainnya berhasil diimport
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                        {{-- Data Dilewati/Duplikat --}}
-                        @if ($stats['skipped'] > 0 && !empty($stats['skipped_data']))
-                            <div class="border border-amber-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div
-                                    class="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-200">
-                                    <h4 class="font-semibold text-amber-800 flex items-center">
-                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        Data Dilewati
-                                        <span
-                                            class="ml-2 bg-amber-200 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['skipped'] }}
-                                            data</span>
-                                    </h4>
-                                </div>
-                                <div class="max-h-80 overflow-y-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50 sticky top-0 z-10">
-                                            <tr>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                                                    No</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Nama</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Email</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                                                    NIP</th>
-                                                <th scope="col"
-                                                    class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                                                    Alasan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            @foreach (array_slice($stats['skipped_data'], 0, 30) as $index => $item)
-                                                <tr class="hover:bg-amber-50 transition-colors duration-150">
-                                                    <td
-                                                        class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-medium">
-                                                        {{ $index + 1 }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                                        {{ $item['nama'] }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
-                                                        {{ $item['email'] }}</td>
-                                                    <td
-                                                        class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 font-mono">
-                                                        {{ $item['nip'] ?? '-' }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-xs">
-                                                        <span
-                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800">
-                                                            {{ $item['reason'] }}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-
-                                    @if (count($stats['skipped_data']) > 30)
-                                        <div
-                                            class="bg-gradient-to-r from-gray-50 to-amber-50 px-4 py-3 border-t border-gray-200">
-                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
-                                                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                                        clip-rule="evenodd"></path>
-                                                </svg>
-                                                dan <strong
-                                                    class="mx-1">{{ count($stats['skipped_data']) - 30 }}</strong> data
-                                                dilewati lainnya
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                        {{-- Error Details --}}
-                        @if (!empty($stats['error_list']) && $stats['errors'] > 0)
-                            <div class="border border-red-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="bg-gradient-to-r from-red-50 to-pink-50 px-4 py-3 border-b border-red-200">
-                                    <h4 class="font-semibold text-red-800 flex items-center">
-                                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd"></path>
-                                        </svg>
-                                        Kesalahan Validasi
-                                        <span
-                                            class="ml-2 bg-red-200 text-red-800 px-2.5 py-0.5 rounded-full text-xs font-medium">{{ $stats['errors'] }}
-                                            error</span>
-                                    </h4>
-                                </div>
-                                <div class="max-h-72 overflow-y-auto">
-                                    <div class="divide-y divide-red-100">
-                                        @foreach (array_slice($stats['error_list'], 0, 15) as $index => $error)
-                                            <div
-                                                class="px-4 py-3 hover:bg-red-50 transition-colors duration-150 flex items-start">
-                                                <span
-                                                    class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-bold mr-3">{{ $index + 1 }}</span>
-                                                <span class="text-sm text-gray-700">{{ $error }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-
-                                    @if (count($stats['error_list']) > 15)
-                                        <div
-                                            class="bg-gradient-to-r from-gray-50 to-red-50 px-4 py-3 border-t border-red-200">
-                                            <p class="text-sm text-gray-600 text-center flex items-center justify-center">
-                                                <svg class="w-4 h-4 mr-2 text-red-600" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                                        clip-rule="evenodd"></path>
-                                                </svg>
-                                                dan <strong class="mx-1">{{ count($stats['error_list']) - 15 }}</strong>
-                                                error lainnya
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-
-                    </div>
-                </div>
-
-                <style>
-                    @keyframes fade-in {
-                        from {
-                            opacity: 0;
-                            transform: translateY(-10px);
-                        }
-
-                        to {
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
-                    }
-
-                    .animate-fade-in {
-                        animation: fade-in 0.3s ease-out;
-                    }
-                </style>
+                @include('components.teacher-import-alert')
             @endif
 
-            <!-- Table Controls -->
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-center space-x-4">
-                        <!-- Items Per Page -->
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-slate-600">Tampilkan:</span>
-                            <select onchange="changePerPage(this.value)"
-                                class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="5" {{ request('per_page', 10) == 5 ? 'selected' : '' }}>5</option>
-                                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('per_page', 10) == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page', 10) == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('per_page', 10) == 100 ? 'selected' : '' }}>100</option>
-                            </select>
-                            <span class="text-sm text-slate-600">entri</span>
-                        </div>
-
-                        <!-- Sort Options -->
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-slate-600">Urutkan:</span>
-                            <select onchange="applySort(this.value)"
-                                class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>
-                                    Terbaru</option>
-                                <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Terlama
-                                </option>
-                                <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Nama A-Z
-                                </option>
-                                <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Class Filter -->
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-slate-600">Filter Kelas:</span>
-                            <select id="classFilter" onchange="applyFilters()"
-                                class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Semua Kelas</option>
-                                @foreach ($classes as $class)
-                                    <option value="{{ $class->id }}"
-                                        {{ request('class_filter') == $class->id ? 'selected' : '' }}>
-                                        {{ $class->name_class }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex space-x-2">
-                        <!-- Reset Filter -->
-                        @if (request('search_teacher') || request('class_filter') || request('sort') || request('per_page') != 10)
-                            <a href="{{ route('teachers.index') }}"
-                                class="flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
+            <!-- Filter & Search Section (style seperti tahun ajaran) -->
+            <div class="p-6 border-b border-slate-200 bg-slate-50">
+                <form method="GET" action="{{ route('teachers.index') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <!-- Search -->
+                    <div class="md:col-span-3">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                Reset Filter
-                            </a>
-                        @endif
-
-                        <!-- Search form -->
-                        <form id="searchForm" action="{{ route('teachers.index') }}" method="GET"
-                            class="flex items-center">
-                            <div class="relative flex items-center">
-                                <input type="text" name="search_teacher" id="searchInput"
-                                    placeholder="Cari nama/email/NIP..." value="{{ request('search_teacher') }}"
-                                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                                <button type="submit"
-                                    class="absolute right-0 flex items-center justify-center w-10 h-10 text-blue-600 hover:text-blue-800">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <path d="m21 21-4.35-4.35"></path>
-                                    </svg>
-                                </button>
                             </div>
-                        </form>
+                            <input type="text" name="search_teacher" value="{{ request('search_teacher') }}"
+                                placeholder="Cari nama, email, NIP..."
+                                class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
                     </div>
-                </div>
+
+                    <!-- Filter Kelas -->
+                    <div class="md:col-span-2">
+                        <select name="class_filter"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Semua Kelas</option>
+                            @foreach ($classes as $class)
+                                <option value="{{ $class->id }}" {{ request('class_filter') == $class->id ? 'selected' : '' }}>
+                                    {{ $class->name_class }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Filter Status Aktif -->
+                    <div class="md:col-span-2">
+                        <select name="status"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Semua Status</option>
+                            <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                            <option value="tidak_aktif" {{ request('status') == 'tidak_aktif' ? 'selected' : '' }}>Tidak Aktif</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="md:col-span-2">
+                        <select name="sort"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Terbaru</option>
+                            <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Terlama</option>
+                            <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Nama A-Z</option>
+                            <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A</option>
+                            <option value="nip_asc" {{ request('sort') == 'nip_asc' ? 'selected' : '' }}>NIP ↑</option>
+                            <option value="nip_desc" {{ request('sort') == 'nip_desc' ? 'selected' : '' }}>NIP ↓</option>
+                        </select>
+                    </div>
+
+                    <!-- Per Page -->
+                    <div class="md:col-span-1">
+                        <select name="per_page"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
+                            <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="md:col-span-2 flex gap-2">
+                        <button type="submit"
+                            class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center shadow-sm">
+                            <span class="text-sm font-medium">Filter</span>
+                        </button>
+                        <a href="{{ route('teachers.index') }}"
+                            class="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors duration-200 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <!-- Table -->
@@ -707,9 +355,6 @@
                                         </div>
                                         <div>
                                             <div class="text-sm font-medium text-slate-900">{{ $teacher->name }}</div>
-                                            <div class="text-xs text-slate-500">
-                                                {{ $teacher->teacher->sapaan ?? 'Guru' }}
-                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -725,7 +370,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    @if ($teacher->teacher && $teacher->teacher->teacherClasses->isNotEmpty())
+                                    @if ($teacher->is_active)
                                         <span
                                             class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
                                             Aktif
@@ -739,38 +384,41 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <div class="flex items-center space-x-2">
-                                        <button type="button"
-                                            onclick="quickView({{ $teacher->teacher ? $teacher->teacher->id : $teacher->id }})"
-                                            class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 tooltip"
-                                            title="Lihat Detail">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
-                                        <button type="button" onclick="openEditModal({{ $teacher->id }})"
-                                            class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200 tooltip"
-                                            title="Edit Data">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                        <button type="button" onclick="openDeleteModal({{ $teacher->id }})"
-                                            class="inline-flex items-center px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors duration-200 tooltip"
-                                            title="Hapus Data">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
+                                        @if ($teacher->teacher)
+                                            <button type="button" onclick="quickView({{ $teacher->teacher->id }})"
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 tooltip"
+                                                title="Lihat Detail">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            </button>
+                                            <button type="button" onclick="openEditModal({{ $teacher->teacher->id }})"
+                                                class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200 tooltip"
+                                                title="Edit Data">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            <button type="button" onclick="openDeleteModal({{ $teacher->teacher->id }})"
+                                                class="inline-flex items-center px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors duration-200 tooltip"
+                                                title="Hapus Data">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        @else
+                                            <span class="text-xs text-slate-400 italic">Data tidak lengkap</span>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -790,24 +438,12 @@
                     </div>
                     <h3 class="text-lg font-medium text-slate-900 mb-2">Tidak ada data guru</h3>
                     <p class="text-slate-600 mb-6">Mulai dengan menambahkan guru baru.</p>
-
                 </div>
             @endif
 
             <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="text-sm text-slate-600">
-                        Menampilkan {{ $teachers->firstItem() ?? 0 }} - {{ $teachers->lastItem() ?? 0 }} dari
-                        {{ $teachers->total() }} guru
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="text-sm text-slate-600">
-                            Halaman {{ $teachers->currentPage() }} dari {{ $teachers->lastPage() }}
-                        </div>
-                        <div>
-                            {{ $teachers->withQueryString()->links('vendor.pagination.tailwind') }}
-                        </div>
-                    </div>
+                <div>
+                    {{ $teachers->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>
             </div>
         </div>
@@ -1037,18 +673,20 @@
 
     {{-- Edit Modal --}}
     <div id="editModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
-        <!-- Structure will be populated by JavaScript -->
+        <!-- Isi modal akan diisi oleh JavaScript -->
     </div>
 
     {{-- Delete Modal --}}
     <div id="deleteModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
-        <!-- Structure will be populated by JavaScript -->
+        <!-- Isi modal akan diisi oleh JavaScript -->
     </div>
 
     <script>
         // Data dari Blade
         const subjects = @json($subjects);
         const classes = @json($classes);
+        const teacherBaseUrl = "{{ route('teachers.index') }}";
+        const csrfToken = "{{ csrf_token() }}";
 
         // Add Modal Functions
         function openAddModal() {
@@ -1142,10 +780,11 @@
 
         // Edit Modal Functions
         function openEditModal(id) {
-            fetch(`/teachers/${id}/edit`, {
+            fetch(teacherBaseUrl + '/' + id + '/edit', {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
                     }
                 })
                 .then(response => {
@@ -1153,146 +792,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    const modal = document.getElementById('editModal');
-
-                    // Prepare selected classes and subjects
-                    let selectedClassIds = [];
-                    let selectedSubjects = {};
-
-                    if (data.teacherClasses && data.teacherClasses.length > 0) {
-                        data.teacherClasses.forEach(tc => {
-                            selectedClassIds.push(tc.classes_id.toString());
-                            selectedSubjects[tc.classes_id] = tc.subjects.map(s => s.id.toString());
-                        });
-                    }
-
-                    modal.innerHTML = `
-                        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
-                        <div class="fixed inset-0 z-10 overflow-y-auto">
-                            <div class="flex min-h-full items-center justify-center p-4">
-                                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
-                                    <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-blue-50 rounded-t-xl">
-                                        <div class="flex items-center space-x-3">
-                                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <h3 class="text-lg font-semibold text-slate-900">Edit Guru</h3>
-                                                <p class="text-sm text-slate-500">Ubah data guru</p>
-                                            </div>
-                                        </div>
-                                        <button type="button" onclick="closeEditModal()"
-                                            class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <form action="/teachers/${id}" method="POST" id="editForm">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="p-6 space-y-4">
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span class="text-red-500">*</span></label>
-                                                    <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                                        value="${data.name || ''}">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
-                                                    <input type="email" name="email" required placeholder="contoh@email.com"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                                        value="${data.email || ''}">
-                                                </div>
-                                            </div>
-
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 mb-1">Password (Kosongkan jika tidak diubah)</label>
-                                                    <input type="text" name="password" placeholder="Masukkan password baru"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-                                                    <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
-                                                    <input type="text" name="nip" placeholder="Masukkan NIP"
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
-                                                        value="${data.teacher?.nip || ''}">
-                                                </div>
-                                            </div>
-
-                                            <!-- Kelas dan Mapel -->
-                                            <div class="border-t border-slate-200 pt-4 mt-4">
-                                                <label class="block text-sm font-medium text-slate-700 mb-2">Penempatan Kelas & Mapel</label>
-
-                                                <!-- Pilih Kelas (Multiple Select) -->
-                                                <div class="mb-4">
-                                                    <label class="block text-xs text-slate-600 mb-1">Pilih Kelas <span class="text-red-500">*</span></label>
-                                                    <select id="editClassSelect" multiple
-                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                        style="width: 100%">
-                                                        ${classes.map(cls =>
-                                                            `<option value="${cls.id}">${cls.name_class}</option>`
-                                                        ).join('')}
-                                                    </select>
-                                                    <input type="hidden" name="selected_classes" id="editSelectedClasses">
-                                                    <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas (Ctrl+klik untuk pilih banyak)</p>
-                                                </div>
-
-                                                <!-- Container untuk Mapel per Kelas -->
-                                                <div id="editSubjectContainer" class="space-y-4">
-                                                    <!-- Subjects akan ditampilkan di sini -->
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
-                                            <button type="button" onclick="closeEditModal()"
-                                                class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
-                                                Batal
-                                            </button>
-                                            <button type="submit"
-                                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                                Simpan Perubahan
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    modal.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-
-                    // Initialize select2 for edit class selection
-                    $('#editClassSelect').select2({
-                        width: '100%',
-                        placeholder: 'Pilih satu atau lebih kelas',
-                        closeOnSelect: false
-                    });
-
-                    // Set selected classes
-                    if (selectedClassIds.length > 0) {
-                        $('#editClassSelect').val(selectedClassIds).trigger('change');
-                        document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
-
-                        // Load subjects for selected classes
-                        handleEditClassSelection(selectedClassIds, selectedSubjects);
-                    }
-
-                    // Add change event
-                    $('#editClassSelect').off('change').on('change', function() {
-                        const selectedOptions = $(this).select2('data');
-                        const selectedClassIds = selectedOptions.map(opt => opt.id);
-                        document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
-                        handleEditClassSelection(selectedClassIds, {});
-                    });
-
+                    renderEditModal(data, id);
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -1300,31 +800,166 @@
                 });
         }
 
-        function handleEditClassSelection(selectedClassIds, selectedSubjects = {}) {
-            const subjectContainer = document.getElementById('editSubjectContainer');
+        function renderEditModal(data, id) {
+            const modal = document.getElementById('editModal');
 
-            if (selectedClassIds.length === 0) {
-                subjectContainer.innerHTML = `
-                    <div class="text-sm text-slate-400 italic">
-                        Pilih kelas terlebih dahulu untuk menampilkan mata pelajaran
+            // Prepare selected classes and subjects from teacherSubjectAssignments
+            let selectedClassIds = [];
+            let selectedSubjects = {};
+
+            if (data.assignments && data.assignments.length > 0) {
+                data.assignments.forEach(assignment => {
+                    const classId = assignment.class_id.toString();
+                    if (!selectedClassIds.includes(classId)) {
+                        selectedClassIds.push(classId);
+                    }
+                    if (!selectedSubjects[classId]) {
+                        selectedSubjects[classId] = [];
+                    }
+                    selectedSubjects[classId].push(assignment.subject_id.toString());
+                });
+            }
+
+            modal.innerHTML = `
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="closeEditModal()"></div>
+                <div class="fixed inset-0 z-10 overflow-y-auto">
+                    <div class="flex min-h-full items-center justify-center p-4">
+                        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
+                            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-amber-50 rounded-t-xl">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                        <svg class="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-slate-900">Edit Guru</h3>
+                                        <p class="text-sm text-slate-500">Ubah data guru</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="closeEditModal()"
+                                    class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors duration-200">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <form action="${teacherBaseUrl}/${id}" method="POST" id="editForm">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <input type="hidden" name="_method" value="PUT">
+                                <div class="p-6 space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Nama Guru <span class="text-red-500">*</span></label>
+                                            <input type="text" name="name" required placeholder="Masukkan nama lengkap guru"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                                value="${data.name || ''}">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                            <input type="email" name="email" required placeholder="contoh@email.com"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                                value="${data.email || ''}">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">Password (Kosongkan jika tidak diubah)</label>
+                                            <input type="text" name="password" placeholder="Masukkan password baru"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                            <p class="text-xs text-slate-500 mt-1">Password minimal 8 karakter</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">NIP (Opsional)</label>
+                                            <input type="text" name="nip" placeholder="Masukkan NIP"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono"
+                                                value="${data.nip || ''}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Kelas dan Mapel -->
+                                    <div class="border-t border-slate-200 pt-4 mt-4">
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Penempatan Kelas & Mapel</label>
+
+                                        <!-- Pilih Kelas (Multiple Select) -->
+                                        <div class="mb-4">
+                                            <label class="block text-xs text-slate-600 mb-1">Pilih Kelas <span class="text-red-500">*</span></label>
+                                            <select id="editClassSelect" multiple
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                style="width: 100%">
+                                                ${classes.map(cls =>
+                                                    `<option value="${cls.id}">${cls.name_class}</option>`
+                                                ).join('')}
+                                            </select>
+                                            <input type="hidden" name="selected_classes" id="editSelectedClasses">
+                                            <p class="text-xs text-slate-500 mt-1">Pilih satu atau lebih kelas (Ctrl+klik untuk pilih banyak)</p>
+                                        </div>
+
+                                        <!-- Container untuk Mapel per Kelas -->
+                                        <div id="editSubjectContainer" class="space-y-4">
+                                            <!-- Subjects akan ditampilkan di sini -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end space-x-3">
+                                    <button type="button" onclick="closeEditModal()"
+                                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                                        Batal
+                                    </button>
+                                    <button type="submit"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors duration-200">
+                                        Simpan Perubahan
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                `;
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            // Initialize select2 untuk edit
+            $('#editClassSelect').select2({
+                width: '100%',
+                placeholder: 'Pilih satu atau lebih kelas',
+                closeOnSelect: false
+            });
+
+            // Set selected classes
+            if (selectedClassIds.length > 0) {
+                $('#editClassSelect').val(selectedClassIds).trigger('change');
+                document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
+                renderEditSubjectFields(selectedClassIds, selectedSubjects);
+            }
+
+            // Event change untuk kelas
+            $('#editClassSelect').off('change').on('change', function() {
+                const selectedOptions = $(this).select2('data');
+                const selectedClassIds = selectedOptions.map(opt => opt.id);
+                document.getElementById('editSelectedClasses').value = JSON.stringify(selectedClassIds);
+                renderEditSubjectFields(selectedClassIds, selectedSubjects);
+            });
+        }
+
+        function renderEditSubjectFields(selectedClassIds, selectedSubjects) {
+            const container = document.getElementById('editSubjectContainer');
+            if (selectedClassIds.length === 0) {
+                container.innerHTML = `<div class="text-sm text-slate-400 italic">Pilih kelas terlebih dahulu</div>`;
                 return;
             }
 
-            // Tampilkan select mapel untuk setiap kelas
-            subjectContainer.innerHTML = '';
-
+            container.innerHTML = '';
             selectedClassIds.forEach(classId => {
                 const classOption = $(`#editClassSelect option[value="${classId}"]`);
                 const className = classOption.length > 0 ? classOption.text() : 'Kelas';
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'mb-4 p-4 border border-slate-200 rounded-lg';
-
-                // Get previously selected subjects for this class
-                const preSelectedSubjects = selectedSubjects[classId] || [];
-
                 wrapper.innerHTML = `
                     <label class="block text-sm font-medium text-slate-700 mb-2">
                         Mata Pelajaran untuk ${className}
@@ -1333,17 +968,15 @@
                         class="subject-select w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         style="width: 100%">
                         ${subjects.map(subject =>
-                            `<option value="${subject.id}" ${preSelectedSubjects.includes(subject.id.toString()) ? 'selected' : ''}>
-                                    ${subject.name_subject}
-                                </option>`
+                            `<option value="${subject.id}" ${selectedSubjects[classId]?.includes(subject.id.toString()) ? 'selected' : ''}>
+                                                            ${subject.name_subject}
+                                                        </option>`
                         ).join('')}
                     </select>
                     <p class="text-xs text-slate-500 mt-1">Pilih mata pelajaran yang akan diajar (Ctrl+klik untuk pilih banyak)</p>
                 `;
 
-                subjectContainer.appendChild(wrapper);
-
-                // Initialize select2 for subject selection
+                container.appendChild(wrapper);
                 $(wrapper.querySelector('.subject-select')).select2({
                     width: '100%',
                     placeholder: 'Pilih mata pelajaran',
@@ -1396,20 +1029,16 @@
                                 <p class="text-center text-slate-700 mb-2">Apakah Anda yakin ingin menghapus guru ini?</p>
                                 <p class="text-center text-sm text-slate-500 mb-6">Data yang dihapus tidak dapat dikembalikan</p>
 
-                                <form action="/teachers/${id}" method="POST" id="deleteForm">
-                                    @csrf
-                                    @method('DELETE')
-                                    <div class="flex justify-end space-x-3">
-                                        <button type="button" onclick="closeDeleteModal()"
-                                            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors duration-200">
-                                            Batal
-                                        </button>
-                                        <button type="submit"
-                                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200">
-                                            Hapus
-                                        </button>
-                                    </div>
-                                </form>
+                                <div class="flex justify-center space-x-3">
+                                    <button type="button" onclick="closeDeleteModal()"
+                                        class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                                        Batal
+                                    </button>
+                                    <button type="button" onclick="confirmDelete(${id})"
+                                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">
+                                        Hapus
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1425,6 +1054,18 @@
             document.body.style.overflow = '';
         }
 
+        function confirmDelete(id) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = teacherBaseUrl + '/' + id;
+            form.innerHTML = `
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="_method" value="DELETE">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         function showImportModal() {
             document.getElementById('importModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
@@ -1437,10 +1078,11 @@
 
         async function quickView(id) {
             try {
-                const response = await fetch(`/teachers/${id}/detail`, {
+                const response = await fetch(teacherBaseUrl + '/' + id + '/detail', {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
                     }
                 });
 
@@ -1487,15 +1129,6 @@
                         </div>
                     `;
                 }
-
-                // Get teacher name from table row
-                const teacherRow = document.querySelector(`#teacher-${id}`);
-                const teacherName = teacherRow ? teacherRow.querySelector('td:nth-child(2) .text-sm.font-medium')
-                    .textContent : 'Guru';
-                const teacherEmail = teacherRow ? teacherRow.querySelector('td:nth-child(3)').textContent : '';
-                const teacherNip = teacherRow ? teacherRow.querySelector('td:nth-child(4) span').textContent : '-';
-                const teacherStatus = data && data.length > 0 ? 'Aktif' : 'Belum Aktif';
-                const statusColor = data && data.length > 0 ? 'text-emerald-600' : 'text-amber-600';
 
                 content.innerHTML = `
                     <div class="space-y-4">
@@ -1593,7 +1226,7 @@
                 }
             });
 
-            // Add tooltip functionality
+            // Tooltips
             const tooltips = document.querySelectorAll('.tooltip');
             tooltips.forEach(tooltip => {
                 tooltip.addEventListener('mouseenter', function(e) {

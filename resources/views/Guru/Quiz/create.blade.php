@@ -224,7 +224,7 @@
                         </div>
 
                         <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                            <input type="checkbox" name="enable_retake" value="1"
+                            <input type="checkbox" name="enable_retake" value="1" x-model="enableRetake"
                                 {{ old('enable_retake') ? 'checked' : '' }} class="w-4 h-4 text-purple-600 rounded">
                             <label class="text-sm font-medium text-slate-700 cursor-pointer flex-1">
                                 Izinkan Ulang Quiz
@@ -321,11 +321,10 @@
                                     Pernah</option>
                             </select>
                         </div>
-
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-slate-700">Maksimal Percobaan</label>
                             <input type="number" name="limit_attempts" min="1" max="10"
-                                value="{{ old('limit_attempts', 1) }}"
+                                value="{{ old('limit_attempts', 1) }}" :disabled="!enableRetake"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-purple-500 outline-none">
                         </div>
 
@@ -378,6 +377,7 @@
                 isSubmitting: false,
                 title: '{{ old('title', '') }}',
                 subjectId: '{{ old('subject_id', '') }}',
+                enableRetake: {{ old('enable_retake', 0) ? 'true' : 'false' }},
 
                 init() {
                     if (this.selectedSubjectId) {

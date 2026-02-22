@@ -103,18 +103,6 @@
                     <h2 class="text-xl font-bold text-slate-800">Data Mata Pelajaran</h2>
 
                     <div class="flex flex-wrap gap-3">
-                        <!-- Quick Actions -->
-                        <div class="flex items-center space-x-2">
-                            <button onclick="showImportModal()"
-                                class="text-sm flex items-center space-x-1 px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                                </svg>
-                                <span>Import</span>
-                            </button>
-                        </div>
-
                         <!-- Add Button -->
                         <button type="button" onclick="openAddModal()"
                             class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
@@ -195,73 +183,89 @@
                 </div>
             @endif
 
-            <!-- Table Controls -->
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-slate-600">Tampilkan:</span>
-                            <select onchange="changePerPage(this.value)"
-                                class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="5" {{ request('per_page', 10) == 5 ? 'selected' : '' }}>5</option>
-                                <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('per_page', 10) == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page', 10) == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('per_page', 10) == 100 ? 'selected' : '' }}>100</option>
-                            </select>
-                            <span class="text-sm text-slate-600">entri</span>
-                        </div>
-
-                        <!-- Sort Options -->
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-slate-600">Urutkan:</span>
-                            <select onchange="applySort(this.value)"
-                                class="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>
-                                    Terbaru</option>
-                                <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Terlama
-                                </option>
-                                <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Nama A-Z
-                                </option>
-                                <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A
-                                </option>
-                                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Paling Banyak
-                                    Guru</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex space-x-2">
-                        @if (request('search') || request('sort') != 'newest' || request('per_page') != 10)
-                            <a href="{{ route('subject.index') }}"
-                                class="flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Filter Section (seperti tahun ajaran) -->
+            <div class="p-6 border-b border-slate-200 bg-slate-50">
+                <form method="GET" action="{{ route('subject.index') }}"
+                    class="grid grid-cols-1 md:grid-cols-12 gap-4 ">
+                    <!-- Search -->
+                    <div class="md:col-span-3">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                Reset Filter
-                            </a>
-                        @endif
-
-                        <!-- Search form -->
-                        <form id="searchForm" action="{{ route('subject.index') }}" method="GET"
-                            class="flex items-center">
-                            <div class="relative flex items-center">
-                                <input type="text" name="search" id="searchInput"
-                                    placeholder="Cari mata pelajaran..." value="{{ request('search') }}"
-                                    class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                                <button type="submit"
-                                    class="absolute right-0 flex items-center justify-center w-10 h-10 text-blue-600 hover:text-blue-800">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <path d="m21 21-4.35-4.35"></path>
-                                    </svg>
-                                </button>
                             </div>
-                        </form>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                placeholder="Cari mata pelajaran..."
+                                class="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
                     </div>
-                </div>
+                    <div class="md:col-span-2">
+                        <select name="min_teachers"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Min. Guru</option>
+                            <option value="1" {{ request('min_teachers') == '1' ? 'selected' : '' }}>≥ 1</option>
+                            <option value="2" {{ request('min_teachers') == '2' ? 'selected' : '' }}>≥ 2</option>
+                            <option value="3" {{ request('min_teachers') == '3' ? 'selected' : '' }}>≥ 3</option>
+                            <option value="5" {{ request('min_teachers') == '5' ? 'selected' : '' }}>≥ 5</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter Max Guru -->
+                    <div class="md:col-span-2">
+                        <select name="max_teachers"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Max. Guru</option>
+                            <option value="1" {{ request('max_teachers') == '1' ? 'selected' : '' }}>≤ 1</option>
+                            <option value="2" {{ request('max_teachers') == '2' ? 'selected' : '' }}>≤ 2</option>
+                            <option value="3" {{ request('max_teachers') == '3' ? 'selected' : '' }}>≤ 3</option>
+                            <option value="5" {{ request('max_teachers') == '5' ? 'selected' : '' }}>≤ 5</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="md:col-span-2">
+                        <select name="sort"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Terbaru</option>
+                            <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Terlama
+                            </option>
+                            <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Nama A-Z
+                            </option>
+                            <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Nama Z-A
+                            </option>
+                            <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Paling Banyak
+                                Guru</option>
+                        </select>
+                    </div>
+
+                    <!-- Per Page -->
+                    <div class="md:col-span-1">
+                        <select name="per_page"
+                            class="block w-full px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
+                            <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="md:col-span-2 flex gap-2">
+                        <button type="submit"
+                            class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center shadow-sm">
+                            <span class="text-sm font-medium">Filter</span>
+                        </button>
+                        <a href="{{ route('subject.index') }}"
+                            class="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors duration-200 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <!-- Table -->
@@ -269,10 +273,12 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 No
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
                                 onclick="sortColumn('name')">
                                 <div class="flex items-center">
                                     Nama Mata Pelajaran
@@ -291,7 +297,8 @@
                                     @endif
                                 </div>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
                                 onclick="sortColumn('teachers_count')">
                                 <div class="flex items-center">
                                     Jumlah Guru
@@ -304,7 +311,8 @@
                                     @endif
                                 </div>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
                                 onclick="sortColumn('created_at')">
                                 <div class="flex items-center">
                                     Dibuat
@@ -323,7 +331,8 @@
                                     @endif
                                 </div>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Aksi
                             </th>
                         </tr>
@@ -344,13 +353,6 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div
-                                            class="w-10 h-10 rounded-lg flex items-center justify-center mr-3
-                        {{ $isPopular ? 'bg-blue-100' : 'bg-slate-100' }}">
-                                            <span class="font-bold {{ $isPopular ? 'text-blue-600' : 'text-slate-600' }}">
-                                                {{ substr($subject->name_subject, 0, 1) }}
-                                            </span>
-                                        </div>
                                         <div>
                                             <div class="text-sm font-medium text-slate-900">{{ $subject->name_subject }}
                                             </div>
@@ -378,17 +380,6 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <div class="flex items-center space-x-2">
-                                        <button type="button" onclick="quickView({{ $subject->id }})"
-                                            class="inline-flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 tooltip"
-                                            title="Lihat Detail">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
                                         <button type="button" onclick="openEditModal({{ $subject->id }})"
                                             class="inline-flex items-center px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors duration-200 tooltip"
                                             title="Edit Data">
@@ -433,19 +424,8 @@
             @endif
 
             <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="text-sm text-slate-600">
-                        Menampilkan {{ $subjects->firstItem() ?? 0 }} - {{ $subjects->lastItem() ?? 0 }} dari
-                        {{ $subjects->total() }} mata pelajaran
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="text-sm text-slate-600">
-                            Halaman {{ $subjects->currentPage() }} dari {{ $subjects->lastPage() }}
-                        </div>
-                        <div>
-                            {{ $subjects->withQueryString()->links('vendor.pagination.tailwind') }}
-                        </div>
-                    </div>
+                <div>
+                    {{ $subjects->withQueryString()->links('vendor.pagination.tailwind') }}
                 </div>
             </div>
         </div>
@@ -773,7 +753,7 @@
 
         async function openEditModal(id) {
             try {
-                const response = await fetch(`/subject/${id}/edit`);
+                const response = await fetch(`/admin/subject/${id}/edit`);
                 if (!response.ok) throw new Error('Failed to fetch subject data');
 
                 const subject = await response.json();
@@ -781,7 +761,7 @@
                 // Populate edit modal with data
                 document.getElementById('editNameSubject').value = subject.name_subject || '';
                 document.getElementById('editDescription').value = subject.description || '';
-                document.getElementById('editForm').action = `/subject/${id}`;
+                document.getElementById('editForm').action = `/admin/subject/${id}`;
                 document.getElementById('editNameError').classList.add('hidden');
 
                 document.getElementById('editModal').classList.remove('hidden');
@@ -799,7 +779,7 @@
 
         function openDeleteModal(id, name) {
             document.getElementById('deleteSubjectName').textContent = `Hapus "${name}"?`;
-            document.getElementById('deleteForm').action = `/subject/${id}`;
+            document.getElementById('deleteForm').action = `/admin/subject/${id}`;
             document.getElementById('deleteModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
@@ -825,7 +805,7 @@
 
         async function quickView(id) {
             try {
-                const response = await fetch(`/subject/${id}/detail`);
+                const response = await fetch(`/admin/subject/${id}/detail`);
                 if (!response.ok) throw new Error('Failed to fetch subject details');
 
                 const data = await response.json();
@@ -860,11 +840,11 @@
                         </div>
 
                         ${data.description ? `
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
-                                    <p class="text-sm text-slate-900">${data.description}</p>
-                                </div>
-                                ` : ''}
+                                                            <div>
+                                                                <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
+                                                                <p class="text-sm text-slate-900">${data.description}</p>
+                                                            </div>
+                                                            ` : ''}
 
                         <div class="pt-4 border-t border-slate-200">
                             <div class="flex space-x-2">

@@ -358,7 +358,7 @@
                         @php
                             $status = $quiz->display_status ?? 'available';
 
-                            // Determine status class and text
+                            // Default values
                             $statusClass = 'status-available';
                             $statusText = 'Tersedia';
                             $buttonClass = 'bg-blue-600 hover:bg-blue-700';
@@ -367,16 +367,22 @@
                             $disabled = false;
                             $icon = 'fa-eye';
 
-                            // Jika room terbuka tapi belum dimulai
-                            if ($quiz->is_room_open && !$quiz->is_quiz_started) {
-                                $statusClass = 'status-waiting';
-                                $statusText = 'Ruangan Terbuka';
-                                $buttonClass = 'bg-blue-600 hover:bg-blue-700';
-                                $buttonText = 'Masuk Ruangan';
-                                $buttonLink = route('quiz.room', $quiz->id);
-                                $icon = 'fa-door-open';
+                            // Jika sudah selesai (completed) → Lihat Hasil
+                            if ($status === 'completed') {
+                                $statusClass = 'status-completed';
+                                $statusText = 'Selesai';
+                                $buttonClass = 'bg-green-600 hover:bg-green-700';
+                                $buttonText = 'Lihat Hasil';
+                                $buttonLink =
+                                    $quiz->last_attempt && $quiz->last_attempt->id
+                                        ? route('quiz.result', [
+                                            'quiz' => $quiz->id,
+                                            'attempt' => $quiz->last_attempt->id,
+                                        ])
+                                        : route('quiz.index');
+                                $icon = 'fa-check-circle';
                             }
-                            // Jika quiz sedang berlangsung
+                            // Jika quiz sedang berlangsung (room terbuka & sudah dimulai)
                             elseif ($quiz->is_room_open && $quiz->is_quiz_started) {
                                 $statusClass = 'status-ongoing';
                                 $statusText = 'Sedang Berlangsung';
@@ -385,19 +391,16 @@
                                 $buttonLink = route('quiz.room', $quiz->id);
                                 $icon = 'fa-play-circle';
                             }
-                            // Jika sudah selesai
-                            elseif ($status === 'completed') {
-                                $statusClass = 'status-completed';
-                                $statusText = 'Selesai';
-                                $buttonClass = 'bg-green-600 hover:bg-green-700';
-                                $buttonText = 'Lihat Hasil';
-                                $buttonLink = route('quiz.result', [
-                                    'quiz' => $quiz->id,
-                                    'attempt' => $quiz->last_attempt->id ?? 0,
-                                ]);
-                                $icon = 'fa-check-circle';
+                            // Jika ruangan terbuka tapi belum dimulai
+                            elseif ($quiz->is_room_open && !$quiz->is_quiz_started) {
+                                $statusClass = 'status-waiting';
+                                $statusText = 'Ruangan Terbuka';
+                                $buttonClass = 'bg-blue-600 hover:bg-blue-700';
+                                $buttonText = 'Masuk Ruangan';
+                                $buttonLink = route('quiz.room', $quiz->id);
+                                $icon = 'fa-door-open';
                             }
-                            // Jika belum dimulai
+                            // Jika belum dimulai (upcoming)
                             elseif ($status === 'upcoming') {
                                 $statusClass = 'status-upcoming';
                                 $statusText = 'Akan Datang';
@@ -406,7 +409,7 @@
                                 $disabled = true;
                                 $icon = 'fa-clock';
                             }
-                            // Jika sudah selesai (time finished)
+                            // Jika sudah selesai karena waktu habis (finished)
                             elseif ($status === 'finished') {
                                 $statusClass = 'status-completed';
                                 $statusText = 'Selesai';
@@ -416,7 +419,7 @@
                                 $icon = 'fa-calendar-times';
                             }
                         @endphp
-                        
+
                         <div class="card-quiz bg-white shadow-md">
                             <!-- Quiz Header with Gradient Background -->
                             <div class="quiz-header-gradient p-6 relative">

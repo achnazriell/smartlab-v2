@@ -18,9 +18,18 @@
                 <div class="max-w-2xl">
                     <h1 class="text-3xl lg:text-4xl font-semibold mb-4 font-display tracking-tight">
                         Selamat datang kembali,
-                        @if (optional(Auth::user()->teacher)->sapaan)
-                            {{ Auth::user()->teacher->sapaan }}
-                        @endif
+                        @php
+                            $nip = $teacher->nip ?? '';
+                            $sapaan = 'Guru';
+                            if ($nip) {
+                                // Logika sederhana: jika digit terakhir genap => Bu, ganjil => Pak
+                                $lastDigit = substr($nip, -1);
+                                if (is_numeric($lastDigit)) {
+                                    $sapaan = $lastDigit % 2 == 0 ? 'Bu' : 'Pak';
+                                }
+                            }
+                        @endphp
+                        {{ $sapaan }}
                         {{ $namaDepan }}! 👋
                     </h1>
                 </div>

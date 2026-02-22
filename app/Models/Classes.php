@@ -10,87 +10,104 @@ class Classes extends Model
     protected $guarded = ['id'];
 
     /**
-     * ========================
-     * RELASI GURU
-     * ========================
+     * Relasi ke department (jurusan)
      */
-
-    // pivot utama guru-kelas
-    public function teacherClasses()
+    public function department()
     {
-        return $this->hasMany(TeacherClass::class, 'classes_id');
+        return $this->belongsTo(Department::class);
     }
 
-    // akses Teacher langsung
-    public function teachers()
+    /**
+     * Relasi ke penempatan guru mengajar (teacher_subject_assignments)
+     */
+    public function teacherAssignments()
+    {
+        return $this->hasMany(TeacherSubjectAssignment::class, 'class_id');
+    }
+
+    /**
+     * Relasi ke penempatan siswa (student_class_assignments)
+     */
+    public function studentAssignments()
+    {
+        return $this->hasMany(StudentClassAssignment::class, 'class_id');
+    }
+
+    /**
+     * Mendapatkan siswa yang saat ini berada di kelas ini (tahun ajaran aktif)
+     */
+    public function currentStudents()
+    {
+        return $this->belongsToMany(
+            Student::class,
+            'student_class_assignments',
+            'class_id',
+            'student_id'
+        )->wherePivot('academic_year_id', function ($query) {
+            $query->select('id')
+                  ->from('academic_years')
+                  ->where('is_active', true)
+                  ->limit(1);
+        })->withTimestamps();
+    }
+
+    /**
+     * Mendapatkan guru yang mengajar di kelas ini (tahun ajaran aktif)
+     */
+    public function currentTeachers()
     {
         return $this->belongsToMany(
             Teacher::class,
-            'teacher_classes',
-            'classes_id',
+            'teacher_subject_assignments',
+            'class_id',
             'teacher_id'
-        );
+        )->wherePivot('academic_year_id', function ($query) {
+            $query->select('id')
+                  ->from('academic_years')
+                  ->where('is_active', true)
+                  ->limit(1);
+        })->withPivot('subject_id')->withTimestamps();
     }
 
-    // AKSES USER GURU (UNTUK VIEW LAMA)
-    public function users()
+    /**
+     * Mendapatkan mata pelajaran yang diajarkan di kelas ini (tahun ajaran aktif)
+     */
+    public function subjectsTaught()
     {
         return $this->belongsToMany(
-            User::class,
-            'teacher_classes',
-            'classes_id',
-            'teacher_id'
-        );
-    }
-
-    /**
-     * ========================
-     * RELASI SISWA
-     * ========================
-     */
-
-    // siswa dari tabel students
-    public function studentList()
-    {
-        return $this->hasMany(Student::class, 'class_id');
-    }
-
-    // AKSES USER SISWA (jika diperlukan)
-    public function students()
-    {
-        return $this->hasManyThrough(
-            User::class,
-            Student::class,
+            Subject::class,
+            'teacher_subject_assignments',
             'class_id',
-            'id',
-            'id',
-            'user_id'
-        );
+            'subject_id'
+        )->wherePivot('academic_year_id', function ($query) {
+            $query->select('id')
+                  ->from('academic_years')
+                  ->where('is_active', true)
+                  ->limit(1);
+        })->withPivot('teacher_id')->withTimestamps();
     }
 
     /**
-     * ========================
-     * RELASI PEMBELAJARAN
-     * ========================
+     * Relasi ke tugas (jika tugas memiliki class_id langsung)
      */
-
     public function tasks()
     {
         return $this->hasMany(Task::class, 'class_id');
     }
 
+    /**
+     * Relasi ke materi (jika materi memiliki class_id langsung)
+     */
     public function materis()
     {
-        return $this->belongsToMany(
-            Materi::class,
-            'materi_classes',
-            'class_id',
-            'materi_id'
-        );
+        return $this->hasMany(Materi::class, 'class_id');
     }
 
-    public function subjects()
+    /**
+     * Relasi many-to-many ke materi melalui tabel pivot (jika ada)
+     */
+    public function materisViaPivot()
     {
-        return $this->belongsTo(Subject::class, 'subject_id');
+        return $this->belongsToMany(Materi::class, 'materi_classes', 'class_id', 'materi_id');
     }
 }

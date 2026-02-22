@@ -32,12 +32,12 @@ class SubjectController extends Controller
         $maxTeachers = $request->input('max_teachers');
         $status = $request->input('status');
 
-        // Query utama dengan count teachers - PERBAIKAN DI SINI
+        // Query utama dengan count teachers dari teacher_subject_assignments
         $query = Subject::query()
             ->select('subjects.*')
-            ->leftJoin('teacher_subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->leftJoin('teacher_subject_assignments', 'subjects.id', '=', 'teacher_subject_assignments.subject_id')
             ->groupBy('subjects.id', 'subjects.name_subject', 'subjects.created_at', 'subjects.updated_at')
-            ->selectRaw('COUNT(DISTINCT teacher_subjects.teacher_id) as teachers_count');
+            ->selectRaw('COUNT(DISTINCT teacher_subject_assignments.teacher_id) as teachers_count');
 
         // Apply search filter
         if ($search) {
@@ -59,10 +59,10 @@ class SubjectController extends Controller
 
         // Apply teacher count filters
         if ($minTeachers) {
-            $query->havingRaw('COUNT(DISTINCT teacher_subjects.teacher_id) >= ?', [$minTeachers]);
+            $query->havingRaw('COUNT(DISTINCT teacher_subject_assignments.teacher_id) >= ?', [$minTeachers]);
         }
         if ($maxTeachers) {
-            $query->havingRaw('COUNT(DISTINCT teacher_subjects.teacher_id) <= ?', [$maxTeachers]);
+            $query->havingRaw('COUNT(DISTINCT teacher_subject_assignments.teacher_id) <= ?', [$maxTeachers]);
         }
 
         // Apply sorting
@@ -85,13 +85,10 @@ class SubjectController extends Controller
         $totalSubjects = Subject::count();
         $totalClasses = Classes::count();
 
-        // Hitung total guru yang mengajar semua mapel
-        $totalTeachers = 0;
-        if (Schema::hasTable('teacher_subjects')) {
-            $totalTeachers = DB::table('teacher_subjects')
-                ->distinct('teacher_id')
-                ->count('teacher_id');
-        }
+        // Hitung total guru yang mengajar semua mapel (distinct)
+        $totalTeachers = DB::table('teacher_subject_assignments')
+            ->distinct('teacher_id')
+            ->count('teacher_id');
 
         $avgTeachersPerSubject = $totalSubjects > 0 ? round($totalTeachers / $totalSubjects, 1) : 0;
 
@@ -99,8 +96,8 @@ class SubjectController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Hitung mata pelajaran populer (dengan 3 atau lebih guru)
-        $popularSubjects = Subject::whereHas('teachers', function ($query) {
+        // Hitung mata pelajaran populer (dengan 3 atau lebih guru) berdasarkan assignments
+        $popularSubjects = Subject::whereHas('teacherAssignments', function ($query) {
             $query->select('teacher_id')
                 ->groupBy('teacher_id')
                 ->havingRaw('COUNT(DISTINCT teacher_id) >= 3');
@@ -117,6 +114,7 @@ class SubjectController extends Controller
             'totalTeachers'
         ));
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -185,8 +183,8 @@ class SubjectController extends Controller
     {
         $subject = Subject::findOrFail($id);
 
-        // Hitung jumlah guru
-        $teachersCount = DB::table('teacher_subjects')
+        // Hitung jumlah guru dari assignments
+        $teachersCount = DB::table('teacher_subject_assignments')
             ->where('subject_id', $id)
             ->distinct('teacher_id')
             ->count('teacher_id');
@@ -352,9 +350,9 @@ class SubjectController extends Controller
 
         $query = Subject::query()
             ->select('subjects.*')
-            ->leftJoin('teacher_subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->leftJoin('teacher_subject_assignments', 'subjects.id', '=', 'teacher_subject_assignments.subject_id')
             ->groupBy('subjects.id', 'subjects.name_subject', 'subjects.created_at', 'subjects.updated_at')
-            ->selectRaw('COUNT(DISTINCT teacher_subjects.teacher_id) as teachers_count');
+            ->selectRaw('COUNT(DISTINCT teacher_subject_assignments.teacher_id) as teachers_count');
 
         if ($search) {
             $query->where('subjects.name_subject', 'like', '%' . $search . '%');
@@ -373,6 +371,8 @@ class SubjectController extends Controller
 
         $callback = function () use ($subjects) {
             $file = fopen('php://output', 'w');
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
             fputcsv($file, ['No', 'Nama Mata Pelajaran', 'Jumlah Guru', 'Dibuat', 'Diperbarui', 'Status']);
 
             foreach ($subjects as $index => $subject) {
@@ -454,16 +454,17 @@ class SubjectController extends Controller
     {
         $subject = Subject::findOrFail($id);
 
-        $teachers = DB::table('teacher_subjects')
-            ->join('teachers', 'teacher_subjects.teacher_id', '=', 'teachers.id')
+        $teachers = DB::table('teacher_subject_assignments')
+            ->join('teachers', 'teacher_subject_assignments.teacher_id', '=', 'teachers.id')
             ->leftJoin('users', 'teachers.user_id', '=', 'users.id')
-            ->where('teacher_subjects.subject_id', $id)
+            ->where('teacher_subject_assignments.subject_id', $id)
             ->select(
                 'teachers.id',
                 'users.name as name',
                 'users.email as email',
                 'users.phone as phone'
             )
+            ->distinct()
             ->get();
 
         $teachersCount = $teachers->count();
