@@ -9,6 +9,19 @@ class ExamQuestion extends Model
 {
     use HasFactory;
 
+    /**
+     * Tipe soal yang didukung:
+     * PG  = Pilihan Ganda (1 jawaban benar)
+     * PGK = Pilihan Ganda Kompleks (beberapa jawaban benar)
+     * BS  = Benar/Salah
+     * DD  = Dropdown (1 jawaban benar, tampilan dropdown)
+     * IS  = Isian Singkat
+     * ES  = Esai (dinilai manual)
+     * SK  = Skala Linear
+     * MJ  = Menjodohkan (matching)
+     */
+    public const VALID_TYPES = ['PG', 'PGK', 'BS', 'DD', 'IS', 'ES', 'SK', 'MJ'];
+
     protected $fillable = [
         'exam_id',
         'type',
@@ -23,94 +36,32 @@ class ExamQuestion extends Model
         'enable_mark_review',
         'randomize_choices',
         'require_all_options',
-        'order', // TAMBAHKAN INI
-        'image_path', // TAMBAHKAN JIKA ADA
-
+        'order',
+        'image_path',
     ];
 
     protected $casts = [
-        'short_answers' => 'array',
-        'score' => 'integer',
+        'score'              => 'integer',
+        'enable_timer'       => 'boolean',
+        'enable_skip'        => 'boolean',
+        'show_explanation'   => 'boolean',
+        'enable_mark_review' => 'boolean',
+        'randomize_choices'  => 'boolean',
+        'require_all_options'=> 'boolean',
+        'order'              => 'integer',
+        // short_answers TIDAK di-cast 'array' di sini karena kita handle lewat accessor/mutator
     ];
 
-    public function getQuestionSettingsForStudent()
-    {
-        return [
-            'enable_timer' => $this->enable_timer ?? false,
-            'time_limit' => $this->time_limit,
-            'enable_skip' => $this->enable_skip ?? true,
-            'show_explanation' => $this->show_explanation ?? false,
-            'enable_mark_review' => $this->enable_mark_review ?? true,
-            'randomize_choices' => $this->randomize_choices ?? false,
-            'require_all_options' => $this->require_all_options ?? false,
-        ];
-    }
-
-    public function shouldRandomizeChoices()
-    {
-        return $this->randomize_choices ?? false;
-    }
-
-    public function canSkip()
-    {
-        return $this->enable_skip ?? true;
-    }
-
-    public function showExplanation()
-    {
-        return $this->show_explanation ?? false;
-    }
+    /* ===================== RELATIONSHIPS ===================== */
 
     public function exam()
     {
         return $this->belongsTo(Exam::class);
     }
 
-    // PERBAIKAN: Tentukan foreign key secara eksplisit
     public function choices()
     {
-        return $this->hasMany(ExamChoice::class, 'question_id'); // Tambahkan parameter kedua
-    }
-
-    // Accessor untuk mendapatkan jawaban benar
-    public function getCorrectAnswerAttribute()
-    {
-        if ($this->type === 'PG') {
-            $correct = $this->choices()->where('is_correct', true)->first();
-            return $correct ? [
-                'label' => $correct->label,
-                'text' => $correct->text,
-                'index' => $this->choices->search(function ($item) use ($correct) {
-                    return $item->id === $correct->id;
-                })
-            ] : null;
-        } elseif ($this->type === 'IS') {
-            return $this->short_answers ?? [];
-        }
-        return null;
-    }
-
-    // PERBAIKAN: Tambahkan parameter untuk orderBy
-    public function getChoicesAttribute()
-    {
-        return $this->choices()->orderBy('order')->get();
-    }
-
-    public function getShortAnswersAttribute($value)
-    {
-        if (is_string($value)) {
-            return json_decode($value, true) ?? [];
-        }
-        return $value ?? [];
-    }
-
-    public function setShortAnswersAttribute($value)
-    {
-        if (is_array($value)) {
-            $this->attributes['short_answers'] = json_encode($value);
-        } else {
-            $this->attributes['short_answers'] = $value;
-        }
+        return $this->hasMany(ExamChoice::class, 'question_id')->orderBy('order');
     }
 
     public function answers()
@@ -118,63 +69,113 @@ class ExamQuestion extends Model
         return $this->hasMany(ExamAnswer::class, 'question_id');
     }
 
-    public function getRandomShortAnswers($count = 3)
+    /* ===================== ACCESSORS / MUTATORS ===================== */
+
+    /**
+     * Selalu kembalikan array dari short_answers,
+     * baik disimpan sebagai JSON string maupun sudah array.
+     */
+    public function getShortAnswersAttribute($value)
     {
-        if ($this->type !== 'IS' || empty($this->short_answers)) {
+        if (is_null($value)) {
             return [];
         }
-
-        $answers = $this->short_answers;
-        $randomAnswers = [];
-
-        if (count($answers) <= $count) {
-            return $answers;
+        if (is_array($value)) {
+            return $value;
         }
-
-        $randomKeys = array_rand($answers, $count);
-        if (!is_array($randomKeys)) {
-            $randomKeys = [$randomKeys];
-        }
-
-        foreach ($randomKeys as $key) {
-            $randomAnswers[] = $answers[$key];
-        }
-
-        return $randomAnswers;
+        return json_decode($value, true) ?? [];
     }
 
-    // Accessor untuk question_text (jika diperlukan)
+    /**
+     * Simpan short_answers sebagai JSON string.
+     */
+    public function setShortAnswersAttribute($value)
+    {
+        if (is_null($value)) {
+            $this->attributes['short_answers'] = null;
+        } elseif (is_array($value)) {
+            $this->attributes['short_answers'] = json_encode($value);
+        } else {
+            // Sudah JSON string
+            $this->attributes['short_answers'] = $value;
+        }
+    }
+
+    /* ===================== COMPUTED ATTRIBUTES ===================== */
+
+    /**
+     * Jawaban benar berdasarkan tipe soal.
+     */
+    public function getCorrectAnswerAttribute()
+    {
+        switch ($this->type) {
+            case 'PG':
+            case 'DD':
+                $correct = $this->choices()->where('is_correct', true)->first();
+                return $correct ? [
+                    'label' => $correct->label,
+                    'text'  => $correct->text,
+                    'index' => $correct->order,
+                ] : null;
+
+            case 'PGK':
+                return $this->choices()->where('is_correct', true)->get()->map(fn($c) => [
+                    'label' => $c->label,
+                    'text'  => $c->text,
+                    'index' => $c->order,
+                ])->toArray();
+
+            case 'BS':
+            case 'IS':
+            case 'ES':
+            case 'SK':
+            case 'MJ':
+                return $this->short_answers;
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Alias untuk field question.
+     */
     public function getQuestionTextAttribute()
     {
-        return $this->question; // 'question' adalah kolom di database
+        return $this->question;
     }
 
-    // Accessor untuk options
-    public function getOptionsAttribute()
+    /* ===================== HELPERS ===================== */
+
+    public function isMultipleChoice(): bool
     {
-        if ($this->type === 'PG') {
-            return $this->choices->mapWithKeys(function ($choice) {
-                return [$choice->id => $choice->text];
-            })->toArray();
-        }
-
-        return [];
+        return in_array($this->type, ['PG', 'PGK', 'DD']);
     }
 
+    public function isShortAnswer(): bool
+    {
+        return $this->type === 'IS';
+    }
+
+    public function isEssay(): bool
+    {
+        return $this->type === 'ES';
+    }
+
+    public function isTrueFalse(): bool
+    {
+        return $this->type === 'BS';
+    }
+
+    /* ===================== BOOT ===================== */
+
+    /**
+     * CATATAN: Boot event validasi IS dihapus karena menyebabkan
+     * masalah saat saving secara bertahap. Validasi sudah dilakukan
+     * di QuestionController sebelum menyimpan.
+     */
     protected static function booted()
     {
-        static::saving(function ($question) {
-            // Validasi short_answers untuk tipe IS
-            if ($question->type === 'IS') {
-                if (empty($question->short_answers)) {
-                    throw new \Exception('Jawaban singkat tidak boleh kosong untuk soal isian');
-                }
-
-                // Pastikan short_answers adalah array JSON yang valid
-                if (is_array($question->short_answers)) {
-                    $question->short_answers = json_encode(array_values($question->short_answers));
-                }
-            }
-        });
+        // Tidak ada validasi ketat di sini agar controller lebih fleksibel.
     }
 }

@@ -10,7 +10,7 @@ COMPOSER_VERSION = "2"
 
 [deploy]
 # RESET DATABASE + JALANKAN SEEDER
-preDeployCommand = "php artisan config:cache && php artisan migrate --seed --force"
+preDeployCommand = "php artisan config:cache && php artisan migrate:fresh --seed --force"
 
 [[services]]
 type = "web"

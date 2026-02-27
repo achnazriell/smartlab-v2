@@ -175,12 +175,6 @@
                                     {{ $attempt->answers->where('is_correct', true)->count() }}
                                 </p>
                             </div>
-                            <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
                         </div>
                     </div>
 
@@ -193,12 +187,6 @@
                                     {{ $attempt->answers->where('is_correct', false)->count() }}
                                 </p>
                             </div>
-                            <div class="bg-slate-200 text-slate-700 p-3 rounded-full">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
                         </div>
                     </div>
 
@@ -210,12 +198,6 @@
                                 <p class="text-3xl font-bold text-blue-900 mt-2">
                                     {{ $attempt->score ?? 0 }}/{{ $exam->questions->sum('score') }}
                                 </p>
-                            </div>
-                            <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
                             </div>
                         </div>
                     </div>
@@ -232,12 +214,6 @@
                                     @endphp
                                     {{ $minutes }}:{{ str_pad($seconds, 2, '0', STR_PAD_LEFT) }}
                                 </p>
-                            </div>
-                            <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
                             </div>
                         </div>
                     </div>
@@ -345,8 +321,12 @@
                                     </span>
                                     <div>
                                         <span class="font-semibold text-slate-900">Soal #{{ $index + 1 }}</span>
-                                        <span class="ml-3 px-2 py-1 bg-gray-200 text-gray-700 text-xs font-medium rounded">
-                                            {{ $question->type === 'PG' ? 'Pilihan Ganda' : 'Isian Singkat' }}
+                                        @php
+                                            $typeNames = ['PG'=>'Pilihan Ganda','PGK'=>'PG Kompleks','BS'=>'Benar/Salah','DD'=>'Dropdown','IS'=>'Isian Singkat','ES'=>'Esai','SK'=>'Skala Linear','MJ'=>'Menjodohkan'];
+                                            $typeColors = ['PG'=>'bg-blue-100 text-blue-700','PGK'=>'bg-indigo-100 text-indigo-700','BS'=>'bg-purple-100 text-purple-700','DD'=>'bg-cyan-100 text-cyan-700','IS'=>'bg-amber-100 text-amber-700','ES'=>'bg-rose-100 text-rose-700','SK'=>'bg-teal-100 text-teal-700','MJ'=>'bg-orange-100 text-orange-700'];
+                                        @endphp
+                                        <span class="ml-3 px-2 py-1 text-xs font-semibold rounded {{ $typeColors[$question->type] ?? 'bg-gray-100 text-gray-700' }}">
+                                            {{ $typeNames[$question->type] ?? $question->type }}
                                         </span>
                                     </div>
                                 </div>
@@ -374,121 +354,189 @@
                                 </div>
                             </div>
 
-                            <!-- Answers Display -->
-                            @if ($question->type === 'PG')
+                            <!-- Answers Display - All 8 types -->
+                            @php
+                                $sa = $question->short_answers ?? [];
+                            @endphp
+
+                            @if (in_array($question->type, ['PG', 'DD', 'PGK']))
+                                {{-- ── Pilihan Ganda / Dropdown / PGK ── --}}
                                 @if($exam->show_correct_answer)
-                                    <!-- SHOW ALL CHOICES WITH INDICATORS -->
                                     <div class="mb-4">
-                                        <p class="text-slate-800 font-medium mb-2">Pilihan Jawaban:</p>
+                                        <p class="text-slate-700 font-semibold text-sm mb-2">Pilihan Jawaban:</p>
                                         <div class="space-y-2">
                                             @foreach ($question->choices->sortBy('order') as $choice)
-                                                <div class="flex flex-col sm:flex-row sm:items-start gap-3 p-3 rounded-lg border
-                                                    {{ $answer->choice_id == $choice->id
+                                                @php
+                                                    $isSelected = ($question->type === 'PGK')
+                                                        ? in_array($choice->label, explode(',', $answer->answer_text ?? ''))
+                                                        : ($answer->choice_id == $choice->id);
+                                                @endphp
+                                                <div class="flex items-start gap-3 p-3 rounded-lg border transition-colors
+                                                    {{ $isSelected
                                                         ? ($isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50')
-                                                        : ($choice->is_correct ? 'border-green-300 bg-green-50/50' : 'border-gray-200') }}">
-
-                                                    <div class="flex items-center gap-3">
-                                                        <span class="flex items-center justify-center w-8 h-8 rounded-full
-                                                            {{ $choice->is_correct ? 'bg-green-100 text-green-800 font-bold' : 'bg-gray-100 text-gray-800' }}
-                                                            {{ $answer->choice_id == $choice->id ? ($isCorrect ? 'ring-2 ring-green-500' : 'ring-2 ring-red-500') : '' }}">
-                                                            {{ $choice->label }}
-                                                        </span>
-
-                                                        <div class="flex-1">
-                                                            <p class="{{ $answer->choice_id == $choice->id ? 'font-medium' : '' }}">
-                                                                {{ $choice->text }}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Indicators -->
-                                                    <div class="flex items-center gap-2 mt-2 sm:mt-0">
-                                                        @if ($answer->choice_id == $choice->id)
-                                                            <div class="flex items-center gap-2">
-                                                                @if ($isCorrect)
-                                                                    <span class="text-green-600 font-medium text-sm">
-                                                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                        </svg>
-                                                                        Jawaban Anda (Benar)
-                                                                    </span>
-                                                                @else
-                                                                    <span class="text-red-600 font-medium text-sm">
-                                                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                                d="M6 18L18 6M6 6l12 12" />
-                                                                        </svg>
-                                                                        Jawaban Anda (Salah)
-                                                                    </span>
-                                                                @endif
-                                                            </div>
-                                                        @elseif ($choice->is_correct)
-                                                            <div class="flex items-center gap-2 text-green-600">
-                                                                <span class="font-medium text-sm">
-                                                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                    </svg>
-                                                                    Jawaban Benar
+                                                        : ($choice->is_correct ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200 bg-white') }}">
+                                                    <span class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold
+                                                        {{ $choice->is_correct ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}
+                                                        {{ $isSelected ? ($isCorrect ? 'ring-2 ring-green-400' : 'ring-2 ring-red-400') : '' }}">
+                                                        {{ $choice->label }}
+                                                    </span>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm {{ $isSelected ? 'font-semibold' : '' }} text-slate-800">{{ $choice->text }}</p>
+                                                        <div class="flex flex-wrap gap-1 mt-1">
+                                                            @if($isSelected)
+                                                                <span class="text-xs font-medium {{ $isCorrect ? 'text-green-700' : 'text-red-700' }}">
+                                                                    {{ $isCorrect ? '✓ Jawaban Anda (Benar)' : '✗ Jawaban Anda (Salah)' }}
                                                                 </span>
-                                                            </div>
-                                                        @endif
+                                                            @endif
+                                                            @if($choice->is_correct && !$isSelected)
+                                                                <span class="text-xs font-medium text-emerald-700">✓ Jawaban Benar</span>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 </div>
                                             @endforeach
                                         </div>
                                     </div>
                                 @else
-                                    <!-- ONLY SHOW SELECTED ANSWER -->
                                     <div class="mb-4">
-                                        <p class="text-slate-800 font-medium mb-2">Jawaban Anda:</p>
-                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                            @if($answer->choice)
-                                                <span class="font-bold">{{ $answer->choice->label }}.</span>
-                                                {{ $answer->choice->text }}
+                                        <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                                            @if($question->type === 'PGK')
+                                                {{ $answer->answer_text ?? '(tidak dijawab)' }}
+                                            @elseif($answer->choice)
+                                                <span class="font-bold">{{ $answer->choice->label }}.</span> {{ $answer->choice->text }}
                                             @else
-                                                <span class="text-gray-500 italic">
-                                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                                    </svg>
-                                                    Tidak dijawab
-                                                </span>
+                                                <span class="text-gray-400 italic">Tidak dijawab</span>
                                             @endif
                                         </div>
                                     </div>
                                 @endif
 
-                            @else
-                                <!-- Isian Singkat (IS) -->
+                            @elseif($question->type === 'BS')
+                                {{-- ── Benar / Salah ── --}}
+                                <div class="mb-4 flex gap-3 flex-wrap">
+                                    <div class="flex-1 min-w-40">
+                                        <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                        <div class="px-4 py-3 rounded-lg border-2 text-sm font-semibold text-center
+                                            {{ ($answer->answer_text === 'benar') ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-red-400 bg-red-50 text-red-800' }}">
+                                            {{ ucfirst($answer->answer_text ?? '(tidak dijawab)') }}
+                                        </div>
+                                    </div>
+                                    @if($exam->show_correct_answer)
+                                        <div class="flex-1 min-w-40">
+                                            <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Benar:</p>
+                                            <div class="px-4 py-3 rounded-lg border-2 border-emerald-400 bg-emerald-50 text-emerald-800 text-sm font-semibold text-center">
+                                                {{ ucfirst(is_array($sa) ? ($sa[0] ?? '-') : (string)$sa) }}
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+
+                            @elseif($question->type === 'IS')
+                                {{-- ── Isian Singkat ── --}}
                                 <div class="mb-4">
-                                    <p class="text-slate-800 font-medium mb-2">Jawaban Anda:</p>
-                                    <div class="bg-white border border-slate-200 rounded-lg p-4">
-                                        {{ $answer->answer_text ?? '-' }}
+                                    <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                    <div class="px-4 py-3 bg-white border-2 {{ $isCorrect ? 'border-emerald-400' : 'border-gray-200' }} rounded-lg text-sm">
+                                        {{ $answer->answer_text ?? '(tidak dijawab)' }}
+                                    </div>
+                                </div>
+                                @if($exam->show_correct_answer)
+                                    <div class="mb-4">
+                                        <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban yang diterima:</p>
+                                        <div class="flex flex-wrap gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                            @php
+                                                $accepted = $sa['answers'] ?? (is_array($sa) ? $sa : []);
+                                            @endphp
+                                            @foreach($accepted as $acc)
+                                                <span class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-medium">{{ $acc }}</span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
+                            @elseif($question->type === 'ES')
+                                {{-- ── Esai ── --}}
+                                <div class="mb-4">
+                                    <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                    <div class="px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm whitespace-pre-wrap leading-relaxed min-h-16">
+                                        {{ $answer->answer_text ?: '(tidak dijawab)' }}
+                                    </div>
+                                    @if($answer->score > 0)
+                                        <p class="text-xs text-emerald-600 font-medium mt-1">Skor diberikan: {{ $answer->score }}</p>
+                                    @endif
+                                </div>
+                                @if($exam->show_correct_answer && !empty($sa['rubric']))
+                                    <div class="mb-4">
+                                        <p class="text-slate-700 font-semibold text-sm mb-2">Rubrik Penilaian:</p>
+                                        <div class="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">{{ $sa['rubric'] }}</div>
+                                    </div>
+                                @endif
+
+                            @elseif($question->type === 'SK')
+                                {{-- ── Skala Linear ── --}}
+                                <div class="mb-4">
+                                    <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                    <div class="flex items-center gap-2 px-4 py-3 bg-teal-50 border border-teal-200 rounded-lg">
+                                        <span class="text-2xl font-bold text-teal-700">{{ $answer->answer_text ?? '-' }}</span>
+                                        <span class="text-sm text-teal-500">dari skala {{ $sa['min'] ?? 1 }}–{{ $sa['max'] ?? 5 }}</span>
+                                        @if($exam->show_correct_answer && isset($sa['correct']))
+                                            <span class="ml-auto text-sm font-medium {{ $isCorrect ? 'text-emerald-700' : 'text-slate-500' }}">
+                                                Jawaban benar: <strong>{{ $sa['correct'] }}</strong>
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
 
-                                @if($exam->show_correct_answer)
-                                    <div class="mb-4">
-                                        <p class="text-slate-800 font-medium mb-2">Jawaban yang Benar:</p>
-                                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                            @if($question->short_answers)
-                                                @php
-                                                    $correctAnswers = is_string($question->short_answers)
-                                                        ? json_decode($question->short_answers, true)
-                                                        : $question->short_answers;
-                                                @endphp
-                                                @if(is_array($correctAnswers))
-                                                    @foreach($correctAnswers as $ans)
-                                                        <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-lg mr-2 mb-2 font-medium">
-                                                            {{ $ans }}
-                                                        </span>
-                                                    @endforeach
-                                                @endif
-                                            @endif
-                                        </div>
+                            @elseif($question->type === 'MJ')
+                                {{-- ── Menjodohkan ── --}}
+                                <div class="mb-4">
+                                    <p class="text-slate-700 font-semibold text-sm mb-2">Pasangan Jawaban Anda:</p>
+                                    @php
+                                        $givenPairs = [];
+                                        try { $givenPairs = json_decode($answer->answer_text ?? '[]', true) ?? []; } catch(\Exception $e) {}
+                                        $correctPairs = $sa;
+                                    @endphp
+                                    <div class="space-y-2">
+                                        @foreach($givenPairs as $gp)
+                                            @php
+                                                $isMatch = false;
+                                                foreach($correctPairs as $cp) {
+                                                    if (strtolower($gp['left']??'') === strtolower($cp['left']??'') && strtolower($gp['right']??'') === strtolower($cp['right']??'')) {
+                                                        $isMatch = true; break;
+                                                    }
+                                                }
+                                            @endphp
+                                            <div class="flex items-center gap-2 px-3 py-2 rounded-lg border {{ $isMatch ? 'border-emerald-400 bg-emerald-50' : 'border-red-300 bg-red-50' }}">
+                                                <span class="text-sm font-medium text-slate-700 flex-1">{{ $gp['left'] ?? '' }}</span>
+                                                <span class="text-slate-400">→</span>
+                                                <span class="text-sm flex-1 {{ $isMatch ? 'text-emerald-700 font-semibold' : 'text-red-700' }}">{{ $gp['right'] ?? '' }}</span>
+                                                <span class="text-xs">{{ $isMatch ? '✓' : '✗' }}</span>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endif
+                                    @if($exam->show_correct_answer)
+                                        <div class="mt-3">
+                                            <p class="text-slate-700 font-semibold text-sm mb-2">Pasangan yang Benar:</p>
+                                            <div class="space-y-1">
+                                                @foreach($correctPairs as $cp)
+                                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-50 border border-emerald-200 text-sm">
+                                                        <span class="font-medium text-slate-700 flex-1">{{ $cp['left'] ?? '' }}</span>
+                                                        <span class="text-slate-400">→</span>
+                                                        <span class="text-emerald-700 font-semibold flex-1">{{ $cp['right'] ?? '' }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+
+                            @else
+                                {{-- ── Fallback ── --}}
+                                <div class="mb-4">
+                                    <p class="text-slate-700 font-semibold text-sm mb-2">Jawaban Anda:</p>
+                                    <div class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                        {{ $answer->answer_text ?? '(tidak dijawab)' }}
+                                    </div>
+                                </div>
                             @endif
 
                             <!-- Explanation -->
@@ -598,18 +646,6 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Print Button -->
-    <div class="fixed bottom-6 right-6">
-        <button onclick="window.print()"
-            class="bg-white text-slate-700 hover:text-slate-900 border-2 border-slate-300
-                       hover:border-slate-400 rounded-full p-3 shadow-lg hover:shadow-xl transition-all">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-        </button>
     </div>
 
     <style>

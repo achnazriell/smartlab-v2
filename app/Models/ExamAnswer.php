@@ -3,16 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use HasFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ExamAnswer extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'exam_id',
         'question_id',
         'student_id',
         'attempt_id',
         'choice_id',
+        'answer',
         'answer_text',
         'score',
         'is_correct',

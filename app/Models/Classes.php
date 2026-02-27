@@ -25,6 +25,11 @@ class Classes extends Model
         return $this->hasMany(TeacherSubjectAssignment::class, 'class_id');
     }
 
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'class_id');
+    }
+
     /**
      * Relasi ke penempatan siswa (student_class_assignments)
      */
@@ -45,9 +50,9 @@ class Classes extends Model
             'student_id'
         )->wherePivot('academic_year_id', function ($query) {
             $query->select('id')
-                  ->from('academic_years')
-                  ->where('is_active', true)
-                  ->limit(1);
+                ->from('academic_years')
+                ->where('is_active', true)
+                ->limit(1);
         })->withTimestamps();
     }
 
@@ -63,9 +68,9 @@ class Classes extends Model
             'teacher_id'
         )->wherePivot('academic_year_id', function ($query) {
             $query->select('id')
-                  ->from('academic_years')
-                  ->where('is_active', true)
-                  ->limit(1);
+                ->from('academic_years')
+                ->where('is_active', true)
+                ->limit(1);
         })->withPivot('subject_id')->withTimestamps();
     }
 
@@ -81,9 +86,9 @@ class Classes extends Model
             'subject_id'
         )->wherePivot('academic_year_id', function ($query) {
             $query->select('id')
-                  ->from('academic_years')
-                  ->where('is_active', true)
-                  ->limit(1);
+                ->from('academic_years')
+                ->where('is_active', true)
+                ->limit(1);
         })->withPivot('teacher_id')->withTimestamps();
     }
 

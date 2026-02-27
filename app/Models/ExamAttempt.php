@@ -11,6 +11,7 @@ class ExamAttempt extends Model
         'student_id',
         'started_at',
         'ended_at',
+        'submitted_at',
         'remaining_time',
         'status',
         'ip_address',
@@ -27,6 +28,7 @@ class ExamAttempt extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
+        'submitted_at' => 'datetime',
 
         'score' => 'decimal:2',
         'final_score' => 'decimal:2',
@@ -91,6 +93,7 @@ class ExamAttempt extends Model
     {
         $this->calculateScore();
         $this->ended_at = now();
+        $this->submitted_at = now();
         $this->status = 'submitted';
         $this->save();
     }
@@ -98,6 +101,7 @@ class ExamAttempt extends Model
     public function timeout()
     {
         $this->ended_at = now();
+        $this->submitted_at = now();
         $this->status = 'timeout';
         $this->calculateScore();
         $this->save();
@@ -224,6 +228,7 @@ class ExamAttempt extends Model
             'is_cheating_detected' => false,
             'remaining_time' => 0,
             'status' => 'in_progress',
+            'submitted_at' => null,
         ];
 
         return static::create(array_merge($defaults, $attributes));

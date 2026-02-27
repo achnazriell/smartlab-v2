@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\ExamChoice;
@@ -12,6 +13,8 @@ use App\Models\ExamAnswer;
 use App\Models\ExamAttempt;
 use App\Models\QuizParticipant;
 use App\Models\QuizSession;
+use App\Models\Student;
+use App\Models\StudentClassAssignment;
 use App\Models\TeacherClass;
 use App\Models\TeacherClassSubject;
 use Illuminate\Support\Facades\Log;
@@ -59,8 +62,11 @@ class QuizController extends Controller
 
         $quizzes = $quizzes->paginate(10);
 
-        $classes = $teacher->classes()->get();
-        $subjects = $teacher->subjects()->get();
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
+
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
+        $subjects = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
 
         return view('guru.quiz.index', compact('quizzes', 'classes', 'subjects'));
     }
@@ -77,14 +83,14 @@ class QuizController extends Controller
             abort(403, 'Anda harus login sebagai guru');
         }
 
-        $teacherId = $teacher->id;
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-        $mapels = Subject::whereIn('id', $subjectIds)->get();
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        $classes = $teacher->classes;
+        // Ambil mapel yang diajar guru di tahun ajaran aktif
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+
+        // Ambil kelas yang diajar guru di tahun ajaran aktif
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
         return view('guru.quiz.create', compact('mapels', 'classes'));
     }
@@ -119,6 +125,7 @@ class QuizController extends Controller
 
             $duration = $request->duration ?? 30;
 
+            // ✅ CREATE QUIZ
             $quiz = Exam::create([
                 'teacher_id' => $teacher->id,
                 'class_id' => $request->class_id,
@@ -128,30 +135,30 @@ class QuizController extends Controller
                 'duration' => $duration,
                 'start_at' => null,
                 'end_at' => null,
-                'difficulty_level' => $request->difficulty_level,
+                'difficulty_level' => $request->difficulty_level ?? 'medium',
                 'time_per_question' => $request->time_per_question,
                 'quiz_mode' => $request->quiz_mode,
                 'status' => 'draft',
 
-                'shuffle_question' => $request->boolean('shuffle_question'),
-                'shuffle_answer' => $request->boolean('shuffle_answer'),
-                'show_score' => $request->boolean('show_score'),
-                'show_correct_answer' => $request->boolean('show_correct_answer'),
-                'fullscreen_mode' => $request->boolean('fullscreen_mode'),
-                'block_new_tab' => $request->boolean('block_new_tab'),
-                'prevent_copy_paste' => $request->boolean('prevent_copy_paste'),
+                'shuffle_question' => $request->boolean('shuffle_question', false),
+                'shuffle_answer' => $request->boolean('shuffle_answer', false),
+                'show_score' => $request->boolean('show_score', true),
+                'show_correct_answer' => $request->boolean('show_correct_answer', false),
+                'fullscreen_mode' => $request->boolean('fullscreen_mode', false),
+                'block_new_tab' => $request->boolean('block_new_tab', false),
+                'prevent_copy_paste' => $request->boolean('prevent_copy_paste', false),
                 'show_result_after' => $request->show_result_after ?? 'immediately',
                 'limit_attempts' => $request->limit_attempts ?? 1,
                 'min_pass_grade' => $request->min_pass_grade ?? 0,
 
-                'show_leaderboard' => $request->boolean('show_leaderboard'),
-                'enable_music' => $request->boolean('enable_music'),
-                'enable_memes' => $request->boolean('enable_memes'),
-                'enable_powerups' => $request->boolean('enable_powerups'),
-                'instant_feedback' => $request->boolean('instant_feedback'),
-                'streak_bonus' => $request->boolean('streak_bonus'),
-                'time_bonus' => $request->boolean('time_bonus'),
-                'enable_retake' => $request->boolean('enable_retake'),
+                'show_leaderboard' => $request->boolean('show_leaderboard', true),
+                'enable_music' => $request->boolean('enable_music', false),
+                'enable_memes' => $request->boolean('enable_memes', false),
+                'enable_powerups' => $request->boolean('enable_powerups', false),
+                'instant_feedback' => $request->boolean('instant_feedback', false),
+                'streak_bonus' => $request->boolean('streak_bonus', false),
+                'time_bonus' => $request->boolean('time_bonus', false),
+                'enable_retake' => $request->boolean('enable_retake', false),
 
                 'is_room_open' => false,
                 'is_quiz_started' => false,
@@ -159,28 +166,41 @@ class QuizController extends Controller
                 'quiz_remaining_time' => null,
             ]);
 
+            // ✅ AUTO ASSIGN QUIZ KE SEMUA SISWA DI KELAS
+            $this->assignQuizToStudents($quiz);
+
             DB::commit();
+
+            Log::info("Quiz created successfully", [
+                'quiz_id' => $quiz->id,
+                'class_id' => $quiz->class_id,
+                'teacher_id' => $teacher->id
+            ]);
 
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Quiz berhasil dibuat!',
+                    'message' => 'Quiz berhasil dibuat dan di-assign ke siswa!',
                     'exam_id' => $quiz->id,
                     'redirect' => route('guru.quiz.questions', $quiz->id)
                 ]);
             }
 
             return redirect()->route('guru.quiz.questions', $quiz->id)
-                ->with('success', 'Quiz berhasil dibuat!');
+                ->with('success', 'Quiz berhasil dibuat dan di-assign ke siswa!');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error creating quiz: ' . $e->getMessage());
+            Log::error('Error creating quiz: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal membuat quiz: ' . $e->getMessage()
                 ], 500);
             }
+
             return back()->with('error', 'Gagal membuat quiz: ' . $e->getMessage())
                 ->withInput();
         }
@@ -787,7 +807,6 @@ class QuizController extends Controller
 
                 $quiz->update([
                     'status' => 'active',
-                    'published_at' => now()
                 ]);
 
                 $message = 'Quiz berhasil dipublikasikan!';
@@ -823,7 +842,6 @@ class QuizController extends Controller
         try {
             $quiz->update([
                 'status' => 'active',
-                'published_at' => now()
             ]);
 
             return response()->json([
@@ -851,7 +869,6 @@ class QuizController extends Controller
         try {
             $quiz->update([
                 'status' => 'draft',
-                'published_at' => null
             ]);
 
             return response()->json([
@@ -882,7 +899,6 @@ class QuizController extends Controller
             $newExam = $quiz->replicate();
             $newExam->title = $quiz->title . ' (Salinan)';
             $newExam->status = 'draft';
-            $newExam->published_at = null;
             $newExam->save();
 
             $questions = $quiz->questions()->with('choices')->get();
@@ -1132,7 +1148,6 @@ class QuizController extends Controller
                 ->whereIn('id', $request->ids)
                 ->update([
                     'status' => 'active',
-                    'published_at' => now()
                 ]);
 
             DB::commit();
@@ -1165,20 +1180,15 @@ class QuizController extends Controller
         }
 
         $teacher = auth()->user()->teacher;
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        $teacherId = $teacher->id;
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-        $mapels = Subject::whereIn('id', $subjectIds)->get();
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
 
-        $classes = Classes::whereHas('teacherClasses', function ($q) use ($teacher, $quiz) {
-            $q->where('teacher_id', $teacher->id)
-                ->whereHas('subjects', function ($q2) use ($quiz) {
-                    $q2->where('subjects.id', $quiz->subject_id);
-                });
-        })->get();
+        // Kelas yang diajar guru untuk mapel yang sudah dipilih di quiz
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)
+            ->wherePivot('subject_id', $quiz->subject_id)  // filter sesuai mapel quiz
+            ->get();
 
         return view('guru.quiz.edit', compact('quiz', 'mapels', 'classes'));
     }
@@ -1302,12 +1312,13 @@ class QuizController extends Controller
     /**
      * Open quiz room
      */
-    public function openRoom($quizId)
+    public function openRoom(Request $request, $quizId)
     {
         try {
             $user = Auth::user();
-            $quiz = Exam::findOrFail($quizId);
+            $quiz = Exam::with(['class', 'subject'])->findOrFail($quizId);
 
+            // Verify teacher ownership
             if ($quiz->teacher_id != $user->teacher->id) {
                 return response()->json([
                     'success' => false,
@@ -1315,52 +1326,62 @@ class QuizController extends Controller
                 ], 403);
             }
 
-            if ($quiz->type !== 'QUIZ') {
+            // Verify quiz has questions
+            if ($quiz->questions()->count() === 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Hanya quiz yang bisa dibuka ruangannya'
-                ], 422);
-            }
-
-            if ($quiz->is_room_open) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ruangan sudah terbuka'
+                    'message' => 'Quiz harus memiliki minimal 1 soal sebelum dibuka.'
                 ], 422);
             }
 
             DB::beginTransaction();
 
-            $sessionCode = strtoupper(Str::random(6));
+            // Generate session code
+            $sessionCode = $this->generateUniqueSessionCode();
 
+            // Create quiz session
             $session = QuizSession::create([
                 'exam_id' => $quiz->id,
                 'teacher_id' => $user->teacher->id,
                 'session_code' => $sessionCode,
                 'session_status' => 'waiting',
                 'session_started_at' => null,
-                'total_students' => $quiz->class->students()->count() ?? 0,
+                'session_ended_at' => null,
+                'total_duration' => $quiz->duration,
+                'total_students' => 0,
+                'students_joined' => 0,
+                'students_ready' => 0,
+                'students_started' => 0,
+                'students_submitted' => 0,
             ]);
 
+            // Update quiz status
             $quiz->update([
                 'is_room_open' => true,
                 'is_quiz_started' => false,
                 'quiz_started_at' => null,
-                'room_opened_at' => now(),
+                'quiz_remaining_time' => $quiz->duration * 60, // in seconds
+                'status' => 'active',
             ]);
 
             DB::commit();
 
+            Log::info("Quiz room opened successfully", [
+                'quiz_id' => $quiz->id,
+                'session_id' => $session->id,
+                'session_code' => $sessionCode
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Ruangan berhasil dibuka! Silakan bagikan kode ke siswa.',
+                'message' => 'Ruangan berhasil dibuka!',
                 'session_code' => $sessionCode,
                 'session_id' => $session->id,
-                'room_url' => route('quiz.room', $quiz->id)
+                'redirect' => route('guru.quiz.room', $quiz->id)
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in openRoom: ' . $e->getMessage());
+            Log::error('Error opening quiz room: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -1371,7 +1392,7 @@ class QuizController extends Controller
     /**
      * Close quiz room
      */
-    public function closeRoom($quizId)
+    public function closeRoom(Request $request, $quizId)
     {
         try {
             $user = Auth::user();
@@ -1394,6 +1415,7 @@ class QuizController extends Controller
 
             DB::beginTransaction();
 
+            // Update quiz
             $quiz->update([
                 'is_room_open' => false,
                 'is_quiz_started' => false,
@@ -1401,17 +1423,14 @@ class QuizController extends Controller
                 'quiz_remaining_time' => null,
             ]);
 
+            // Update session
             $session->update([
                 'session_status' => 'finished',
                 'session_ended_at' => now(),
             ]);
 
-            $session->participants()
-                ->whereIn('status', ['started', 'ready', 'waiting'])
-                ->update([
-                    'status' => 'submitted',
-                    'submitted_at' => now(),
-                ]);
+            // Clear all participants
+            QuizParticipant::where('quiz_session_id', $session->id)->delete();
 
             DB::commit();
 
@@ -1421,11 +1440,81 @@ class QuizController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in closeRoom: ' . $e->getMessage());
+            Log::error('Error closing quiz room: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    private function assignQuizToStudents(Exam $quiz)
+    {
+        try {
+            // Get active academic year
+            $activeYear = AcademicYear::active()->first();
+
+            if (!$activeYear) {
+                Log::warning("No active academic year found when assigning quiz", [
+                    'quiz_id' => $quiz->id
+                ]);
+                return;
+            }
+
+            // Get all students in the class for current academic year
+            $studentIds = StudentClassAssignment::where('class_id', $quiz->class_id)
+                ->where('academic_year_id', $activeYear->id)
+                ->pluck('student_id')
+                ->toArray();
+
+            if (empty($studentIds)) {
+                Log::warning("No students found in class", [
+                    'quiz_id' => $quiz->id,
+                    'class_id' => $quiz->class_id,
+                    'academic_year_id' => $activeYear->id
+                ]);
+                return;
+            }
+
+            // Get User IDs from Student records
+            $userIds = Student::whereIn('id', $studentIds)
+                ->pluck('user_id')
+                ->toArray();
+
+            if (empty($userIds)) {
+                Log::warning("No user IDs found for students", [
+                    'quiz_id' => $quiz->id,
+                    'student_ids' => $studentIds
+                ]);
+                return;
+            }
+
+            // Create exam assignment records for each student
+            $assignments = [];
+            foreach ($userIds as $userId) {
+                $assignments[] = [
+                    'exam_id' => $quiz->id,
+                    'student_id' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            // Bulk insert exam assignments
+            if (!empty($assignments)) {
+                DB::table('exam_student')->insert($assignments);
+
+                Log::info("Quiz assigned to students successfully", [
+                    'quiz_id' => $quiz->id,
+                    'student_count' => count($assignments)
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error assigning quiz to students: ' . $e->getMessage(), [
+                'quiz_id' => $quiz->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw exception, just log it
         }
     }
 
@@ -1439,68 +1528,79 @@ class QuizController extends Controller
             $quiz = Exam::findOrFail($quizId);
 
             if ($quiz->teacher_id != $user->teacher->id) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized access'], 403);
-            }
-
-            if (!$quiz->is_room_open) {
-                return response()->json(['success' => false, 'message' => 'Ruangan belum dibuka'], 422);
-            }
-
-            if ($quiz->is_quiz_started) {
-                return response()->json(['success' => false, 'message' => 'Quiz sudah dimulai'], 422);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
             }
 
             $session = $quiz->activeSession;
             if (!$session) {
-                return response()->json(['success' => false, 'message' => 'Session tidak ditemukan'], 422);
-            }
-
-            $readyCount = $session->participants()->where('status', 'ready')->count();
-            if ($readyCount === 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Belum ada siswa yang siap. Tunggu minimal 1 siswa.'
+                    'message' => 'Session tidak ditemukan'
                 ], 422);
             }
 
             DB::beginTransaction();
 
-            $totalQuestions  = $quiz->questions()->count();
-            $timePerQuestion = $quiz->time_per_question ?? 30;
-            $totalSeconds    = $totalQuestions * $timePerQuestion;
-
+            // Update quiz
             $quiz->update([
-                'is_quiz_started'    => true,
-                'quiz_started_at'    => now(),
-                'quiz_remaining_time' => $totalSeconds,
+                'is_quiz_started' => true,
+                'quiz_started_at' => now(),
+                'quiz_remaining_time' => $quiz->duration * 60, // in seconds
             ]);
 
+            // Update session
             $session->update([
-                'session_status'    => 'active',
+                'session_status' => 'active',
                 'session_started_at' => now(),
-                'total_duration'    => $totalSeconds,
             ]);
 
-            $session->participants()
+            // Create exam attempts for all participants who are ready
+            $readyParticipants = $session->participants()
                 ->where('status', 'ready')
-                ->update([
-                    'status'     => 'started',
+                ->get();
+
+            foreach ($readyParticipants as $participant) {
+                // Create exam attempt
+                ExamAttempt::create([
+                    'exam_id' => $quiz->id,
+                    'student_id' => $participant->student_id,
+                    'quiz_session_id' => $session->id,
+                    'started_at' => now(),
+                    'status' => 'in_progress',
+                    'remaining_time' => $quiz->duration * 60,
+                    'ip_address' => $participant->ip_address,
+                    'user_agent' => $participant->user_agent,
+                    'exam_settings' => json_encode([]),
+                ]);
+
+                // Update participant status
+                $participant->update([
+                    'status' => 'started',
                     'started_at' => now(),
                 ]);
+            }
 
             $session->updateStats();
 
             DB::commit();
 
+            Log::info("Quiz started successfully", [
+                'quiz_id' => $quiz->id,
+                'session_id' => $session->id,
+                'participants_started' => $readyParticipants->count()
+            ]);
+
             return response()->json([
-                'success'        => true,
-                'message'        => 'Quiz berhasil dimulai!',
-                'quiz_started_at' => now()->toIso8601String(),
-                'total_time'     => $totalSeconds,
+                'success' => true,
+                'message' => 'Quiz dimulai! Peserta dapat mengerjakan sekarang.',
+                'started_count' => $readyParticipants->count()
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in startQuiz: ' . $e->getMessage());
+            Log::error('Error starting quiz: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -1511,33 +1611,21 @@ class QuizController extends Controller
     /**
      * Show quiz room (halaman guru)
      */
-    public function showRoom($quizId)
+    public function showRoom(Exam $quiz)
     {
-        try {
-            $user = Auth::user();
-            $quiz = Exam::with([
-                'activeSession.participants.student',
-                'questions',
-                'class.students'
-            ])->findOrFail($quizId);
+        $teacher = Auth::user()->teacher;
 
-            if ($quiz->teacher_id != $user->teacher->id) {
-                abort(403, 'Unauthorized access');
-            }
-
-            if (!$quiz->is_room_open) {
-                $this->openRoom($quizId);
-                $quiz->refresh();
-            }
-
-            $session = $quiz->activeSession;
-
-            return view('quiz.room', compact('quiz', 'session'));
-        } catch (\Exception $e) {
-            Log::error('Error in showRoom: ' . $e->getMessage());
-            return redirect()->route('guru.quiz.index')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        if ($quiz->teacher_id !== $teacher->id) {
+            abort(403, 'Anda tidak memiliki akses ke quiz ini.');
         }
+
+        $quiz->load([
+            'class',
+            'subject',
+            'questions', 'activeSession.participants.student'
+        ]);
+
+        return view('quiz.room', compact('quiz'));
     }
 
     /**
@@ -1584,92 +1672,76 @@ class QuizController extends Controller
     /**
      * GET /guru/quiz/{quiz}/room/status
      */
-    public function getRoomStatus($quizId)
+    public function getRoomStatus(Exam $quiz)
     {
         try {
-            $quiz = \App\Models\Exam::with(['activeSession', 'class'])->findOrFail($quizId);
+            $teacher = Auth::user()->teacher;
+
+            if ($quiz->teacher_id !== $teacher->id) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
             $session = $quiz->activeSession;
 
-            $participants = [];
-            $stats = [
-                'total_students' => 0,
-                'joined'         => 0,
-                'ready'          => 0,
-                'started'        => 0,
-                'submitted'      => 0,
-            ];
+            if (!$session) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session tidak aktif'
+                ], 422);
+            }
 
-            if ($session) {
-                $allParticipants = \App\Models\QuizParticipant::where('quiz_session_id', $session->id)
-                    ->with(['student:id,name,email'])
-                    ->where('is_present', true)
-                    ->orderBy('joined_at', 'asc')
-                    ->get();
-
-                $participants = $allParticipants->map(function ($p) {
-                    // ✅ FIX: Ambil violation_count dari ExamAttempt (lebih akurat)
-                    $attempt = \App\Models\ExamAttempt::where('exam_id', $p->exam_id)
-                        ->where('student_id', $p->student_id)
-                        ->latest()
+            // Get participants with their status
+            $participants = $session->participants()
+                ->with(['student:id,name,email'])
+                ->get()
+                ->map(function ($participant) {
+                    $attempt = ExamAttempt::where('student_id', $participant->student_id)
+                        ->where('exam_id', $participant->exam_id)
+                        ->where('quiz_session_id', $participant->quiz_session_id)
                         ->first();
 
-                    // ✅ FIX: Gabungkan violation dari participant dan attempt
-                    $violationFromAttempt   = $attempt ? (int)($attempt->violation_count ?? 0) : 0;
-                    $violationFromParticipant = (int)($p->violation_count ?? 0);
-                    $violationCount = max($violationFromAttempt, $violationFromParticipant);
-
                     return [
-                        'id'              => $p->id,
-                        'student_id'      => $p->student_id,
-                        'name'            => $p->student->name ?? 'Unknown',
-                        'student_name'    => $p->student->name ?? 'Unknown',
-                        'email'           => $p->student->email ?? '',
-                        'student_email'   => $p->student->email ?? '',
-                        'status'          => $p->status,
-                        'joined_time'     => $p->joined_at?->format('H:i') ?? '-',
-                        'joined_at'       => $p->joined_at?->format('H:i') ?? '-',
-                        'initial'         => strtoupper(($p->student->name ?? '?')[0] ?? '?'),
-                        // ✅ FIX: violation_count yang benar
-                        'violation_count' => $violationCount,
-                        'has_violation'   => $violationCount > 0,
-                        'is_violation'    => (bool)($p->is_violation ?? false),
+                        'id' => $participant->id,
+                        'student_id' => $participant->student_id,
+                        'student_name' => $participant->student->name ?? 'Unknown',
+                        'student_email' => $participant->student->email ?? '',
+                        'status' => $participant->status,
+                        'joined_at' => $participant->joined_at ? $participant->joined_at->format('H:i:s') : null,
+                        'ready_at' => $participant->ready_at ? $participant->ready_at->format('H:i:s') : null,
+                        'started_at' => $participant->started_at ? $participant->started_at->format('H:i:s') : null,
+                        'submitted_at' => $participant->submitted_at ? $participant->submitted_at->format('H:i:s') : null,
+                        'is_present' => $participant->is_present,
+                        'violation_count' => $attempt ? $attempt->violation_count : 0,
+                        'is_cheating_detected' => $attempt ? $attempt->is_cheating_detected : false,
                     ];
-                })->values()->toArray();
+                });
 
-                $stats = [
-                    'total_students' => $quiz->class ? $quiz->class->students()->count() : 0,
-                    'joined'         => $allParticipants->count(),
-                    'ready'          => $allParticipants->where('status', 'ready')->count(),
-                    'started'        => $allParticipants->where('status', 'started')->count(),
-                    'submitted'      => $allParticipants->where('status', 'submitted')->count(),
-                ];
-            }
-
-            $timeRemaining = 0;
-            if ($session && $quiz->is_quiz_started) {
-                $startedAt    = $quiz->quiz_started_at ?? now();
-                $elapsed      = (int) now()->diffInSeconds($startedAt);
-                $totalSeconds = (int) ($quiz->duration * 60);
-                $timeRemaining = max(0, $totalSeconds - $elapsed);
-            } else {
-                $timeRemaining = $quiz->duration * 60;
-            }
+            $stats = $session->updateStats();
 
             return response()->json([
-                'success'         => true,
-                'is_room_open'    => (bool) $quiz->is_room_open,
-                'is_quiz_started' => (bool) $quiz->is_quiz_started,
-                'session_status'  => $session ? $session->session_status : 'no_session',
-                'stats'           => $stats,
-                'participants'    => $participants,
-                'time_remaining'  => $timeRemaining,
-                'show_leaderboard' => (bool)($quiz->show_leaderboard ?? false),
+                'success' => true,
+                'quiz' => [
+                    'id' => $quiz->id,
+                    'title' => $quiz->title,
+                    'is_room_open' => $quiz->is_room_open,
+                    'is_quiz_started' => $quiz->is_quiz_started,
+                    'quiz_started_at' => $quiz->quiz_started_at ? $quiz->quiz_started_at->format('Y-m-d H:i:s') : null,
+                    'quiz_remaining_time' => $quiz->quiz_remaining_time,
+                    'duration' => $quiz->duration,
+                ],
+                'session' => [
+                    'id' => $session->id,
+                    'session_code' => $session->session_code,
+                    'session_status' => $session->session_status,
+                ],
+                'stats' => $stats,
+                'participants' => $participants,
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error in Guru getRoomStatus: ' . $e->getMessage());
+            Log::error('Error getting room status: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Error: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1797,6 +1869,18 @@ class QuizController extends Controller
             'success' => true,
             'participants' => $participants
         ]);
+    }
+
+    /**
+     * Generate unique session code
+     */
+    private function generateUniqueSessionCode()
+    {
+        do {
+            $code = strtoupper(Str::random(6));
+        } while (QuizSession::where('session_code', $code)->exists());
+
+        return $code;
     }
 
     /**
@@ -1937,7 +2021,17 @@ class QuizController extends Controller
                 'session_ended_at' => now(),
             ]);
 
-            // Paksa submit semua peserta yang masih started
+            // Force submit all active attempts
+            $activeAttempts = ExamAttempt::where('exam_id', $quiz->id)
+                ->where('quiz_session_id', $session->id)
+                ->where('status', 'in_progress')
+                ->get();
+
+            foreach ($activeAttempts as $attempt) {
+                $attempt->submit();
+            }
+
+            // Update participants
             QuizParticipant::where('quiz_session_id', $session->id)
                 ->whereIn('status', ['started', 'ready', 'waiting'])
                 ->update([

@@ -26,6 +26,16 @@ class User extends Authenticatable
         ];
     }
 
+    public function classes()
+    {
+        return $this->belongsToMany(
+            Classes::class,
+            'teacher_classes',
+            'teacher_id',
+            'classes_id'
+        );
+    }
+
     /**
      * Relasi ke guru (jika user adalah guru)
      */

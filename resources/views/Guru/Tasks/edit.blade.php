@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="space-y-6">
-        <!-- Back button yang lebih jelas dan prominent -->
+        <!-- Back button -->
         <div class="flex items-center gap-3 mb-4">
             <a href="{{ route('tasks.index') }}"
                 class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded-lg transition-all duration-200 font-medium text-sm">
@@ -13,7 +13,7 @@
             </a>
         </div>
 
-        <!-- Header warna subtle seperti create, bukan gradient terang -->
+        <!-- Header -->
         <div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl shadow-sm p-4 md:p-8">
             <div class="min-w-0">
                 <h1 class="text-xl md:text-3xl font-bold text-blue-900">Ubah Tugas</h1>
@@ -48,7 +48,7 @@
                 @csrf
                 @method('PUT')
 
-                <!-- Judul Tugas (Full Width) -->
+                <!-- Judul Tugas -->
                 <div>
                     <label for="title_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         Judul Tugas <span class="text-red-600">*</span>
@@ -85,15 +85,15 @@
                         @enderror
                     </div>
 
-                    <!-- Materi -->
+                    <!-- Materi (OPSIONAL) -->
                     <div>
                         <label for="materi_id" class="block text-sm font-semibold text-gray-900 mb-2.5">
-                            Materi <span class="text-red-600">*</span>
+                            Materi
+                            <span class="text-gray-400 font-normal text-xs">(Opsional)</span>
                         </label>
                         <select id="materi_id" name="materi_id"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white"
-                            required>
-                            <option value="">Pilih Materi</option>
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
+                            <option value="">— Tanpa Materi —</option>
                             @foreach ($materis as $materi)
                                 <option value="{{ $materi->id }}"
                                     {{ old('materi_id', $task->materi_id) == $materi->id ? 'selected' : '' }}>
@@ -101,24 +101,22 @@
                                 </option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-gray-500 mt-1">Kosongkan jika tugas tidak terkait materi tertentu</p>
                         @error('materi_id')
                             <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    <!-- Improved class multi-select with search and select-all -->
+                    <!-- Kelas Multi-Select -->
                     <div>
                         <label for="class_id" class="block text-sm font-semibold text-gray-900 mb-2.5">
                             Kelas <span class="text-red-600">*</span>
                         </label>
                         <div class="relative" x-data="{ open: false, search: '' }" @click.away="open = false">
-                            <!-- Dropdown Button dengan Selected Chips -->
                             <button type="button" @click="open = !open"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white text-left flex justify-between items-center hover:border-gray-400">
                                 <div class="flex flex-wrap gap-1.5 flex-1 items-center">
-                                    <div id="button-chips" class="flex flex-wrap gap-1.5">
-                                        <!-- Chips will be populated by JavaScript -->
-                                    </div>
+                                    <div id="button-chips" class="flex flex-wrap gap-1.5"></div>
                                     <span id="selected-count" class="text-gray-500 text-xs">
                                         {{ count(old('class_id', $task->classes->pluck('id')->toArray())) > 0 ? '' : 'Pilih Kelas' }}
                                     </span>
@@ -134,45 +132,43 @@
                             <!-- Dropdown Menu -->
                             <div x-show="open" x-cloak
                                 class="absolute top-full mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-80 overflow-hidden flex flex-col">
-                                <!-- Search Bar -->
                                 <div class="sticky top-0 px-4 py-3 border-b border-gray-200 bg-white">
                                     <input type="text" x-model="search" placeholder="Cari kelas..."
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
 
-                                <!-- Select All Option -->
                                 <div class="px-3 py-2 border-b border-gray-200">
-                                    <label
-                                        class="flex items-center gap-3 px-1 py-1 hover:bg-blue-50 rounded-md cursor-pointer transition-colors">
+                                    <label class="flex items-center gap-3 px-1 py-1 hover:bg-blue-50 rounded-md cursor-pointer transition-colors">
                                         <input type="checkbox" id="select-all-classes"
                                             class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                         <span class="text-sm font-medium text-gray-700">Pilih Semua</span>
                                     </label>
                                 </div>
 
-                                <!-- Options List -->
                                 <div id="class-options" class="overflow-y-auto flex-1 p-2 space-y-1">
-                                    @foreach ($task->classes as $selectedClass)
-                                        @foreach ($classes as $class)
-                                            @if ($class->id == $selectedClass->id)
-                                                <label
-                                                    class="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 rounded-md cursor-pointer transition-colors class-option"
-                                                    data-name="{{ $class->name_class }}">
-                                                    <input type="checkbox" name="class_id[]" value="{{ $class->id }}"
-                                                        checked
-                                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 checkbox-class">
-                                                    <span
-                                                        class="text-sm text-gray-700 flex-1">{{ $class->name_class }}</span>
-                                                </label>
-                                            @endif
-                                        @endforeach
-                                    @endforeach
+                                    @php $selectedClassIds = old('class_id', $task->classes->pluck('id')->toArray()); @endphp
+                                    {{-- Tampilkan yang dipilih dulu --}}
                                     @foreach ($classes as $class)
-                                        @unless ($task->classes->pluck('id')->contains($class->id))
+                                        @if (in_array($class->id, $selectedClassIds))
                                             <label
                                                 class="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 rounded-md cursor-pointer transition-colors class-option"
-                                                data-name="{{ $class->name_class }}">
-                                                <input type="checkbox" name="class_id[]" value="{{ $class->id }}"
+                                                data-name="{{ $class->name_class }}"
+                                                data-value="{{ $class->id }}">
+                                                <input type="checkbox" value="{{ $class->id }}"
+                                                    checked
+                                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 checkbox-class">
+                                                <span class="text-sm text-gray-700 flex-1">{{ $class->name_class }}</span>
+                                            </label>
+                                        @endif
+                                    @endforeach
+                                    {{-- Tampilkan yang belum dipilih --}}
+                                    @foreach ($classes as $class)
+                                        @unless (in_array($class->id, $selectedClassIds))
+                                            <label
+                                                class="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 rounded-md cursor-pointer transition-colors class-option"
+                                                data-name="{{ $class->name_class }}"
+                                                data-value="{{ $class->id }}">
+                                                <input type="checkbox" value="{{ $class->id }}"
                                                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 checkbox-class">
                                                 <span class="text-sm text-gray-700 flex-1">{{ $class->name_class }}</span>
                                             </label>
@@ -182,7 +178,7 @@
                             </div>
                         </div>
 
-                        <!-- Hidden select untuk form submission -->
+                        <!-- Hidden select for form submission -->
                         <select id="class_id" name="class_id[]" multiple class="hidden">
                             @foreach ($classes as $class)
                                 <option value="{{ $class->id }}"
@@ -205,13 +201,14 @@
                             value="{{ old('date_collection', \Carbon\Carbon::parse($task->date_collection)->format('Y-m-d\TH:i')) }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                             required>
+                        <p class="text-xs text-gray-500 mt-1" id="date-hint">⏱ Minimal 30 menit dari sekarang</p>
                         @error('date_collection')
                             <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
                         @enderror
                     </div>
                 </div>
-                
-                <!-- Deskripsi (Full Width) -->
+
+                <!-- Deskripsi -->
                 <div>
                     <label for="description_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         Deskripsi Tugas
@@ -223,7 +220,7 @@
                     @enderror
                 </div>
 
-                <!-- File Tugas (Full Width) -->
+                <!-- File Tugas -->
                 <div>
                     <label for="file_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         File Tugas
@@ -240,8 +237,9 @@
                         </div>
                     @endif
 
-                    <p class="text-xs text-gray-600 mb-3">Biarkan kosong jika tidak ingin mengganti file</p>
+                    <p class="text-xs text-gray-600 mb-3">Biarkan kosong jika tidak ingin mengganti file. Format: PDF, JPG, PNG. Maks 10MB</p>
                     <input type="file" id="file_task" name="file_task"
+                        accept=".pdf,.jpg,.jpeg,.png"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
                     @error('file_task')
                         <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
@@ -266,24 +264,54 @@
     </div>
 
     <script>
-        const classSelect = document.getElementById('class_id');
+        const classSelect       = document.getElementById('class_id');
         const selectAllCheckbox = document.getElementById('select-all-classes');
-        const classOptions = document.querySelectorAll('.class-option');
-        const checkboxes = document.querySelectorAll('.checkbox-class');
-        const buttonChipsDiv = document.getElementById('button-chips');
+        const classOptions      = document.querySelectorAll('.class-option');
+        const checkboxes        = document.querySelectorAll('.checkbox-class');
+        const buttonChipsDiv    = document.getElementById('button-chips');
         const selectedCountSpan = document.getElementById('selected-count');
+        const dateInput         = document.getElementById('date_collection');
 
-        // Initialize with existing selections
+        // ============================================================
+        // SET MIN DATE: 30 menit dari sekarang
+        // ============================================================
+        function setMinDate() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 30);
+            const pad = n => String(n).padStart(2, '0');
+            const minVal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            dateInput.min = minVal;
+
+            const hint = document.getElementById('date-hint');
+            if (hint) {
+                hint.textContent = `⏱ Minimal 30 menit dari sekarang (${pad(now.getHours())}:${pad(now.getMinutes())})`;
+            }
+        }
+        setMinDate();
+        setInterval(setMinDate, 60000);
+
+        // Validasi saat submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const selectedDate = new Date(dateInput.value);
+            const minDate = new Date(dateInput.min);
+            if (selectedDate < minDate) {
+                e.preventDefault();
+                alert('Tanggal pengumpulan harus minimal 30 menit dari sekarang.');
+                dateInput.focus();
+            }
+        });
+
+        // ============================================================
+        // KELAS CHECKBOX SYNC
+        // ============================================================
         updateButtonChips();
         updateSelectAllState();
 
-        // Event listeners
         selectAllCheckbox.addEventListener('change', handleSelectAll);
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', handleCheckboxChange);
         });
 
-        // Search functionality
         const searchInput = document.querySelector('input[placeholder="Cari kelas..."]');
         if (searchInput) {
             searchInput.addEventListener('input', function() {
@@ -310,9 +338,7 @@
             checkboxes.forEach(checkbox => {
                 checkbox.checked = isChecked;
                 const option = classSelect.querySelector(`option[value="${checkbox.value}"]`);
-                if (option) {
-                    option.selected = isChecked;
-                }
+                if (option) option.selected = isChecked;
             });
             updateButtonChips();
         }
@@ -337,7 +363,7 @@
         }
 
         function updateSelectAllState() {
-            const totalOptions = classSelect.querySelectorAll('option').length - 1; // Exclude empty option
+            const totalOptions = classSelect.querySelectorAll('option').length;
             const selectedCount = classSelect.querySelectorAll('option:checked').length;
             selectAllCheckbox.checked = totalOptions > 0 && selectedCount === totalOptions;
             selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < totalOptions;

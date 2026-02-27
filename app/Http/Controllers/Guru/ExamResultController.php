@@ -26,57 +26,59 @@ class ExamResultController extends Controller
             ->where('teacher_id', $teacher->id)
             ->firstOrFail();
 
-        // Hitung statistik umum
-        $totalStudents = $exam->class->students()->count();
+        // Total siswa terdaftar di kelas ujian
+        // Coba beberapa kemungkinan nama kolom FK
+        // Total siswa terdaftar di kelas ujian — pakai currentStudents() sesuai pola ClassController
+        $totalStudents = $exam->class->currentStudents()->count();
 
-        // Ambil attempts dengan data student yang lengkap
+        // Ambil semua attempts (submitted/timeout) dengan data student
         $attempts = ExamAttempt::select(
             'exam_attempts.*',
             'students.nis',
             'users.name as student_name',
-            'users.email as student_email',
-            'users.profile_photo'
+            'users.email as student_email'
         )
             ->leftJoin('students', 'exam_attempts.student_id', '=', 'students.id')
             ->leftJoin('users', 'students.user_id', '=', 'users.id')
             ->where('exam_attempts.exam_id', $examId)
             ->whereIn('exam_attempts.status', ['submitted', 'timeout'])
+            ->orderByDesc('exam_attempts.final_score')
             ->get()
             ->map(function ($attempt) {
-                // Buat student data object
                 $attempt->student_data = (object) [
-                    'id' => $attempt->student_id,
-                    'nis' => $attempt->nis,
-                    'name' => $attempt->student_name,
+                    'id'    => $attempt->student_id,
+                    'nis'   => $attempt->nis,
+                    'name'  => $attempt->student_name,
                     'email' => $attempt->student_email,
-                    'profile_photo' => $attempt->profile_photo,
-                    'profile_photo_url' => $attempt->profile_photo
-                        ? asset('storage/' . $attempt->profile_photo)
-                        : asset('images/default-avatar.png')
                 ];
-
-                // Hapus kolom tambahan yang tidak perlu
-                unset($attempt->nis, $attempt->student_name, $attempt->student_email, $attempt->profile_photo);
-
+                unset($attempt->nis, $attempt->student_name, $attempt->student_email);
                 return $attempt;
             });
 
-        // Hitung total attempts
+        // Jumlah attempt (bisa > totalStudents jika ada yang reset & ulang)
         $totalAttempts = $attempts->count();
 
-        // Hitung statistik tambahan
-        $completedAttempts = $totalAttempts;
-        $averageScore = $attempts->avg('final_score') ?? 0;
-        $maxScore = $attempts->max('final_score') ?? 0;
-        $avgScore = $averageScore;
+        // Siswa unik yang sudah mengerjakan
+        $uniqueParticipants = $attempts->unique('student_id')->count();
 
-        // Distribusi nilai
+        // Siswa yang belum ikut sama sekali
+        $belumIkut = max(0, $totalStudents - $uniqueParticipants);
+
+        // Statistik nilai
+        $averageScore = $attempts->avg('final_score') ?? 0;
+        $avgScore     = $averageScore;
+        $maxScore     = $attempts->max('final_score') ?? 0;
+        $completedAttempts = $totalAttempts;
+
+        // Distribusi nilai (berdasarkan attempt terbaik per siswa jika ada lebih dari 1)
+        $bestAttempts = $attempts->groupBy('student_id')->map(fn($g) => $g->sortByDesc('final_score')->first());
+
         $scoreDistribution = [
-            'A' => $attempts->where('final_score', '>=', 85)->count(),
-            'B' => $attempts->whereBetween('final_score', [75, 84.9])->count(),
-            'C' => $attempts->whereBetween('final_score', [65, 74.9])->count(),
-            'D' => $attempts->whereBetween('final_score', [55, 64.9])->count(),
-            'E' => $attempts->where('final_score', '<', 55)->count(),
+            'A' => $bestAttempts->where('final_score', '>=', 85)->count(),
+            'B' => $bestAttempts->filter(fn($a) => $a->final_score >= 75 && $a->final_score < 85)->count(),
+            'C' => $bestAttempts->filter(fn($a) => $a->final_score >= 65 && $a->final_score < 75)->count(),
+            'D' => $bestAttempts->filter(fn($a) => $a->final_score >= 55 && $a->final_score < 65)->count(),
+            'E' => $bestAttempts->where('final_score', '<', 55)->count(),
         ];
 
         // Analisis per soal
@@ -85,8 +87,9 @@ class ExamResultController extends Controller
                 $query->where('is_correct', true);
             }])
             ->withCount('answers')
+            ->orderBy('order')
             ->get()
-            ->map(function ($question) use ($totalAttempts) {
+            ->map(function ($question) {
                 $question->accuracy = $question->answers_count > 0
                     ? round(($question->correct_answers_count / $question->answers_count) * 100, 1)
                     : 0;
@@ -97,6 +100,8 @@ class ExamResultController extends Controller
             'exam',
             'totalStudents',
             'totalAttempts',
+            'uniqueParticipants',
+            'belumIkut',
             'avgScore',
             'scoreDistribution',
             'questions',
@@ -116,21 +121,19 @@ class ExamResultController extends Controller
             ->where('teacher_id', $teacher->id)
             ->firstOrFail();
 
-        $attempt = ExamAttempt::with(['student', 'answers.question.choices'])
+        $attempt = ExamAttempt::with(['student.user', 'answers.question.choices'])
             ->where('exam_id', $examId)
             ->where('id', $attemptId)
             ->firstOrFail();
 
-        // Hitung statistik untuk attempt ini
-        $totalQuestions = $exam->questions()->count();
+        $totalQuestions   = $exam->questions()->count();
         $answeredQuestions = $attempt->answers()->count();
-        $correctAnswers = $attempt->answers()->where('is_correct', true)->count();
+        $correctAnswers   = $attempt->answers()->where('is_correct', true)->count();
         $incorrectAnswers = $answeredQuestions - $correctAnswers;
 
-        // Waktu pengerjaan
-        $timeElapsed = $attempt->getTimeElapsed();
-        $minutes = floor($timeElapsed / 60);
-        $seconds = $timeElapsed % 60;
+        $timeElapsed  = $attempt->getTimeElapsed();
+        $minutes      = floor($timeElapsed / 60);
+        $seconds      = $timeElapsed % 60;
         $timeFormatted = sprintf('%02d:%02d', $minutes, $seconds);
 
         return view('guru.exams.results.detail', compact(
@@ -161,18 +164,14 @@ class ExamResultController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('guru.exams.results.student', compact(
-            'exam',
-            'student',
-            'attempts'
-        ));
+        return view('guru.exams.results.student', compact('exam', 'student', 'attempts'));
     }
 
     public function updateScore(Request $request, $examId, $attemptId)
     {
         $request->validate([
             'question_id' => 'required|exists:exam_questions,id',
-            'score' => 'required|numeric|min:0',
+            'score'       => 'required|numeric|min:0',
         ]);
 
         $teacher = Auth::user()->teacher;
@@ -187,18 +186,15 @@ class ExamResultController extends Controller
 
         DB::beginTransaction();
         try {
-            // Update score per question
             $answer = ExamAnswer::where('attempt_id', $attempt->id)
                 ->where('question_id', $request->question_id)
                 ->firstOrFail();
 
             $answer->score = $request->score;
 
-            // Jika ada penilaian manual untuk essay
             if ($request->has('is_correct')) {
-                $answer->is_correct = $request->is_correct;
+                $answer->is_correct = (bool) $request->is_correct;
             }
-
             if ($request->has('feedback')) {
                 $answer->feedback = $request->feedback;
             }
@@ -207,26 +203,26 @@ class ExamResultController extends Controller
 
             // Hitung ulang total score
             $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
-            $maxScore = $exam->questions()->sum('score');
-            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+            $maxPossible = $exam->questions()->sum('score');
+            $finalScore  = $maxPossible > 0 ? ($totalScore / $maxPossible) * 100 : 0;
 
-            $attempt->score = $totalScore;
+            $attempt->score       = $totalScore;
             $attempt->final_score = $finalScore;
             $attempt->save();
 
             DB::commit();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Nilai berhasil diperbarui',
+                'success'     => true,
+                'message'     => 'Nilai berhasil diperbarui',
                 'total_score' => $totalScore,
-                'final_score' => round($finalScore, 2)
+                'final_score' => round($finalScore, 2),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -249,16 +245,14 @@ class ExamResultController extends Controller
 
             foreach ($answers as $answer) {
                 $question = ExamQuestion::with('choices')->find($answer->question_id);
-
                 if ($question && $question->type === 'PG') {
-                    // Hanya koreksi otomatis untuk PG
                     if ($answer->choice_id) {
                         $correctChoice = $question->choices->where('is_correct', true)->first();
                         if ($correctChoice && $correctChoice->id == $answer->choice_id) {
-                            $answer->score = $question->score;
+                            $answer->score      = $question->score;
                             $answer->is_correct = true;
                         } else {
-                            $answer->score = 0;
+                            $answer->score      = 0;
                             $answer->is_correct = false;
                         }
                         $answer->save();
@@ -266,28 +260,27 @@ class ExamResultController extends Controller
                 }
             }
 
-            // Hitung ulang total score
-            $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
-            $maxScore = $exam->questions()->sum('score');
-            $finalScore = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+            $totalScore  = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
+            $maxPossible = $exam->questions()->sum('score');
+            $finalScore  = $maxPossible > 0 ? ($totalScore / $maxPossible) * 100 : 0;
 
-            $attempt->score = $totalScore;
+            $attempt->score       = $totalScore;
             $attempt->final_score = $finalScore;
             $attempt->save();
 
             DB::commit();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Koreksi otomatis berhasil dilakukan',
+                'success'     => true,
+                'message'     => 'Koreksi otomatis berhasil dilakukan',
                 'total_score' => $totalScore,
-                'final_score' => round($finalScore, 2)
+                'final_score' => round($finalScore, 2),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -306,14 +299,12 @@ class ExamResultController extends Controller
 
         DB::beginTransaction();
         try {
-            // Hapus semua jawaban
             ExamAnswer::where('attempt_id', $attempt->id)->delete();
 
-            // Reset attempt
-            $attempt->score = 0;
-            $attempt->final_score = 0;
-            $attempt->status = 'in_progress';
-            $attempt->ended_at = null;
+            $attempt->score          = 0;
+            $attempt->final_score    = 0;
+            $attempt->status         = 'in_progress';
+            $attempt->ended_at       = null;
             $attempt->remaining_time = $exam->duration * 60;
             $attempt->save();
 
@@ -321,13 +312,13 @@ class ExamResultController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Attempt berhasil direset, siswa dapat mengulang ujian'
+                'message' => 'Attempt berhasil direset, siswa dapat mengulang ujian',
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -343,32 +334,29 @@ class ExamResultController extends Controller
 
         $attempts = ExamAttempt::where('exam_id', $examId)
             ->whereIn('status', ['submitted', 'timeout'])
-            ->with('student')
+            ->with('student.user')
             ->orderBy('final_score', 'desc')
             ->get();
 
         $data = [
-            'exam' => $exam,
-            'attempts' => $attempts,
-            'totalStudents' => $exam->class->students()->count(),
+            'exam'          => $exam,
+            'attempts'      => $attempts,
+            'totalStudents' => $exam->class->currentStudents()->count(),
             'totalAttempts' => $attempts->count(),
-            'avgScore' => $attempts->avg('final_score') ?? 0,
-            'exportDate' => now()->format('d F Y H:i:s'),
+            'avgScore'      => $attempts->avg('final_score') ?? 0,
+            'exportDate'    => now()->format('d F Y H:i:s'),
         ];
 
         if ($format === 'excel') {
             return $this->exportExcel($data);
         }
 
-        // Default PDF
         $pdf = PDF::loadView('guru.exams.results.export-pdf', $data);
         return $pdf->download('hasil-ujian-' . $exam->title . '-' . now()->format('Y-m-d') . '.pdf');
     }
 
     private function exportExcel($data)
     {
-        // Implementasi export Excel menggunakan Laravel Excel
-        // Untuk sementara kembalikan view biasa
         return view('guru.exams.results.export-excel', $data);
     }
 
@@ -389,28 +377,20 @@ class ExamResultController extends Controller
                 $query->where('is_correct', true);
             }])
             ->withCount('answers')
-            ->withCount(['answers as choice_selections' => function ($query) use ($examId) {
-                $query->select(DB::raw('choice_id, COUNT(*) as count'))
-                    ->whereNotNull('choice_id')
-                    ->groupBy('choice_id');
-            }])
+            ->orderBy('order')
             ->get()
             ->map(function ($question) use ($examId) {
-                // Hitung akurasi
                 $question->accuracy = $question->answers_count > 0
                     ? round(($question->correct_answers_count / $question->answers_count) * 100, 1)
                     : 0;
 
-                // Analisis pilihan jawaban
                 if ($question->type === 'PG') {
-                    $choices = $question->choices;
-                    foreach ($choices as $choice) {
+                    foreach ($question->choices as $choice) {
                         $choice->selection_count = ExamAnswer::where('exam_id', $examId)
                             ->where('question_id', $question->id)
                             ->where('choice_id', $choice->id)
                             ->count();
                     }
-                    $question->choices = $choices;
                 }
 
                 return $question;

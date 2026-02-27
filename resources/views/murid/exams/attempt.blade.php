@@ -396,6 +396,117 @@
             color: #1e293b;
         }
 
+        /* ============================================================
+           SECURITY OVERLAYS (pola dari play_simple_blade)
+           ============================================================ */
+
+        #security-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.97);
+            z-index: 99998;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+        #security-overlay.active { display: flex; }
+        #security-overlay .overlay-icon { font-size: 4rem; color: #ef4444; }
+        #security-overlay h2 { color: white; font-size: 1.5rem; font-weight: 700; }
+        #security-overlay p { color: #94a3b8; max-width: 420px; line-height: 1.6; }
+        #security-overlay .resume-btn {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            padding: 0.85rem 2.25rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            box-shadow: 0 8px 24px rgba(37,99,235,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 0.5rem;
+        }
+        #security-overlay .resume-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(37,99,235,0.5);
+        }
+        #security-overlay .violation-badge {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.4);
+            color: #fca5a5;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        #fullscreen-reenter-prompt {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 99997;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+        #fullscreen-reenter-prompt.active { display: flex; }
+        #fullscreen-reenter-prompt h2 { color: white; font-size: 1.75rem; font-weight: 700; }
+        #fullscreen-reenter-prompt p { color: #cbd5e1; max-width: 420px; line-height: 1.6; }
+        #fullscreen-reenter-prompt .enter-fs-btn {
+            background: linear-gradient(135deg, #0066ff, #3b82f6);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 8px 24px rgba(0,102,255,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #fullscreen-reenter-prompt .enter-fs-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,102,255,0.5);
+        }
+
+        #violation-toast {
+            display: none;
+            position: fixed;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 0.9rem 2rem;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            z-index: 99996;
+            box-shadow: 0 8px 32px rgba(239,68,68,0.4);
+            animation: toastSlideDown 0.3s ease;
+            text-align: center;
+        }
+        #violation-toast.show { display: block; }
+
+        @keyframes toastSlideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
         /* Modal Overlay */
         .modal-overlay {
             position: fixed;
@@ -456,7 +567,7 @@
     <script>
         window.quizData = {
             exam: @json($exam),
-            questions: @json($questions),
+            questions: @json($questionsFormatted ?? $questions),
             attempt: @json($attempt),
             securitySettings: @json($securitySettings ?? []),
             markedForReview: @json($markedForReview ?? [])
@@ -477,6 +588,50 @@
             <button class="retry-button" onclick="location.reload()">Coba Lagi</button>
         </div>
     </div>
+
+    <!-- ============================================================
+         SECURITY OVERLAYS (fullscreen exit / tab switch)
+         ============================================================ -->
+
+    <!-- Violation Toast (slide from top) -->
+    <div id="violation-toast"></div>
+
+    <!-- Security Overlay (keluar fullscreen / pindah tab) -->
+    <div id="security-overlay">
+        <div class="overlay-icon">⚠️</div>
+        <h2 id="security-overlay-title">Peringatan Keamanan!</h2>
+        <p id="security-overlay-msg">Tindakan Anda terdeteksi sebagai pelanggaran.</p>
+        <div id="security-violation-badge" class="violation-badge">
+            Pelanggaran <span id="security-violation-count">0</span>/<span id="security-violation-limit">{{ $exam->violation_limit ?? 3 }}</span>
+        </div>
+        <button class="resume-btn" onclick="window.fullscreenHandler && window.fullscreenHandler.resumeFromOverlay()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
+            </svg>
+            Kembali & Lanjutkan Ujian
+        </button>
+    </div>
+
+    <!-- Fullscreen Re-enter Prompt (muncul saat keluar fullscreen — jika fullscreen_mode aktif) -->
+    @if ($exam->fullscreen_mode)
+    <div id="fullscreen-reenter-prompt">
+        <div style="font-size:4rem;">🔒</div>
+        <h2>Mode Layar Penuh Diperlukan</h2>
+        <p>Anda keluar dari mode layar penuh. Ujian ini memerlukan fullscreen agar dapat dilanjutkan.</p>
+        @if (!$exam->disable_violations)
+        <div class="violation-badge" id="fs-violation-badge" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:0.4rem 1rem;border-radius:999px;font-size:0.85rem;font-weight:600;">
+            Pelanggaran dicatat
+        </div>
+        @endif
+        <button class="enter-fs-btn" onclick="window.fullscreenHandler && window.fullscreenHandler.reEnterFullscreen()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
+            </svg>
+            Masuk Kembali ke Fullscreen
+        </button>
+        <p style="color:#64748b;font-size:0.8rem;margin-top:0.5rem;">Atau tekan <kbd style="background:#1e293b;color:#94a3b8;padding:0.2rem 0.5rem;border-radius:4px;font-family:monospace;">F11</kbd></p>
+    </div>
+    @endif
 
     <!-- Violation Counter -->
     <div id="violationCounter" class="violation-count" style="display: none;">
@@ -767,7 +922,7 @@
                                 <!-- Question Text -->
                                 <div class="mb-6">
                                     <div class="question-text"
-                                        x-html="currentQuestion?.question_text || 'Tidak ada soal'">
+                                        x-html="currentQuestion?.question_text || currentQuestion?.question || 'Tidak ada soal'">
                                     </div>
                                     @if (isset($questions[0]['question_image']))
                                         <template x-if="currentQuestion?.question_image">
@@ -777,81 +932,185 @@
                                     @endif
                                 </div>
 
-                                <!-- Answer Options -->
+                                <!-- Answer Options - Support semua 8 tipe soal -->
                                 <div class="space-y-2">
-                                    <!-- Multiple Choice Questions -->
-                                    <template x-if="currentQuestion?.type === 'PG' && currentQuestion?.options">
-                                        <template x-for="(optionText, optionKey) in currentQuestion.options"
-                                            :key="optionKey">
-                                            <button @click="selectAnswer(optionKey)"
-                                                :class="{
-                                                    'selected border-blue-500 bg-blue-50': selectedAnswers[
-                                                        currentQuestion?.id] == optionKey,
-                                                    'border-gray-200 hover:border-blue-300 hover:bg-blue-50': selectedAnswers[
-                                                        currentQuestion?.id] != optionKey
-                                                }"
-                                                class="option-button w-full">
-                                                <!-- Radio button custom -->
-                                                <div class="flex items-center gap-3 w-full">
-                                                    <div class="relative">
-                                                        <!-- Outer circle -->
-                                                        <div class="w-5 h-5 rounded-full border-2 flex-shrink-0"
-                                                            :class="{
-                                                                'border-blue-500': selectedAnswers[currentQuestion
-                                                                    ?.id] == optionKey,
-                                                                'border-gray-300': selectedAnswers[currentQuestion
-                                                                    ?.id] != optionKey
-                                                            }">
-                                                            <!-- Inner dot -->
-                                                            <div
-                                                                class="absolute inset-0 flex items-center justify-center">
-                                                                <div class="w-2.5 h-2.5 rounded-full bg-blue-500 transition-all duration-200"
-                                                                    :class="{
-                                                                        'scale-100 opacity-100': selectedAnswers[
-                                                                            currentQuestion?.id] == optionKey,
-                                                                        'scale-0 opacity-0': selectedAnswers[
-                                                                            currentQuestion?.id] != optionKey
-                                                                    }">
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
 
-                                                    <!-- Option text -->
-                                                    <span class="option-text text-left flex-1"
-                                                        x-html="optionText"></span>
-                                                </div>
-                                            </button>
-                                        </template>
+                                    <!-- PG & DD: Pilihan Ganda Tunggal -->
+                                    <template x-if="(currentQuestion?.type === 'PG' || currentQuestion?.type === 'DD') && currentQuestion?.options">
+                                        <div class="space-y-2">
+                                            <template x-for="(optionText, optionKey) in currentQuestion.options" :key="optionKey">
+                                                <button @click="selectAnswer(optionKey)"
+                                                    :class="{
+                                                        'border-blue-500 bg-blue-50 shadow-sm': selectedAnswers[currentQuestion?.id] == optionKey,
+                                                        'border-gray-200 hover:border-blue-300 hover:bg-slate-50': selectedAnswers[currentQuestion?.id] != optionKey
+                                                    }"
+                                                    class="w-full text-left px-4 py-3 border-2 rounded-xl transition-all duration-200 flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded-full border-2 flex-shrink-0 flex items-center justify-center text-sm font-bold transition-all"
+                                                        :class="{
+                                                            'border-blue-500 bg-blue-500 text-white': selectedAnswers[currentQuestion?.id] == optionKey,
+                                                            'border-gray-300 text-gray-500 bg-gray-50': selectedAnswers[currentQuestion?.id] != optionKey
+                                                        }"
+                                                        x-text="optionKey">
+                                                    </div>
+                                                    <span class="flex-1 text-slate-800 text-sm leading-relaxed" x-html="optionText"></span>
+                                                </button>
+                                            </template>
+                                        </div>
                                     </template>
 
-                                    <!-- Essay Questions -->
+                                    <!-- PGK: Pilihan Ganda Kompleks (multi-checkbox) -->
+                                    <template x-if="currentQuestion?.type === 'PGK'">
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-2 text-xs text-indigo-700 font-semibold bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-lg mb-3">
+                                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                                Pilih semua jawaban yang benar (bisa lebih dari satu)
+                                            </div>
+                                            <template x-for="(optionText, optionKey) in currentQuestion.options" :key="optionKey">
+                                                <button @click="togglePGKAnswer(optionKey)"
+                                                    :class="{
+                                                        'border-indigo-500 bg-indigo-50 shadow-sm': isPGKSelected(optionKey),
+                                                        'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40': !isPGKSelected(optionKey)
+                                                    }"
+                                                    class="w-full text-left px-4 py-3 border-2 rounded-xl transition-all duration-200 flex items-center gap-3">
+                                                    <div class="w-6 h-6 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all"
+                                                        :class="{
+                                                            'border-indigo-500 bg-indigo-500': isPGKSelected(optionKey),
+                                                            'border-gray-300 bg-white': !isPGKSelected(optionKey)
+                                                        }">
+                                                        <svg x-show="isPGKSelected(optionKey)" class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                        </svg>
+                                                    </div>
+                                                    <span class="font-semibold text-indigo-600 text-sm w-5 flex-shrink-0" x-text="optionKey"></span>
+                                                    <span class="flex-1 text-slate-800 text-sm leading-relaxed" x-html="optionText"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <!-- BS: Benar / Salah -->
+                                    <template x-if="currentQuestion?.type === 'BS'">
+                                        <div class="grid grid-cols-2 gap-4 pt-2">
+                                            <button @click="selectAnswer('benar')"
+                                                :class="{
+                                                    'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-md': selectedAnswers[currentQuestion?.id] === 'benar',
+                                                    'border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/50 text-slate-600': selectedAnswers[currentQuestion?.id] !== 'benar'
+                                                }"
+                                                class="py-8 flex flex-col items-center gap-3 border-2 rounded-2xl font-bold transition-all duration-200">
+                                                <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all"
+                                                    :class="{
+                                                        'bg-emerald-500': selectedAnswers[currentQuestion?.id] === 'benar',
+                                                        'bg-gray-100': selectedAnswers[currentQuestion?.id] !== 'benar'
+                                                    }">
+                                                    <svg class="w-7 h-7 transition-all" :class="{'text-white': selectedAnswers[currentQuestion?.id] === 'benar', 'text-gray-400': selectedAnswers[currentQuestion?.id] !== 'benar'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                </div>
+                                                <span class="text-base">Benar</span>
+                                            </button>
+                                            <button @click="selectAnswer('salah')"
+                                                :class="{
+                                                    'border-red-500 bg-red-50 text-red-700 shadow-md': selectedAnswers[currentQuestion?.id] === 'salah',
+                                                    'border-gray-200 hover:border-red-400 hover:bg-red-50/50 text-slate-600': selectedAnswers[currentQuestion?.id] !== 'salah'
+                                                }"
+                                                class="py-8 flex flex-col items-center gap-3 border-2 rounded-2xl font-bold transition-all duration-200">
+                                                <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all"
+                                                    :class="{
+                                                        'bg-red-500': selectedAnswers[currentQuestion?.id] === 'salah',
+                                                        'bg-gray-100': selectedAnswers[currentQuestion?.id] !== 'salah'
+                                                    }">
+                                                    <svg class="w-7 h-7 transition-all" :class="{'text-white': selectedAnswers[currentQuestion?.id] === 'salah', 'text-gray-400': selectedAnswers[currentQuestion?.id] !== 'salah'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </div>
+                                                <span class="text-base">Salah</span>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <!-- IS: Isian Singkat -->
                                     <template x-if="currentQuestion?.type === 'IS'">
-                                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <p class="text-blue-800 text-sm mb-3 flex items-start gap-2">
-                                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-                                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                                    fill="currentColor">
-                                                    <path
-                                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                                                </svg>
-                                                <span>Soal essay - jawaban akan diperiksa manual oleh guru</span>
+                                        <div class="p-5 bg-amber-50 border border-amber-200 rounded-xl">
+                                            <p class="text-amber-800 text-sm mb-3 font-semibold flex items-center gap-2">
+                                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                                Ketik jawaban dengan tepat
+                                            </p>
+                                            <input type="text"
+                                                :value="selectedAnswers[currentQuestion?.id] || ''"
+                                                @input.debounce.300ms="selectAnswer($event.target.value)"
+                                                class="w-full px-4 py-3 border-2 border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-base bg-white placeholder-gray-400 transition-all"
+                                                placeholder="Tulis jawaban di sini...">
+                                        </div>
+                                    </template>
+
+                                    <!-- ES: Esai -->
+                                    <template x-if="currentQuestion?.type === 'ES'">
+                                        <div class="p-5 bg-rose-50 border border-rose-200 rounded-xl">
+                                            <p class="text-rose-800 text-sm mb-3 font-semibold flex items-center gap-2">
+                                                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                                                Soal esai — jawaban diperiksa manual oleh guru
                                             </p>
                                             <textarea x-model="essayAnswers[currentQuestion?.id]"
                                                 @input.debounce.500ms="saveEssayAnswer(currentQuestion?.id, $event.target.value)"
-                                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 essay-textarea"
-                                                rows="4" placeholder="Ketik jawaban Anda di sini..."></textarea>
+                                                class="w-full px-4 py-3 border-2 border-rose-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 bg-white resize-y min-h-32 text-sm placeholder-gray-400 transition-all"
+                                                rows="6" placeholder="Tulis jawaban esai kamu di sini..."></textarea>
+                                            <p class="text-xs text-rose-500 mt-1 text-right" x-text="(essayAnswers[currentQuestion?.id] || '').length + ' karakter'"></p>
+                                        </div>
+                                    </template>
+
+                                    <!-- SK: Skala Linear -->
+                                    <template x-if="currentQuestion?.type === 'SK'">
+                                        <div class="p-5 bg-teal-50 border border-teal-200 rounded-xl">
+                                            <p class="text-teal-800 text-sm mb-4 font-semibold">Pilih nilai pada skala berikut:</p>
+                                            <div class="flex items-center justify-center gap-2 flex-wrap py-2">
+                                                <template x-for="n in getScaleRange(currentQuestion)" :key="n">
+                                                    <button @click="selectAnswer(String(n))"
+                                                        :class="{
+                                                            'bg-teal-600 text-white border-teal-600 shadow-lg scale-110': selectedAnswers[currentQuestion?.id] == String(n),
+                                                            'bg-white border-teal-300 text-teal-700 hover:bg-teal-100': selectedAnswers[currentQuestion?.id] != String(n)
+                                                        }"
+                                                        class="w-12 h-12 rounded-xl border-2 font-bold text-lg transition-all duration-200"
+                                                        x-text="n">
+                                                    </button>
+                                                </template>
+                                            </div>
+                                            <div class="flex justify-between mt-3 px-1 text-xs text-teal-600 font-medium">
+                                                <span x-text="(currentQuestion?.scale_min || 1) + (currentQuestion?.scale_min_label ? ' — ' + currentQuestion.scale_min_label : '')"></span>
+                                                <span x-text="(currentQuestion?.scale_max || 5) + (currentQuestion?.scale_max_label ? ' — ' + currentQuestion.scale_max_label : '')"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- MJ: Menjodohkan -->
+                                    <template x-if="currentQuestion?.type === 'MJ'">
+                                        <div class="p-5 bg-orange-50 border border-orange-200 rounded-xl">
+                                            <p class="text-orange-800 text-sm mb-4 font-semibold flex items-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                                Pasangkan item kiri dengan item kanan yang sesuai
+                                            </p>
+                                            <div class="space-y-3">
+                                                <template x-for="(pair, idx) in (currentQuestion?.pairs || [])" :key="idx">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="flex-1 px-3 py-2.5 bg-white border-2 border-orange-200 rounded-lg text-sm font-medium text-slate-700 min-w-0" x-text="pair.left"></div>
+                                                        <svg class="w-5 h-5 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                        <select
+                                                            :value="getMJAnswer(idx)"
+                                                            @change="setMJAnswer(idx, $event.target.value)"
+                                                            class="flex-1 px-3 py-2.5 border-2 border-orange-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white transition-all min-w-0">
+                                                            <option value="">— pilih —</option>
+                                                            <template x-for="opt in (currentQuestion?.mj_options || [])" :key="opt">
+                                                                <option :value="opt" x-text="opt"></option>
+                                                            </template>
+                                                        </select>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                     </template>
 
                                     <!-- No Question Found -->
                                     <template x-if="!currentQuestion">
                                         <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-                                            <p class="text-red-800 flex items-center">
-                                                Soal tidak ditemukan atau terjadi kesalahan.
-                                            </p>
+                                            <p class="text-red-800">Soal tidak ditemukan atau terjadi kesalahan.</p>
                                         </div>
                                     </template>
+
                                 </div>
                             </div>
 
@@ -1090,11 +1349,6 @@
 
         function safeInit() {
             try {
-                // Cek semua dependency
-                if (typeof Alpine === 'undefined') {
-                    throw new Error('Alpine.js tidak terdeteksi');
-                }
-
                 // Cek data exam - SEKARANG MENGGUNAKAN window.quizData
                 if (!window.quizData || !window.quizData.exam) {
                     throw new Error('Data ujian tidak ditemukan');
@@ -1251,54 +1505,108 @@
                 }
             }
 
+            // ================================================================
+            // SETUP LISTENERS
+            // ================================================================
             setupBasicListeners() {
-                // Fullscreen change listener
+                // Listen fullscreen change dari semua browser
                 const fullscreenEvents = [
                     'fullscreenchange',
                     'webkitfullscreenchange',
                     'mozfullscreenchange',
                     'MSFullscreenChange'
                 ];
-
                 fullscreenEvents.forEach(event => {
                     document.addEventListener(event, () => this.handleFullscreenChange());
                 });
 
-                // Setup violation listeners
+                // Cegah ESC menutup fullscreen saat ujian berlangsung
+                if (this.settings.requireFullscreen) {
+                    document.addEventListener('keydown', (e) => {
+                        if (this.examStarted && !this.isSubmitting && e.key === 'Escape') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }, true);
+                }
+
                 this.setupViolationListeners();
             }
 
             setupViolationListeners() {
-                // Tab switch detection
-                if (this.settings.blockNewTab && !this.settings.disableViolations) {
+                if (this.settings.disableViolations) return;
+
+                // ── Tab / window switch (blockNewTab) ──────────────────────────
+                if (this.settings.blockNewTab) {
                     document.addEventListener('visibilitychange', () => {
                         if (!this.examStarted || this.isSubmitting) return;
-
                         if (document.hidden) {
-                            this.logViolation('Pindah ke tab/window lain');
+                            this.handleTabSwitch('Pindah ke tab/window lain');
+                        } else {
+                            // Kembali ke tab → tutup overlay
+                            this.hideSecurityOverlay();
                         }
                     });
 
                     window.addEventListener('blur', () => {
                         if (!this.examStarted || this.isSubmitting) return;
-                        this.logViolation('Beralih ke aplikasi/window lain');
+                        // blur bisa terpicu saat dialog browser — debounce 300ms
+                        clearTimeout(this._blurTimeout);
+                        this._blurTimeout = setTimeout(() => {
+                            if (!document.hidden) {
+                                this.handleTabSwitch('Beralih ke aplikasi/window lain');
+                            }
+                        }, 300);
+                    });
+
+                    window.addEventListener('focus', () => {
+                        clearTimeout(this._blurTimeout);
+                        // Jika security overlay masih muncul karena blur, tutup
+                        if (!document.hidden) this.hideSecurityOverlay();
+                    });
+
+                    // Blokir Ctrl+T/N/W
+                    document.addEventListener('keydown', (e) => {
+                        if (!this.examStarted || this.isSubmitting) return;
+                        if ((e.ctrlKey || e.metaKey) && ['n', 't', 'w'].includes(e.key.toLowerCase())) {
+                            e.preventDefault();
+                            this.showViolationToast('⛔ Membuka tab/jendela baru tidak diizinkan!');
+                            this.logViolation('Mencoba buka tab/window baru');
+                        }
+                        if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')) {
+                            e.preventDefault();
+                            this.showViolationToast('⛔ Refresh halaman tidak diizinkan!');
+                        }
+                    });
+
+                    document.addEventListener('contextmenu', (e) => {
+                        if (this.examStarted && !this.isSubmitting) e.preventDefault();
                     });
                 }
 
-                // Copy-paste prevention
-                if (this.settings.preventCopyPaste && !this.settings.disableViolations) {
+                // ── Copy-paste prevention ──────────────────────────────────────
+                if (this.settings.preventCopyPaste) {
                     ['copy', 'paste', 'cut'].forEach(event => {
                         document.addEventListener(event, (e) => {
                             if (!this.examStarted || this.isSubmitting) return;
                             e.preventDefault();
                             this.logViolation(`Mencoba ${event} teks`);
+                            this.showViolationToast(`⛔ ${event.charAt(0).toUpperCase()+event.slice(1)} tidak diizinkan!`);
                         });
+                    });
+                    document.addEventListener('keydown', (e) => {
+                        if (!this.examStarted || this.isSubmitting) return;
+                        if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x', 'a'].includes(e.key.toLowerCase())) {
+                            e.preventDefault();
+                            this.showViolationToast('⛔ Copy/paste tidak diizinkan!');
+                            if (['c', 'v', 'x'].includes(e.key.toLowerCase()))
+                                this.logViolation('Shortcut copy/paste');
+                        }
                     });
                 }
 
-                // Right click prevention
-                if ((this.settings.securityLevel === 'strict' || this.settings.securityLevel === 'basic') && !this
-                    .settings.disableViolations) {
+                // ── Right click (strict/basic security) ──────────────────────
+                if (this.settings.securityLevel === 'strict' || this.settings.securityLevel === 'basic') {
                     document.addEventListener('contextmenu', (e) => {
                         if (!this.examStarted || this.isSubmitting) return;
                         e.preventDefault();
@@ -1306,26 +1614,19 @@
                     });
                 }
 
-                // Fullscreen exit detection
-                if (this.settings.requireFullscreen && !this.settings.disableViolations) {
-                    document.addEventListener('fullscreenchange', () => {
-                        if (!this.examStarted || this.isSubmitting) return;
-
-                        const isCurrentlyFullscreen = !!(
-                            document.fullscreenElement ||
-                            document.webkitFullscreenElement ||
-                            document.mozFullScreenElement ||
-                            document.msFullscreenElement
-                        );
-
-                        if (!isCurrentlyFullscreen && this.isFullscreen) {
-                            this.logViolation('Keluar dari mode fullscreen');
-                        }
-                        this.isFullscreen = isCurrentlyFullscreen;
-                    });
-                }
+                // ── DevTools block ─────────────────────────────────────────────
+                document.addEventListener('keydown', (e) => {
+                    if (!this.examStarted || this.isSubmitting) return;
+                    if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase()))) {
+                        e.preventDefault();
+                        this.showViolationToast('⛔ Developer tools diblokir!');
+                    }
+                });
             }
 
+            // ================================================================
+            // FULLSCREEN CHANGE HANDLER — inti logika overlay baru
+            // ================================================================
             handleFullscreenChange() {
                 if (!this.examStarted || this.isSubmitting) return;
 
@@ -1337,11 +1638,107 @@
                     document.msFullscreenElement
                 );
 
-                if (this.settings.requireFullscreen && wasFullscreen && !this.isFullscreen) {
-                    this.logViolation('Keluar dari mode fullscreen');
+                if (this.settings.requireFullscreen) {
+                    if (wasFullscreen && !this.isFullscreen) {
+                        // Keluar dari fullscreen → tampilkan fullscreen re-enter prompt
+                        this.onFullscreenExited();
+                    } else if (!wasFullscreen && this.isFullscreen) {
+                        // Kembali ke fullscreen → tutup prompt
+                        this.hideFullscreenReenterPrompt();
+                        this.hideSecurityOverlay();
+                    }
                 }
             }
 
+            // Dipanggil saat pengguna keluar fullscreen
+            onFullscreenExited() {
+                console.log('[FullscreenHandler] User exited fullscreen');
+                if (!this.settings.disableViolations) {
+                    this.logViolation('Keluar dari mode fullscreen', false); // false = jangan tampilkan security overlay umum
+                }
+                this.showFullscreenReenterPrompt();
+            }
+
+            // Dipanggil saat pengguna pindah tab / window blur
+            handleTabSwitch(reason) {
+                if (!this.examStarted || this.isSubmitting) return;
+                this.logViolation(reason, true); // true = tampilkan security overlay
+            }
+
+            // ================================================================
+            // OVERLAY CONTROLS
+            // ================================================================
+
+            /** Tampilkan overlay security (tab switch / pelanggaran umum) */
+            showSecurityOverlay(title, msg) {
+                document.getElementById('security-overlay-title').textContent = title;
+                document.getElementById('security-overlay-msg').textContent   = msg;
+
+                const badge = document.getElementById('security-violation-badge');
+                const countEl = document.getElementById('security-violation-count');
+                if (countEl) countEl.textContent = this.violationCount;
+                if (badge) badge.style.display = 'block';
+
+                document.getElementById('security-overlay').classList.add('active');
+            }
+
+            hideSecurityOverlay() {
+                const el = document.getElementById('security-overlay');
+                if (el) el.classList.remove('active');
+            }
+
+            /** Tampilkan prompt re-enter fullscreen */
+            showFullscreenReenterPrompt() {
+                const el = document.getElementById('fullscreen-reenter-prompt');
+                if (el) el.classList.add('active');
+            }
+
+            hideFullscreenReenterPrompt() {
+                const el = document.getElementById('fullscreen-reenter-prompt');
+                if (el) el.classList.remove('active');
+            }
+
+            /** Tombol "Kembali & Lanjutkan" pada #security-overlay */
+            resumeFromOverlay() {
+                this.hideSecurityOverlay();
+                // Jika fullscreen mode aktif dan saat ini tidak fullscreen, minta lagi
+                if (this.settings.requireFullscreen && !this.isFullscreen) {
+                    this.reEnterFullscreen();
+                }
+            }
+
+            /** Tombol "Masuk Kembali ke Fullscreen" pada #fullscreen-reenter-prompt */
+            async reEnterFullscreen() {
+                console.log('[FullscreenHandler] Re-entering fullscreen...');
+                const elem = document.documentElement;
+                try {
+                    const promise = elem.requestFullscreen?.() ||
+                        elem.webkitRequestFullscreen?.() ||
+                        elem.mozRequestFullScreen?.() ||
+                        elem.msRequestFullscreen?.();
+                    if (promise) await promise;
+                    this.isFullscreen = true;
+                    this.hideFullscreenReenterPrompt();
+                    this.hideSecurityOverlay();
+                } catch (err) {
+                    console.warn('[FullscreenHandler] Re-enter fullscreen failed:', err);
+                    this.showViolationToast('⚠️ Gagal masuk fullscreen. Coba tekan F11.');
+                }
+            }
+
+            /** Violation toast — slide from top */
+            showViolationToast(msg) {
+                const toast = document.getElementById('violation-toast');
+                if (!toast) return;
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(this._toastTimeout);
+                this._toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
+            // ================================================================
+            // START EXAM
+            // ================================================================
             startExam() {
                 console.log('[FullscreenHandler] Starting exam...');
                 this.examStarted = true;
@@ -1358,36 +1755,43 @@
 
                 // Show exam container
                 const examContainer = document.querySelector('.exam-container');
-                if (examContainer) {
-                    examContainer.classList.add('active');
-                }
+                if (examContainer) examContainer.classList.add('active');
 
-                // Show violation counter if there are violations
-                if (this.violationCount > 0) {
-                    this.updateViolationDisplay();
-                }
+                // Show violation counter if there are existing violations
+                if (this.violationCount > 0) this.updateViolationDisplay();
 
                 console.log('[FullscreenHandler] Exam started successfully');
             }
 
-            logViolation(reason) {
-                if (this.isSubmitting || !this.examStarted || this.settings.disableViolations) {
-                    return;
-                }
+            // ================================================================
+            // VIOLATION LOGGING
+            // ================================================================
+            /**
+             * @param {string} reason       - pesan pelanggaran
+             * @param {boolean} showOverlay - tampilkan security overlay (default: true)
+             */
+            logViolation(reason, showOverlay = true) {
+                if (this.isSubmitting || !this.examStarted || this.settings.disableViolations) return;
 
                 this.violationCount++;
                 this.updateViolationDisplay();
-                console.log(`[Violation] ${reason} (count: ${this.violationCount})`);
+                console.log(`[Violation] ${reason} (count: ${this.violationCount}/${this.settings.violationLimit})`);
 
                 // Send to server
                 this.sendViolationToServer(reason);
 
-                // Show warning
-                this.showViolationWarning(
-                    `Pelanggaran ${this.violationCount}/${this.settings.violationLimit}: ${reason}`
-                );
+                // Tampilkan toast ringkas
+                this.showViolationToast(`⚠️ Pelanggaran ${this.violationCount}/${this.settings.violationLimit}: ${reason}`);
 
-                // Check if limit reached and auto-submit is enabled
+                // Tampilkan security overlay jika diminta
+                if (showOverlay) {
+                    this.showSecurityOverlay(
+                        `⚠️ Pelanggaran #${this.violationCount}!`,
+                        `${reason}. Tekan tombol di bawah untuk kembali melanjutkan ujian.`
+                    );
+                }
+
+                // Cek batas pelanggaran
                 if (this.violationCount >= this.settings.violationLimit && this.settings.autoSubmitOnViolation) {
                     this.handleMaxViolations();
                 }
@@ -1397,41 +1801,17 @@
                 const el = document.getElementById('violationCountText');
                 if (el) el.textContent = this.violationCount;
 
-                // Show violation counter
+                const secCount = document.getElementById('security-violation-count');
+                if (secCount) secCount.textContent = this.violationCount;
+
+                // Show violation counter badge
                 const violationCounter = document.getElementById('violationCounter');
-                if (violationCounter) {
-                    violationCounter.style.display = 'flex';
-                }
+                if (violationCounter) violationCounter.style.display = 'flex';
             }
 
             showViolationWarning(message) {
-                if (!this.examStarted) return;
-
-                // Remove old warning
-                const oldWarning = document.querySelector('.violation-warning');
-                if (oldWarning) oldWarning.remove();
-
-                const warning = document.createElement('div');
-                warning.className = 'violation-warning';
-                warning.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.282 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div>
-                        <strong class="text-lg block mb-1">PERINGATAN!</strong>
-                        <p class="text-sm">${message}</p>
-                    </div>
-                </div>
-            `;
-                document.body.appendChild(warning);
-
-                setTimeout(() => {
-                    if (warning.parentNode) {
-                        warning.parentNode.removeChild(warning);
-                    }
-                }, 4000);
+                // Digantikan oleh showViolationToast + showSecurityOverlay
+                this.showViolationToast(message);
             }
 
             showForceExitModal() {
@@ -1675,7 +2055,7 @@
                 essayAnswers: {},
                 markedForReview: new Set(),
                 showSubmitModal: false,
-                timeRemaining: Math.floor({{ $timeRemaining ?? 0 }}),
+                timeRemaining: Math.floor({{ $timeRemaining ?? ($attempt->getTimeRemaining() ?? 0) }}),
                 timerInterval: null,
                 examLoaded: false,
 
@@ -1705,8 +2085,7 @@
                         @if ($exam->shuffle_answer)
                             console.log('[QuizApp] Shuffling answers...');
                             this.questions = this.questions.map(q => {
-                                if (q.type === 'PG' && q.options && typeof q.options === 'object') {
-                                    // Shuffle options but keep labels
+                                if (['PG', 'DD', 'PGK'].includes(q.type) && q.options && typeof q.options === 'object') {
                                     const entries = Object.entries(q.options);
                                     const shuffled = this.shuffleArray(entries);
                                     q.options = Object.fromEntries(shuffled);
@@ -1808,6 +2187,58 @@
                     this.saveToLocalStorage();
                 },
 
+                // PGK: toggle checkbox
+                togglePGKAnswer(optionKey) {
+                    if (!this.currentQuestion) return;
+                    const id = this.currentQuestion.id;
+                    const current = this.selectedAnswers[id];
+                    let arr = current ? String(current).split(',').filter(Boolean) : [];
+                    const idx = arr.indexOf(String(optionKey));
+                    if (idx > -1) arr.splice(idx, 1);
+                    else arr.push(String(optionKey));
+                    this.selectedAnswers[id] = arr.join(',');
+                    this.saveToLocalStorage();
+                },
+
+                isPGKSelected(optionKey) {
+                    if (!this.currentQuestion) return false;
+                    const current = this.selectedAnswers[this.currentQuestion.id];
+                    if (!current) return false;
+                    return String(current).split(',').includes(String(optionKey));
+                },
+
+                getScaleRange(question) {
+                    const min = parseInt(question?.scale_min ?? 1);
+                    const max = parseInt(question?.scale_max ?? 5);
+                    const range = [];
+                    for (let i = min; i <= max; i++) range.push(i);
+                    return range;
+                },
+
+                getMJAnswer(idx) {
+                    if (!this.currentQuestion) return '';
+                    const current = this.selectedAnswers[this.currentQuestion.id];
+                    if (!current) return '';
+                    try { return JSON.parse(current)[idx]?.right || ''; } catch(e) { return ''; }
+                },
+
+                setMJAnswer(idx, value) {
+                    if (!this.currentQuestion) return;
+                    const id = this.currentQuestion.id;
+                    const pairs = this.currentQuestion.pairs || [];
+                    let current = [];
+                    try {
+                        const saved = this.selectedAnswers[id];
+                        current = saved ? JSON.parse(saved) : pairs.map(p => ({ left: p.left, right: '' }));
+                    } catch(e) {
+                        current = pairs.map(p => ({ left: p.left, right: '' }));
+                    }
+                    if (!current[idx]) current[idx] = { left: pairs[idx]?.left || '', right: '' };
+                    current[idx].right = value;
+                    this.selectedAnswers[id] = JSON.stringify(current);
+                    this.saveToLocalStorage();
+                },
+
                 saveEssayAnswer(questionId, value) {
                     if (!questionId) return;
                     this.essayAnswers[questionId] = value;
@@ -1902,11 +2333,23 @@
                 getQuestionButtonClass(index) {
                     const q = this.questions[index];
                     if (!q) return 'question-number-btn';
-
                     let cls = 'question-number-btn';
                     if (index === this.currentQuestionIndex) cls += ' active';
-                    if (this.markedForReview.has(q.id)) cls += ' marked';
-                    else if (this.selectedAnswers[q.id] || this.essayAnswers[q.id]) cls += ' answered';
+                    if (this.markedForReview.has(q.id)) {
+                        cls += ' marked';
+                    } else {
+                        const sel = this.selectedAnswers[q.id];
+                        const essay = this.essayAnswers[q.id];
+                        let answered = !!(essay && String(essay).trim());
+                        if (!answered && sel) {
+                            const s = String(sel).trim();
+                            if (s && s !== '{}' && s !== '[]') {
+                                if (s.startsWith('[')) { try { answered = JSON.parse(s).some(p => p.right); } catch(e) {} }
+                                else answered = true;
+                            }
+                        }
+                        if (answered) cls += ' answered';
+                    }
                     return cls;
                 },
 
@@ -1990,13 +2433,20 @@
                 },
 
                 get answeredCount() {
-                    const pgCount = Object.keys(this.selectedAnswers).filter(key =>
-                        this.selectedAnswers[key] && this.selectedAnswers[key].trim() !== ''
-                    ).length;
+                    const selCount = Object.keys(this.selectedAnswers).filter(key => {
+                        const v = this.selectedAnswers[key];
+                        if (!v) return false;
+                        const s = String(v).trim();
+                        if (!s || s === '{}' || s === '[]') return false;
+                        if (s.startsWith('[')) {
+                            try { return JSON.parse(s).some(p => p.right && p.right.trim()); } catch(e) { return false; }
+                        }
+                        return true;
+                    }).length;
                     const essayCount = Object.keys(this.essayAnswers).filter(key =>
-                        this.essayAnswers[key] && this.essayAnswers[key].trim() !== ''
+                        this.essayAnswers[key] && String(this.essayAnswers[key]).trim() !== ''
                     ).length;
-                    return pgCount + essayCount;
+                    return selCount + essayCount;
                 },
 
                 get markedForReviewCount() {
@@ -2011,20 +2461,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[App] DOM loaded, initializing...');
 
-            // Check if Alpine is available
-            if (typeof Alpine === 'undefined') {
-                showError('Alpine.js tidak terdeteksi. Silakan refresh halaman.');
-                return;
-            }
-
-            // Initialize Alpine
-            try {
-                Alpine.start();
-            } catch (error) {
-                console.error('[App] Alpine initialization error:', error);
-                showError('Terjadi kesalahan: ' + error.message);
-                return;
-            }
+            // Alpine.js auto-starts via defer CDN - no need to call Alpine.start()
+            // Just set timeout untuk memastikan loading screen hilang jika ada error
 
             // Set timeout untuk memastikan loading screen hilang
             setTimeout(function() {

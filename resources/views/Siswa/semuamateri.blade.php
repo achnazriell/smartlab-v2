@@ -1,112 +1,53 @@
 @extends('layouts.appSiswa')
 
 @section('content')
-    <style>
-        .carousel-indicators {
-            align-items: center;
-        }
-
-        .carousel-indicators button {
-            width: 10px !important;
-            height: 10px !important;
-            border-radius: 100%;
-            background-color: rgba(255, 255, 255, 0.507) !important;
-        }
-
-        .carousel-indicators button.active {
-            width: 15px !important;
-            height: 15px !important;
-            border-radius: 100%;
-            background-color: white !important;
-        }
-
-        .carousel-item img {
-            height: 300px;
-            object-fit: cover;
-            border-radius: 1rem !important;
-        }
-
-        .carousel-item .follow-event-btn {
-            z-index: 100;
-        }
-
-        .carousel-item:after {
-            position: absolute;
-            content: "";
-            height: 100%;
-            width: 100%;
-            top: 0;
-            left: 0;
-            background: linear-gradient(to bottom, rgba(255, 0, 0, 0), rgba(0, 0, 0, 0.65) 100%);
-        }
-
-        @media (max-width: 639px) {
-            .covercard {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-    </style>
-
-    <div class="container p-10">
+    <div class="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
         <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
-            <div class="loader border-t-4 border-blue-600 rounded-full w-16 h-16 animate-spin"></div>
+            <div class="loader border-t-4 border-blue-600 rounded-full w-12 h-12 animate-spin"></div>
         </div>
-        <!-- Header Section -->
-        <div class="flex justify-between items-center my-8">
-            <h1 class="text-2xl text-gray-700 font-poppins font-bold">
-                Daftar Materi
-            </h1>
 
-            <!-- Filter & Search Tools -->
-            <div class="flex items-center gap-2 flex-wrap">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900">Daftar Materi</h1>
+                <p class="text-slate-500 text-sm mt-0.5">Semua materi pembelajaran tersedia di sini</p>
+            </div>
 
-                <!-- Search Form -->
-                <form action="{{ route('semuamateri') }}" method="GET" class="flex items-center gap-2">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..."
-                        class="rounded-xl border border-gray-300 p-3 text-sm">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold p-3 px-4 rounded-xl">
-                        <i class="fas fa-search"></i>
+            <!-- Search + Filter -->
+            <div class="w-full sm:w-auto flex items-center gap-2">
+                <form action="{{ route('semuamateri') }}" method="GET" class="flex items-center gap-2 flex-1 sm:flex-none">
+                    <div class="relative flex-1 sm:w-60">
+                        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari materi..."
+                            class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl transition-all flex-shrink-0">
+                        <i class="fas fa-search text-sm"></i>
                     </button>
                 </form>
 
-                <!-- Filter Mata Pelajaran Dropdown -->
-                <div class="relative">
-                    <button id="filterButton"
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold p-3 px-4 rounded-xl shadow-md">
-                        <i class="fas fa-filter text-white"></i>
+                <!-- Filter Dropdown -->
+                <div class="relative flex-shrink-0" x-data="{ filterOpen: false }">
+                    <button @click="filterOpen = !filterOpen"
+                        class="bg-slate-700 hover:bg-slate-800 text-white p-2.5 rounded-xl transition-all shadow-sm">
+                        <i class="fas fa-filter text-sm"></i>
                     </button>
-                    <div id="filterDropdown"
-                        class="hidden absolute right-0 mt-2 w-72 bg-white border border-gray-300 rounded-xl shadow-md z-50"
-                        style="max-height: 300px; overflow-y: auto;">
-
-                        <!-- Fixed filter header styling -->
-                        <div
-                            class="px-4 py-3 text-lg font-semibold text-gray-700 border-b border-gray-300 sticky top-0 bg-white z-10">
-                            Pilih Mata Pelajaran
+                    <div x-show="filterOpen" @click.outside="filterOpen = false"
+                        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        class="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
+                        <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                            <p class="text-sm font-bold text-slate-700">Filter Mata Pelajaran</p>
                         </div>
-
-                        <!-- Fixed filter form - changed from status to subject filter -->
-                        <form method="GET" action="{{ route('semuamateri') }}" class="p-2">
+                        <form method="GET" action="{{ route('semuamateri') }}" class="p-2 max-h-64 overflow-y-auto">
                             @php
-                                $subjects = [
-                                    'Matematika',
-                                    'Bahasa Indonesia',
-                                    'Bahasa Inggris',
-                                    'Fisika',
-                                    'Kimia',
-                                    'Biologi',
-                                    'Sejarah',
-                                    'Seni Budaya',
-                                    'Pendidikan Agama',
-                                    'Pendidikan Kewarganegaraan',
-                                ];
+                                $filterSubjects = ['Matematika','Bahasa Indonesia','Bahasa Inggris','Fisika','Kimia','Biologi','Sejarah','Seni Budaya','Pendidikan Agama','Pendidikan Kewarganegaraan'];
                             @endphp
-
-                            @foreach ($subjects as $subject)
-                                <button type="submit" name="subject" value="{{ $subject }}"
-                                    class="w-full flex items-center justify-center px-4 py-2 font-bold text-gray-800 bg-gray-100 hover:text-white hover:bg-blue-400 active:text-white active:bg-blue-500 rounded-xl m-2 h-12">
-                                    {{ $subject }}
+                            @foreach ($filterSubjects as $subj)
+                                <button type="submit" name="subject" value="{{ $subj }}"
+                                    class="w-full text-left px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors font-medium {{ request('subject') === $subj ? 'bg-blue-50 text-blue-700' : '' }}">
+                                    {{ $subj }}
                                 </button>
                             @endforeach
                         </form>
@@ -115,77 +56,86 @@
             </div>
         </div>
 
-        <!-- Materi List Section -->
-        <div class="space-y-4">
+        @if(request('subject'))
+            <div class="flex items-center gap-2 mb-4">
+                <span class="text-sm text-slate-500">Filter aktif:</span>
+                <span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                    {{ request('subject') }}
+                    <a href="{{ route('semuamateri') }}" class="hover:text-blue-900">
+                        <i class="fas fa-times text-xs"></i>
+                    </a>
+                </span>
+            </div>
+        @endif
+
+        <!-- Materi List -->
+        <div class="space-y-3 sm:space-y-4">
             @forelse ($materis as $materi)
-                <div class="relative bg-white shadow-md py-6 px-5 rounded-xl">
-                    <!-- Fixed tag structure for title and info -->
-                    <h2 class="text-xl font-bold mb-2">
-                        {{ $materi->title_materi }}
-                    </h2>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-200 transition-all overflow-hidden">
+                    <div class="flex items-start gap-0">
+                        <!-- Left accent bar -->
+                        <div class="w-1 self-stretch bg-blue-500 flex-shrink-0 rounded-l-2xl"></div>
 
-                    <p class="text-gray-600 mb-4">
-                        Mapel: {{ optional($materi->subject)->name_subject ?? 'N/A' }}
-                    </p>
+                        <div class="flex-1 p-4 sm:p-5">
+                            <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <!-- Date badge (top on mobile) -->
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="inline-flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+                                            <i class="fas fa-calendar text-slate-400 text-xs"></i>
+                                            {{ $materi->created_at->translatedFormat('l, d F Y') }}
+                                        </span>
+                                    </div>
 
-                    <!-- Removed "Lihat Detail" button and changed "Buka Materi" to navigate to materi.detail -->
-                    <div class="flex gap-2 absolute bottom-4 right-4">
-                        @if ($materi->file_materi)
-                            <a href="{{ route('materi.show', $materi->id) }}"
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl">
-                                Buka Materi
-                            </a>
-                        @endif
-                    </div>
+                                    <h2 class="text-base sm:text-lg font-bold text-slate-900 leading-tight line-clamp-2">
+                                        {{ $materi->title_materi }}
+                                    </h2>
 
-                    <!-- Date -->
-                    <div class="absolute top-5 right-5 text-sm text-gray-600">
-                        {{ $materi->created_at->translatedFormat('l, d F Y') }}
+                                    <div class="flex items-center gap-1.5 mt-1.5">
+                                        <div class="w-5 h-5 bg-blue-100 rounded-md flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-book text-blue-500" style="font-size: 9px;"></i>
+                                        </div>
+                                        <span class="text-sm text-slate-500">{{ optional($materi->subject)->name_subject ?? 'N/A' }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Action button -->
+                                <div class="flex-shrink-0">
+                                    @if ($materi->file_materi)
+                                        <a href="{{ route('materi.show', $materi->id) }}"
+                                            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all shadow-sm hover:shadow-md active:scale-95">
+                                            <i class="fas fa-book-open text-xs"></i>
+                                            Buka Materi
+                                        </a>
+                                    @else
+                                        <span class="inline-flex items-center gap-2 bg-slate-100 text-slate-400 font-semibold py-2 px-4 rounded-xl text-sm cursor-not-allowed">
+                                            <i class="fas fa-file-slash text-xs"></i>
+                                            Tidak ada file
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             @empty
-                <div class="bg-white shadow-md py-10 px-5 rounded-xl text-center">
-                    <p class="text-gray-500">Belum ada materi untuk kelas kamu</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 py-16 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mb-4">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                        </svg>
+                    </div>
+                    <p class="text-slate-600 font-semibold">Belum ada materi</p>
+                    <p class="text-slate-400 text-sm mt-1">Materi untuk kelasmu akan muncul di sini</p>
                 </div>
             @endforelse
         </div>
     </div>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
     <script>
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-        }
-
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
-            const filterButton = document.getElementById('filterButton');
-            const filterDropdown = document.getElementById('filterDropdown');
-
-            filterButton?.addEventListener('click', (event) => {
-                event.stopPropagation();
-                filterDropdown.classList.toggle('hidden');
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!filterDropdown.contains(event.target) && event.target !== filterButton) {
-                    filterDropdown.classList.add('hidden');
-                }
-            });
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) loadingScreen.classList.add('hidden');
         });
     </script>
 @endsection

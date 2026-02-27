@@ -9,337 +9,52 @@ use App\Models\Subject;
 use App\Models\Collection;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class UserPageController extends Controller
 {
-    public function showSubject()
-    {
-        $user = auth()->user();
-        $student = $user->student;
-
-        if (!$student || !$student->class_id) {
-            return redirect()->back()->with('error', 'Anda belum memiliki kelas.');
-        }
-
-        $kelasId = $student->class_id;
-
-        // Cari subjects melalui teacher_class_subjects
-        $subjects = Subject::whereHas('teacherClassSubjects.teacherClass', function ($query) use ($kelasId) {
-            $query->where('classes_id', $kelasId);
-        })
-            ->withCount([
-                'materi' => function ($query) use ($kelasId) {
-                    $query->whereHas('classes', function ($q) use ($kelasId) {
-                        $q->where('classes.id', $kelasId);
-                    });
-                },
-                'Task as unfinished_task_count' => function ($query) use ($user, $kelasId) {
-                    $query->whereHas('collections', function ($subQuery) use ($user) {
-                        $subQuery->where('user_id', $user->id)
-                            ->where('status', 'Belum mengumpulkan');
-                    })
-                        ->whereHas('classes', function ($q) use ($kelasId) {
-                            $q->where('classes.id', $kelasId);
-                        });
-                }
-            ])
-            ->orderBy('name_subject')
-            ->paginate(6);
-
-        // Jika tidak ada subjects melalui teacher_class_subjects, coba cara lain
-        if ($subjects->isEmpty()) {
-            // Ambil subjects dari materi yang ada di kelas
-            $subjectsFromMateri = Subject::whereHas('materi.classes', function ($query) use ($kelasId) {
-                $query->where('classes.id', $kelasId);
-            })->pluck('id');
-
-            // Ambil subjects dari tugas yang ada di kelas
-            $subjectsFromTask = Subject::whereHas('Task.classes', function ($query) use ($kelasId) {
-                $query->where('classes.id', $kelasId);
-            })->pluck('id');
-
-            $subjectIds = $subjectsFromMateri->merge($subjectsFromTask)->unique();
-
-            $subjects = Subject::whereIn('id', $subjectIds)
-                ->withCount([
-                    'materi' => function ($query) use ($kelasId) {
-                        $query->whereHas('classes', function ($q) use ($kelasId) {
-                            $q->where('classes.id', $kelasId);
-                        });
-                    },
-                    'Task as unfinished_task_count' => function ($query) use ($user, $kelasId) {
-                        $query->whereHas('collections', function ($subQuery) use ($user) {
-                            $subQuery->where('user_id', $user->id)
-                                ->where('status', 'Belum mengumpulkan');
-                        })
-                            ->whereHas('classes', function ($q) use ($kelasId) {
-                                $q->where('classes.id', $kelasId);
-                            });
-                    }
-                ])
-                ->orderBy('name_subject')
-                ->paginate(6);
-        }
-
-        return view('Siswa.mapel', compact('subjects'));
-    }
-
-    public function showMateriBySubject(Request $request, $materi_id)
-    {
-        $user = auth()->user();
-        $order = $request->input('order', 'desc');
-        $search = $request->input('search');
-        $activeTab = $request->input('tab', 'materis');
-        $status = $request->input('status');
-        $student = $user->student;
-
-        if (!$student || !$student->class_id) {
-            return redirect()->back()->with('error', 'Anda belum memiliki kelas.');
-        }
-
-        $kelasID = [$student->class_id];
-
-        // Query Materi
-        $materis = Materi::whereHas('classes', function ($query) use ($kelasID) {
-            $query->whereIn('class_id', $kelasID);
-        })
-            ->with('subject', 'classes')
-            ->where('subject_id', $materi_id)
-            ->where('title_materi', 'like', '%' . $search . '%')
-            ->orderBy('created_at', $order)
-            ->paginate(5);
-
-        // Query Task
-        $tasksQuery = Task::select('tasks.*', 'collections.status as collection_status')
-            ->with([
-                'collections' => function ($query) {
-                    $query->where('user_id', Auth::id());
-                }
-            ])
-            ->leftJoin('collections', function ($join) {
-                $join->on('tasks.id', '=', 'collections.task_id')
-                    ->where('collections.user_id', '=', Auth::id());
-            })
-            ->whereHas('classes', function ($query) use ($kelasID) {
-                $query->whereIn('classes.id', $kelasID);
-            })
-            ->where(function ($query) use ($search) {
-                $query->where('title_task', 'like', '%' . $search . '%')
-                    ->orWhereHas('Subject', function ($q) use ($search) {
-                        $q->where('name_subject', 'like', '%' . $search . '%');
-                    });
-            })
-            ->where('subject_id', $materi_id)
-            ->orderByRaw("FIELD(collections.status, 'Belum mengumpulkan', 'Sudah mengumpulkan', 'Tidak mengumpulkan') ASC")
-            ->orderBy('created_at', 'desc');
-
-        if ($status) {
-            $tasksQuery->whereHas('collections', function ($query) use ($status) {
-                $query->where('user_id', Auth::id());
-                if ($status == 'Sudah mengumpulkan') {
-                    $query->where('status', 'Sudah mengumpulkan');
-                } elseif ($status == 'Belum mengumpulkan') {
-                    $query->whereNotIn('status', ['Sudah mengumpulkan', 'Tidak mengumpulkan']);
-                } elseif ($status == 'Tidak mengumpulkan') {
-                    $query->where('status', 'Tidak mengumpulkan');
-                }
-            });
-        }
-
-        $tasks = $tasksQuery->paginate(5);
-        $countSiswa = User::whereHas('roles', function ($query) {
-            $query->where('roles.name', 'Murid');
-        })
-            ->whereHas('classes', function ($query) use ($kelasID) {
-                $query->whereIn('classes_id', $kelasID);
-            })
-            ->count();
-
-        $subjectName = Subject::whereHas('materi', function ($query) use ($materi_id) {
-            $query->where('subject_id', $materi_id);
-        })
-            ->orWhereHas('Task', function ($q) use ($materi_id) {
-                $q->where('subject_id', $materi_id);
-            })->distinct()->pluck('name_subject')->first();
-
-        $teacherName = User::whereHas('tasks', function ($query) use ($materi_id) {
-            $query->where('subject_id', $materi_id);
-        })
-            ->orWhereHas('materis', function ($query) use ($materi_id) {
-                $query->where('subject_id', $materi_id);
-            })
-            ->distinct()->pluck('name')->first();
-
-        return view('Siswa.materi', compact('materis', 'tasks', 'subjectName', 'materi_id', 'activeTab', 'countSiswa', 'teacherName'));
-    }
-
-    public function showTask(Request $request)
-    {
-        $user = auth()->user();
-        $search = $request->input('search');
-        $status = $request->input('status');
-
-        $student = $user->student;
-
-        // JIKA USER BUKAN SISWA
-        if (!$student) {
-            return view('Siswa.tugas', [
-                'tasks' => collect()
-            ]);
-        }
-
-        // AMBIL CLASS ID SISWA
-        $classId = $student->class_id;
-
-        $tasksQuery = Task::leftJoin('collections', function ($join) {
-            $join->on('tasks.id', '=', 'collections.task_id')
-                ->where('collections.user_id', auth()->id());
-        })
-            ->select(
-                'tasks.*',
-                DB::raw("COALESCE(collections.status, 'Belum mengumpulkan') as collection_status")
-            )
-            ->whereHas('classes', function ($query) use ($classId) {
-                $query->where('classes.id', $classId);
-            })
-            ->when($search, function ($query) use ($search) {
-                $query->where('tasks.title_task', 'like', "%$search%")
-                    ->orWhereHas('subject', function ($q) use ($search) {
-                        $q->where('name_subject', 'like', "%$search%");
-                    });
-            })
-            ->orderByRaw("
-                CASE
-                    WHEN collections.status = 'Belum mengumpulkan' THEN 1
-                    WHEN collections.status = 'Sudah mengumpulkan' THEN 2
-                    WHEN collections.status = 'Tidak mengumpulkan' THEN 3
-                    ELSE 4
-                END ASC
-            ")
-            ->orderBy('tasks.created_at', 'desc');
-
-        if ($status) {
-            if ($status === 'Belum mengumpulkan') {
-                $tasksQuery->where(function ($query) {
-                    $query->whereNull('collections.status')
-                        ->orWhere('collections.status', 'Belum mengumpulkan');
-                });
-            } else {
-                $tasksQuery->where('collections.status', $status);
-            }
-        }
-
-        $tasks = $tasksQuery->paginate(5);
-
-        // Update task status yang sudah lewat deadline
-        $this->updateTaskStatus();
-
-        return view('Siswa.tugas', compact('tasks'));
-    }
-
-    private function updateTaskStatus()
-    {
-        $now = now();
-
-        // Update collections yang sudah melewati deadline
-        Collection::whereHas('task', function ($query) use ($now) {
-            $query->where('date_collection', '<', $now);
-        })
-            ->where('status', 'Belum mengumpulkan')
-            ->update(['status' => 'Tidak mengumpulkan']);
-
-        // Update tasks yang tidak memiliki collection tapi deadline sudah lewat
-        Task::whereDoesntHave('collections', function ($query) {
-            $query->where('user_id', Auth::id());
-        })
-            ->where('date_collection', '<', $now)
-            ->get()
-            ->each(function ($task) {
-                Collection::create([
-                    'task_id' => $task->id,
-                    'user_id' => Auth::id(),
-                    'status' => 'Tidak mengumpulkan',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-            });
-    }
-
-    public function showAllMateri(Request $request)
-    {
-        $user = auth()->user();
-        $student = $user->student;
-
-        if (!$student || !$student->class_id) {
-            return redirect()->back()->with('error', 'Kelas siswa tidak ditemukan');
-        }
-
-        $classId = $student->class_id;
-        $search  = $request->search;
-
-        $materis = Materi::with(['subject', 'classes'])
-            ->whereHas('classes', function ($q) use ($classId) {
-                $q->where('classes.id', $classId);
-            })
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($qq) use ($search) {
-                    $qq->where('title_materi', 'like', "%$search%")
-                        ->orWhereHas('subject', function ($sub) use ($search) {
-                            $sub->where('name_subject', 'like', "%$search%");
-                        });
-                });
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(6);
-
-        return view('Siswa.semuamateri', compact('materis'));
-    }
-
-    public function showMateri($id)
-    {
-        $user = auth()->user();
-        $student = $user->student;
-
-        if (!$student || !$student->class_id) {
-            abort(403, 'Kelas siswa tidak ditemukan');
-        }
-
-        $materi = Materi::with(['subject', 'classes'])
-            ->whereHas('classes', function ($q) use ($student) {
-                $q->where('classes.id', $student->class_id);
-            })
-            ->where('id', $id)
-            ->firstOrFail();
-
-        return view('Siswa.materi-detail', compact('materi'));
-    }
-
+    /**
+     * Dashboard siswa
+     */
     public function Dashboard()
     {
         $user = auth()->user();
         $student = $user->student;
 
-        $class = $student?->class?->name_class;
+        $class = $student?->currentClass()?->first()?->name_class ?? 'Belum ada kelas';
 
-        // Hitung tugas
-        $countNotCollected = Collection::where('status', 'Belum mengumpulkan')
-            ->where('user_id', $user->id)
-            ->count();
+        $currentAssignment = $student?->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->first();
+        $kelasId = $currentAssignment?->class_id;
 
-        $countCollected = Collection::where('status', 'Sudah mengumpulkan')
-            ->where('user_id', $user->id)
-            ->count();
+        $countNotCollected = 0;
+        $countCollected = 0;
 
-        // Hitung total tugas untuk progress
+        if ($kelasId) {
+            $countNotCollected = Collection::where('status', 'Belum mengumpulkan')
+                ->where('user_id', $user->id)
+                ->whereHas('task', function ($q) use ($kelasId) {
+                    $q->whereHas('classes', fn($cq) => $cq->where('classes.id', $kelasId));
+                })
+                ->count();
+
+            $countCollected = Collection::where('status', 'Sudah mengumpulkan')
+                ->where('user_id', $user->id)
+                ->whereHas('task', function ($q) use ($kelasId) {
+                    $q->whereHas('classes', fn($cq) => $cq->where('classes.id', $kelasId));
+                })
+                ->count();
+        }
+
         $totalTasks = $countCollected + $countNotCollected;
         $progressPercentage = $totalTasks > 0 ? round(($countCollected / $totalTasks) * 100) : 0;
 
-        // Ambil aktivitas terakhir dari berbagai sumber
         $recentActivities = $this->getRecentActivities($user);
 
         return view('Siswa.dashboard', compact(
@@ -351,11 +66,13 @@ class UserPageController extends Controller
         ));
     }
 
+    /**
+     * Mendapatkan aktivitas terbaru untuk dashboard
+     */
     private function getRecentActivities($user)
     {
         $activities = [];
 
-        // 1. Tugas yang baru dikumpulkan (dari collections)
         $recentCollections = Collection::where('user_id', $user->id)
             ->with('task.subject')
             ->where('status', 'Sudah mengumpulkan')
@@ -366,18 +83,17 @@ class UserPageController extends Controller
         foreach ($recentCollections as $collection) {
             if ($collection->task) {
                 $activities[] = [
-                    'title' => 'Mengumpulkan Tugas',
-                    'subtitle' => $collection->task->title_task,
-                    'time' => $this->formatTimeAgo($collection->updated_at),
+                    'title'     => 'Mengumpulkan Tugas',
+                    'subtitle'  => $collection->task->title_task,
+                    'time'      => $this->formatTimeAgo($collection->updated_at),
                     'timestamp' => $collection->updated_at,
-                    'subject' => $collection->task->subject->name_subject ?? 'Umum',
-                    'type' => 'task_submission',
-                    'icon' => '📝'
+                    'subject'   => $collection->task->subject->name_subject ?? 'Umum',
+                    'type'      => 'task_submission',
+                    'icon'      => '📝',
                 ];
             }
         }
 
-        // 2. Ujian yang baru dikerjakan (dari exam_attempts)
         $recentExams = ExamAttempt::where('student_id', $user->id)
             ->with('exam.subject')
             ->where('status', 'submitted')
@@ -387,171 +103,90 @@ class UserPageController extends Controller
 
         foreach ($recentExams as $examAttempt) {
             if ($examAttempt->exam) {
-                $score = $examAttempt->score ? " (Nilai: {$examAttempt->score})" : "";
+                $score = $examAttempt->score ? " (Nilai: {$examAttempt->score})" : '';
                 $activities[] = [
-                    'title' => 'Menyelesaikan Ujian',
-                    'subtitle' => $examAttempt->exam->title . $score,
-                    'time' => $this->formatTimeAgo($examAttempt->updated_at),
+                    'title'     => 'Menyelesaikan Ujian',
+                    'subtitle'  => $examAttempt->exam->title . $score,
+                    'time'      => $this->formatTimeAgo($examAttempt->updated_at),
                     'timestamp' => $examAttempt->updated_at,
-                    'subject' => $examAttempt->exam->subject->name_subject ?? 'Umum',
-                    'type' => 'exam_submission',
-                    'icon' => '📊'
+                    'subject'   => $examAttempt->exam->subject->name_subject ?? 'Umum',
+                    'type'      => 'exam_submission',
+                    'icon'      => '📊',
                 ];
             }
         }
 
-        // 3. Ujian baru yang tersedia (dari exams yang belum dikerjakan)
         if (count($activities) < 3) {
             $student = $user->student;
-            if ($student && $student->class_id) {
-                // Cari ujian yang baru dibuat dan belum dikerjakan
-                $newExams = Exam::where('class_id', $student->class_id)
+            $currentAssignment = $student?->classAssignments()
+                ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                ->first();
+            if ($currentAssignment) {
+                $kelasId = $currentAssignment->class_id;
+                $newExams = Exam::where('class_id', $kelasId)
                     ->where('status', 'active')
-                    ->where(function ($query) {
-                        $query->whereNull('start_at')
-                            ->orWhere('start_at', '<=', now());
-                    })
-                    ->where(function ($query) {
-                        $query->whereNull('end_at')
-                            ->orWhere('end_at', '>=', now());
-                    })
-                    ->whereDoesntHave('attempts', function ($query) use ($user) {
-                        $query->where('student_id', $user->id)
-                            ->where('status', 'submitted');
-                    })
-                    ->where('created_at', '>=', Carbon::now()->subDays(3)) // Hanya ambil yang dibuat 3 hari terakhir
+                    ->where(fn($q) => $q->whereNull('start_at')->orWhere('start_at', '<=', now()))
+                    ->where(fn($q) => $q->whereNull('end_at')->orWhere('end_at', '>=', now()))
+                    ->whereDoesntHave('attempts', fn($q) => $q->where('student_id', $user->id)->where('status', 'submitted'))
+                    ->where('created_at', '>=', Carbon::now()->subDays(3))
                     ->orderBy('created_at', 'desc')
                     ->limit(3 - count($activities))
                     ->get();
 
                 foreach ($newExams as $exam) {
                     $activities[] = [
-                        'title' => 'Ujian Baru Tersedia',
-                        'subtitle' => $exam->title . " ({$exam->questions()->count()} soal)",
-                        'time' => $this->formatTimeAgo($exam->created_at),
+                        'title'     => 'Ujian Baru Tersedia',
+                        'subtitle'  => $exam->title . " ({$exam->questions()->count()} soal)",
+                        'time'      => $this->formatTimeAgo($exam->created_at),
                         'timestamp' => $exam->created_at,
-                        'subject' => $exam->subject->name_subject ?? 'Umum',
-                        'type' => 'new_exam',
-                        'icon' => '📋'
+                        'subject'   => $exam->subject->name_subject ?? 'Umum',
+                        'type'      => 'new_exam',
+                        'icon'      => '📋',
                     ];
                 }
             }
         }
 
-        // 4. Ujian yang akan segera dimulai/berakhir
         if (count($activities) < 3) {
             $student = $user->student;
-            if ($student && $student->class_id) {
-                $upcomingExams = Exam::where('class_id', $student->class_id)
-                    ->where('status', 'active')
-                    ->where(function ($query) {
-                        // Ujian yang akan dimulai dalam 24 jam
-                        $query->whereBetween('start_at', [now(), now()->addHours(24)])
-                            ->orWhere(function ($q) {
-                                // Atau ujian yang akan berakhir dalam 24 jam
-                                $q->whereNotNull('end_at')
-                                    ->whereBetween('end_at', [now(), now()->addHours(24)]);
-                            });
-                    })
-                    ->whereDoesntHave('attempts', function ($query) use ($user) {
-                        $query->where('student_id', $user->id)
-                            ->where('status', 'submitted');
-                    })
-                    ->orderBy('start_at', 'asc')
-                    ->limit(3 - count($activities))
-                    ->get();
-
-                foreach ($upcomingExams as $exam) {
-                    $timeLeft = '';
-
-                    if ($exam->start_at && $exam->start_at > now()) {
-                        $timeLeft = ' (Dimulai dalam ' . $this->formatTimeLeft($exam->start_at) . ')';
-                    } elseif ($exam->end_at && $exam->end_at > now()) {
-                        $timeLeft = ' (Berakhir dalam ' . $this->formatTimeLeft($exam->end_at) . ')';
-                    }
-
-                    $activities[] = [
-                        'title' => 'Ujian ' . ($exam->start_at > now() ? 'Akan Dimulai' : 'Akan Berakhir'),
-                        'subtitle' => $exam->title . $timeLeft,
-                        'time' => $this->formatTimeAgo($exam->updated_at),
-                        'timestamp' => $exam->updated_at,
-                        'subject' => $exam->subject->name_subject ?? 'Umum',
-                        'type' => 'exam_reminder',
-                        'icon' => '⏰'
-                    ];
-                }
-            }
-        }
-
-        // 5. Materi yang baru dibuka (ambil materi terbaru dari kelasnya)
-        if (count($activities) < 3) {
-            $student = $user->student;
-            if ($student && $student->class_id) {
-                $recentMateri = Materi::whereHas('classes', function ($q) use ($student) {
-                    $q->where('classes.id', $student->class_id);
-                })
-                    ->where('created_at', '>=', Carbon::now()->subDays(7)) // Hanya ambil 7 hari terakhir
+            $currentAssignment = $student?->classAssignments()
+                ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                ->first();
+            if ($currentAssignment) {
+                $kelasId = $currentAssignment->class_id;
+                $recentMateri = Materi::whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+                    ->where('created_at', '>=', Carbon::now()->subDays(7))
                     ->orderBy('created_at', 'desc')
                     ->limit(3 - count($activities))
                     ->get();
 
                 foreach ($recentMateri as $materi) {
                     $activities[] = [
-                        'title' => 'Materi Baru Tersedia',
-                        'subtitle' => $materi->title_materi,
-                        'time' => $this->formatTimeAgo($materi->created_at),
+                        'title'     => 'Materi Baru Tersedia',
+                        'subtitle'  => $materi->title_materi,
+                        'time'      => $this->formatTimeAgo($materi->created_at),
                         'timestamp' => $materi->created_at,
-                        'subject' => $materi->subject->name_subject ?? 'Umum',
-                        'type' => 'new_materi',
-                        'icon' => '📚'
+                        'subject'   => $materi->subject->name_subject ?? 'Umum',
+                        'type'      => 'new_materi',
+                        'icon'      => '📚',
                     ];
                 }
             }
         }
 
-        // 6. Jika masih kurang dari 3, tambahkan aktivitas default
         if (count($activities) < 3) {
-            $defaultActivities = [
-                [
-                    'title' => 'Bergabung di Kelas',
-                    'subtitle' => 'Memulai pembelajaran online',
-                    'time' => 'Awal semester',
-                    'timestamp' => Carbon::now()->subDays(30),
-                    'subject' => 'Sistem',
-                    'type' => 'system',
-                    'icon' => '👋'
-                ],
-                [
-                    'title' => 'Menyelesaikan Kuis',
-                    'subtitle' => 'Latihan soal pertama',
-                    'time' => 'Minggu lalu',
-                    'timestamp' => Carbon::now()->subDays(7),
-                    'subject' => 'Latihan',
-                    'type' => 'quiz',
-                    'icon' => '✅'
-                ],
-                [
-                    'title' => 'Membaca Materi',
-                    'subtitle' => 'Pengenalan materi baru',
-                    'time' => '2 hari yang lalu',
-                    'timestamp' => Carbon::now()->subDays(2),
-                    'subject' => 'Pembelajaran',
-                    'type' => 'study',
-                    'icon' => '📖'
-                ]
+            $defaults = [
+                ['title' => 'Bergabung di Kelas', 'subtitle' => 'Memulai pembelajaran online', 'time' => 'Awal semester', 'timestamp' => Carbon::now()->subDays(30), 'subject' => 'Sistem', 'type' => 'system', 'icon' => '👋'],
+                ['title' => 'Menyelesaikan Kuis', 'subtitle' => 'Latihan soal pertama', 'time' => 'Minggu lalu', 'timestamp' => Carbon::now()->subDays(7), 'subject' => 'Latihan', 'type' => 'quiz', 'icon' => '✅'],
+                ['title' => 'Membaca Materi', 'subtitle' => 'Pengenalan materi baru', 'time' => '2 hari yang lalu', 'timestamp' => Carbon::now()->subDays(2), 'subject' => 'Pembelajaran', 'type' => 'study', 'icon' => '📖'],
             ];
-
             for ($i = count($activities); $i < 3; $i++) {
-                $activities[] = $defaultActivities[$i] ?? $defaultActivities[0];
+                $activities[] = $defaults[$i] ?? $defaults[0];
             }
         }
 
-        // Urutkan berdasarkan timestamp (terbaru dulu)
-        usort($activities, function ($a, $b) {
-            return $b['timestamp'] <=> $a['timestamp'];
-        });
+        usort($activities, fn($a, $b) => $b['timestamp'] <=> $a['timestamp']);
 
-        // Hapus field tambahan sebelum dikembalikan
         foreach ($activities as &$activity) {
             unset($activity['timestamp'], $activity['type'], $activity['icon']);
         }
@@ -562,154 +197,87 @@ class UserPageController extends Controller
     private function formatTimeAgo($timestamp)
     {
         if (!$timestamp) return 'Beberapa waktu lalu';
-
         $now = Carbon::now();
-
-        $diffInSeconds = $now->diffInSeconds($timestamp);
-        $diffInMinutes = $now->diffInMinutes($timestamp);
-        $diffInHours   = $now->diffInHours($timestamp);
-        $diffInDays    = $now->diffInDays($timestamp);
-
-        // 0–59 detik
-        if ($diffInSeconds < 60) {
-            return 'Baru saja';
-        }
-
-        // 1–59 menit
-        if ($diffInMinutes < 60) {
-            return $diffInMinutes . ' menit yang lalu';
-        }
-
-        // 1–23 jam
-        if ($diffInHours < 24) {
-            return $diffInHours . ' jam yang lalu';
-        }
-
-        // 1–29 hari
-        if ($diffInDays < 30) {
-            return $diffInDays . ' hari yang lalu';
-        }
-
-        // Lebih dari 30 hari → tanggal lengkap
-        return Carbon::parse($timestamp)
-            ->locale('id')
-            ->translatedFormat('d F Y');
+        $s = $now->diffInSeconds($timestamp);
+        $m = $now->diffInMinutes($timestamp);
+        $h = $now->diffInHours($timestamp);
+        $d = $now->diffInDays($timestamp);
+        if ($s < 60)    return 'Baru saja';
+        if ($m < 60)    return "$m menit yang lalu";
+        if ($h < 24)    return "$h jam yang lalu";
+        if ($d < 30)    return "$d hari yang lalu";
+        return Carbon::parse($timestamp)->locale('id')->translatedFormat('d F Y');
     }
 
     private function formatTimeLeft($futureTime)
     {
-        if (!$futureTime || $futureTime <= now()) {
-            return '';
-        }
-
-        $totalMinutes = now()->diffInMinutes($futureTime);
-
-        $hours = intdiv($totalMinutes, 60);
-        $minutes = $totalMinutes % 60;
-
-        if ($hours > 0 && $minutes > 0) {
-            return "{$hours} jam {$minutes} menit";
-        }
-
-        if ($hours > 0) {
-            return "{$hours} jam";
-        }
-
+        if (!$futureTime || $futureTime <= now()) return '';
+        $total   = now()->diffInMinutes($futureTime);
+        $hours   = intdiv($total, 60);
+        $minutes = $total % 60;
+        if ($hours > 0 && $minutes > 0) return "{$hours} jam {$minutes} menit";
+        if ($hours > 0) return "{$hours} jam";
         return "{$minutes} menit";
     }
 
-
-    // Di UserPageController - perbaiki method showSoal()
+    /**
+     * Menampilkan daftar ujian untuk siswa
+     */
     public function showSoal(Request $request)
     {
         try {
             $user = Auth::user();
 
-            // Cek jika user adalah siswa
             if (!$user->hasRole('Murid')) {
                 return back()->with('error', 'Hanya siswa yang dapat mengakses halaman ini.');
             }
 
-            // Cek jika user memiliki data student
             if (!$user->student) {
-                return view('Siswa.soal', [
-                    'exams' => collect(),
-                    'error' => 'Data siswa tidak ditemukan. Silakan hubungi administrator.'
-                ]);
+                return view('Siswa.soal', ['exams' => collect(), 'error' => 'Data siswa tidak ditemukan.']);
             }
 
-            // Cek jika student memiliki class_id
             $student = $user->student;
-            if (!$student->class_id) {
-                return view('Siswa.soal', [
-                    'exams' => collect(),
-                    'error' => 'Anda belum memiliki kelas. Silakan tunggu hingga administrator menugaskan Anda ke kelas.'
-                ]);
+            $currentAssignment = $student->classAssignments()
+                ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                ->first();
+
+            if (!$currentAssignment) {
+                return view('Siswa.soal', ['exams' => collect(), 'error' => 'Anda belum memiliki kelas.']);
             }
 
-            $kelasId = $student->class_id;
-            $search = $request->input('search');
-            $status = $request->input('status');
+            $kelasId = $currentAssignment->class_id;
+            $search  = $request->input('search');
+            $status  = $request->input('status');
 
-            // Query dasar dengan scope untuk exam yang aktif dan tersedia
-            $query = Exam::with([
-                'subject',
-                'teacher.user',
-                'questions' // Tambahkan untuk menghitung jumlah soal
-            ])
+            $query = Exam::with(['subject', 'teacher.user'])
                 ->where('class_id', $kelasId)
-                ->where('status', 'active') // Hanya exam yang aktif
-                ->where(function ($query) {
-                    $query->whereNull('end_at')
-                        ->orWhere('end_at', '>=', now());
-                });
+                ->where('status', 'active')
+                ->where(fn($q) => $q->whereNull('end_at')->orWhere('end_at', '>=', now()));
 
-            // Filter pencarian
             if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('type', 'like', '%' . $search . '%')
-                        ->orWhereHas('subject', function ($subjectQuery) use ($search) {
-                            $subjectQuery->where('name_subject', 'like', '%' . $search . '%');
-                        })
-                        ->orWhereHas('teacher.user', function ($teacherQuery) use ($search) {
-                            $teacherQuery->where('name', 'like', '%' . $search . '%');
-                        });
-                });
+                $query->where(fn($q) => $q
+                    ->where('title', 'like', "%$search%")
+                    ->orWhere('type', 'like', "%$search%")
+                    ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+                    ->orWhereHas('teacher.user', fn($tq) => $tq->where('name', 'like', "%$search%"))
+                );
             }
 
-            // Filter berdasarkan status
             if ($status) {
                 switch ($status) {
                     case 'available':
-                        // Belum dikerjakan dan tersedia
-                        $query->where(function ($q) use ($user) {
-                            $q->whereDoesntHave('attempts', function ($subQuery) use ($user) {
-                                $subQuery->where('student_id', $user->id)
-                                    ->whereIn('status', ['submitted', 'timeout']);
-                            })
-                                ->orWhereHas('attempts', function ($subQuery) use ($user) {
-                                    $subQuery->where('student_id', $user->id)
-                                        ->where('status', 'in_progress');
-                                });
-                        });
+                        $query->where(fn($q) => $q
+                            ->whereDoesntHave('attempts', fn($sub) => $sub->where('student_id', $user->id)->whereIn('status', ['submitted', 'timeout']))
+                            ->orWhereHas('attempts', fn($sub) => $sub->where('student_id', $user->id)->where('status', 'in_progress'))
+                        );
                         break;
-
                     case 'completed':
-                        // Sudah dikerjakan
-                        $query->whereHas('attempts', function ($q) use ($user) {
-                            $q->where('student_id', $user->id)
-                                ->whereIn('status', ['submitted', 'timeout']);
-                        });
+                        $query->whereHas('attempts', fn($q) => $q->where('student_id', $user->id)->whereIn('status', ['submitted', 'timeout']));
                         break;
-
                     case 'expired':
-                        // Kadaluarsa
                         $query->where('end_at', '<', now());
                         break;
-
                     case 'upcoming':
-                        // Akan datang
                         $query->where('start_at', '>', now());
                         break;
                 }
@@ -717,121 +285,387 @@ class UserPageController extends Controller
 
             $exams = $query->orderBy('created_at', 'desc')->paginate(12);
 
-            // Tambahkan informasi status untuk setiap exam
             foreach ($exams as $exam) {
                 $attempt = ExamAttempt::where('exam_id', $exam->id)
                     ->where('student_id', $user->id)
-                    ->latest()
-                    ->first();
-
-                $exam->attempt = $attempt;
-                $exam->questions_count = $exam->questions->count();
-                $exam->status = $this->getExamStatus($exam, $attempt);
-
-                // Hitung berapa kali sudah attempt
-                $exam->attempt_count = ExamAttempt::where('exam_id', $exam->id)
+                    ->latest()->first();
+                $exam->attempt         = $attempt;
+                $exam->questions_count = $exam->questions()->count();
+                $exam->attempt_count   = ExamAttempt::where('exam_id', $exam->id)
                     ->where('student_id', $user->id)
                     ->whereIn('status', ['submitted', 'timeout'])
                     ->count();
-
                 $exam->can_retake = $exam->limit_attempts > $exam->attempt_count;
             }
 
             return view('Siswa.soal', compact('exams'));
         } catch (\Exception $e) {
-            \Log::error('Error in showSoal: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            Log::error('Error in showSoal: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Menampilkan detail ujian
+     */
     public function showSoalDetail($examId)
     {
         try {
-            $user = Auth::user();
+            $user    = Auth::user();
             $student = $user->student;
 
-            if (!$student || !$student->class_id) {
-                return back()->with('error', 'Anda belum memiliki kelas.');
-            }
+            if (!$student) return back()->with('error', 'Data siswa tidak ditemukan.');
 
-            $exam = Exam::with([
-                'subject',
-                'teacher.user',
-                'questions' => function ($query) {
-                    $query->with('choices');
-                }
-            ])
+            $currentAssignment = $student->classAssignments()
+                ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                ->first();
+
+            if (!$currentAssignment) return back()->with('error', 'Anda belum memiliki kelas.');
+
+            $exam = Exam::with(['subject', 'teacher.user', 'questions' => fn($q) => $q->with('choices')])
                 ->where('id', $examId)
-                ->where('class_id', $student->class_id)
+                ->where('class_id', $currentAssignment->class_id)
                 ->first();
 
-            if (!$exam) {
-                return redirect()->route('soal.index')
-                    ->with('error', 'Ujian tidak ditemukan atau tidak tersedia untuk kelas Anda.');
+            if (!$exam) return redirect()->route('soal.index')->with('error', 'Ujian tidak ditemukan.');
+
+            if (!$this->isExamAccessibleForStudent($exam)) {
+                $message = $this->getExamAccessibilityMessage($exam);
+                return redirect()->route('soal.index')->with('error', 'Ujian tidak dapat diakses. ' . $message);
             }
-
-            // PERBAIKI: Gunakan isAccessibleForStudent() bukan cek manual
-            if (!$exam->isAccessibleForStudent()) {
-                $status = $exam->getTimeStatus();
-                $message = 'Ujian tidak dapat diakses. ';
-
-                if ($status === 'upcoming') {
-                    $message .= 'Mulai: ' . $exam->start_at->format('d M Y H:i');
-                } elseif ($status === 'finished') {
-                    $message .= 'Berakhir: ' . $exam->end_at->format('d M Y H:i');
-                } elseif ($status === 'inactive') {
-                    $message .= 'Status: ' . $exam->status;
-                }
-
-                return redirect()->route('soal.index')
-                    ->with('error', $message);
-            }
-
-            // Cek attempt - PERBAIKI: Gunakan status 'in_progress' bukan 'ongoing'
-            $latestAttempt = ExamAttempt::where('exam_id', $examId)
-                ->where('student_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->first();
 
             $attemptCount = ExamAttempt::where('exam_id', $examId)
                 ->where('student_id', $user->id)
                 ->whereIn('status', ['submitted', 'timeout'])
                 ->count();
 
+            $canRetake     = $exam->limit_attempts > $attemptCount;
+            $latestAttempt = ExamAttempt::where('exam_id', $examId)
+                ->where('student_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
             $exam->questions_count = $exam->questions->count();
-            $canRetake = $exam->limit_attempts > $attemptCount;
 
             return view('Siswa.soal-detail', compact('exam', 'latestAttempt', 'attemptCount', 'canRetake'));
         } catch (\Exception $e) {
-            Log::error('Error in showDetail: ' . $e->getMessage());
+            Log::error('Error in showSoalDetail: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    private function getExamStatus($exam, $attempt)
+    private function isExamAccessibleForStudent($exam)
     {
-        if (!$exam) return 'not_available';
+        if ($exam->status !== 'active') return false;
+        if ($exam->type !== 'QUIZ') {
+            if ($exam->start_at && now() < $exam->start_at) return false;
+            if ($exam->end_at   && now() > $exam->end_at)   return false;
+        }
+        return true;
+    }
 
-        // Cek jika sudah melewati batas waktu
-        if ($exam->end_at && now() > $exam->end_at) {
-            return 'expired';
+    private function getExamAccessibilityMessage($exam)
+    {
+        if ($exam->status !== 'active') return 'Status ujian: ' . $exam->status;
+        if ($exam->type !== 'QUIZ') {
+            if ($exam->start_at && now() < $exam->start_at) return 'Ujian dimulai pada ' . $exam->start_at->format('d M Y H:i');
+            if ($exam->end_at   && now() > $exam->end_at)   return 'Ujian telah berakhir pada ' . $exam->end_at->format('d M Y H:i');
+        }
+        return 'Ujian tidak tersedia.';
+    }
+
+    /**
+     * Menampilkan daftar mata pelajaran untuk siswa.
+     * Mendukung parameter:
+     *   ?search=   → cari berdasarkan nama mapel
+     *   ?sort=asc|desc → urutan A–Z / Z–A  (default: asc)
+     *   ?tugas=ada|selesai → filter berdasarkan status tugas
+     */
+    public function showSubject(Request $request)
+    {
+        $user    = auth()->user();
+        $student = $user->student;
+
+        if (!$student) {
+            return redirect()->back()->with('error', 'Data siswa tidak ditemukan.');
         }
 
-        // Cek jika belum dimulai
-        if ($exam->start_at && now() < $exam->start_at) {
-            return 'upcoming';
+        $currentAssignment = $student->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->with('academicYear')
+            ->first();
+
+        if (!$currentAssignment) {
+            return redirect()->back()->with('error', 'Anda belum memiliki kelas di tahun ajaran aktif.');
         }
 
-        // Cek berdasarkan attempt
-        if ($attempt) {
-            if ($attempt->status === 'submitted' || $attempt->status === 'timeout') {
-                return 'completed';
-            } elseif ($attempt->status === 'in_progress') {
-                return 'ongoing';
+        $kelasId        = $currentAssignment->class_id;
+        $academicYearId = $currentAssignment->academicYear->id ?? null;
+        $search         = $request->input('search');
+        $sort           = in_array($request->input('sort'), ['asc', 'desc']) ? $request->input('sort') : 'asc';
+        $tugasFilter    = $request->input('tugas'); // 'ada' | 'selesai' | null
+
+        // Ambil subject_id dari teacher_subject_assignments
+        $subjectIds = DB::table('teacher_subject_assignments')
+            ->where('class_id', $kelasId)
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->pluck('subject_id')
+            ->unique();
+
+        // Fallback dari materi/tugas
+        if ($subjectIds->isEmpty()) {
+            $subjectIds = Materi::whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+                ->pluck('subject_id')
+                ->merge(
+                    Task::whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+                        ->pluck('subject_id')
+                )->unique();
+        }
+
+        if ($subjectIds->isEmpty()) {
+            $subjects = Subject::whereRaw('1=0')->paginate(6);
+        } else {
+            $query = Subject::whereIn('id', $subjectIds)
+                ->withCount([
+                    'materis as materi_count' => function ($q) use ($kelasId) {
+                        $q->whereHas('classes', fn($sq) => $sq->where('classes.id', $kelasId));
+                    },
+                    'tasks as unfinished_task_count' => function ($q) use ($user, $kelasId) {
+                        $q->whereHas('classes', fn($sq) => $sq->where('classes.id', $kelasId))
+                          ->whereHas('collections', fn($sq) => $sq->where('user_id', $user->id)->where('status', 'Belum mengumpulkan'));
+                    },
+                ])
+                ->with(['teacherAssignments' => function ($q) use ($kelasId, $academicYearId) {
+                    $q->where('class_id', $kelasId)
+                      ->when($academicYearId, fn($sq) => $sq->where('academic_year_id', $academicYearId))
+                      ->with('teacher.user');
+                }]);
+
+            // Search
+            if ($search) {
+                $query->where('name_subject', 'like', "%$search%");
+            }
+
+            // Filter tugas
+            if ($tugasFilter === 'ada') {
+                $query->where('unfinished_task_count', '>', 0);
+                // Karena withCount hasilnya setelah select, kita pakai having
+                // Alternatif: filter di PHP jika tidak jalan di SQL
+            } elseif ($tugasFilter === 'selesai') {
+                $query->where('unfinished_task_count', 0);
+            }
+
+            $subjects = $query->orderBy('name_subject', $sort)->paginate(6)->withQueryString();
+        }
+
+        return view('Siswa.mapel', compact('subjects', 'kelasId'));
+    }
+
+    /**
+     * Menampilkan materi dan tugas berdasarkan mata pelajaran.
+     * Parameter:
+     *   ?tab=materi|tugas   → tab aktif (default: materi)
+     *   ?search=            → cari
+     *   ?order=asc|desc     → urutan materi
+     *   ?status=            → filter status tugas
+     */
+    public function showMateriBySubject(Request $request, $subjectId)
+    {
+        $user    = auth()->user();
+        $student = $user->student;
+
+        if (!$student) return redirect()->back()->with('error', 'Data siswa tidak ditemukan.');
+
+        $currentAssignment = $student->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->first();
+
+        if (!$currentAssignment) return redirect()->back()->with('error', 'Anda belum memiliki kelas.');
+
+        $kelasId   = $currentAssignment->class_id;
+        $order     = $request->input('order', 'desc');
+        $search    = $request->input('search');
+        // ✅ Perbaikan: gunakan 'tab' konsisten (bukan 'materi' atau 'tugas' hardcoded)
+        $activeTab = in_array($request->input('tab'), ['materi', 'tugas']) ? $request->input('tab') : 'materi';
+        $status    = $request->input('status');
+
+        // Query Materi
+        $materis = Materi::where('subject_id', $subjectId)
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+            ->when($search && $activeTab === 'materi', fn($q) => $q->where('title_materi', 'like', "%$search%"))
+            ->orderBy('created_at', $order)
+            ->paginate(5, ['*'], 'materi_page');
+
+        // Query Tugas
+        $tasksQuery = Task::with(['collections' => fn($q) => $q->where('user_id', $user->id)])
+            ->leftJoin('collections', function ($join) use ($user) {
+                $join->on('tasks.id', '=', 'collections.task_id')
+                     ->where('collections.user_id', $user->id);
+            })
+            ->select('tasks.*', 'collections.status as collection_status')
+            ->where('subject_id', $subjectId)
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+            ->when($search && $activeTab === 'tugas', fn($q) => $q->where('title_task', 'like', "%$search%"))
+            ->orderByRaw("FIELD(collections.status, 'Belum mengumpulkan', 'Sudah mengumpulkan', 'Tidak mengumpulkan') ASC")
+            ->orderBy('tasks.created_at', 'desc');
+
+        // ✅ Filter status tugas hanya saat tab=tugas
+        if ($status) {
+            $tasksQuery->whereHas('collections', function ($q) use ($user, $status) {
+                $q->where('user_id', $user->id)->where('status', $status);
+            });
+        }
+
+        $tasks = $tasksQuery->paginate(5, ['*'], 'tugas_page');
+
+        $subjectName = Subject::find($subjectId)?->name_subject ?? 'Mata Pelajaran';
+
+        $countSiswa = $kelasId
+            ? Student::whereHas('classAssignments', fn($q) => $q
+                ->where('class_id', $kelasId)
+                ->whereHas('academicYear', fn($ay) => $ay->where('is_active', true))
+              )->count()
+            : 0;
+
+        $teacherName  = 'Guru';
+        $firstMateri  = $materis->first();
+        if ($firstMateri && $firstMateri->user) {
+            $teacherName = $firstMateri->user->name;
+        } else {
+            $firstTask = $tasks->first();
+            if ($firstTask && isset($firstTask->user)) {
+                $teacherName = $firstTask->user->name;
             }
         }
 
-        // Default: tersedia untuk dikerjakan
-        return 'available';
+        return view('Siswa.materi', compact(
+            'materis', 'tasks', 'subjectName', 'subjectId',
+            'activeTab', 'countSiswa', 'teacherName'
+        ));
+    }
+
+    /**
+     * Menampilkan semua tugas untuk siswa
+     */
+    public function showTask(Request $request)
+    {
+        $user    = auth()->user();
+        $student = $user->student;
+
+        if (!$student) return view('Siswa.tugas', ['tasks' => collect()]);
+
+        $currentAssignment = $student->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->first();
+
+        if (!$currentAssignment) return view('Siswa.tugas', ['tasks' => collect()]);
+
+        $kelasId = $currentAssignment->class_id;
+        $search  = $request->input('search');
+        $status  = $request->input('status');
+
+        $tasksQuery = Task::leftJoin('collections', function ($join) use ($user) {
+            $join->on('tasks.id', '=', 'collections.task_id')
+                 ->where('collections.user_id', $user->id);
+        })
+            ->select('tasks.*', DB::raw("COALESCE(collections.status,'Belum mengumpulkan') as collection_status"))
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+            ->with(['subject', 'materi', 'collections' => fn($q) => $q->where('user_id', $user->id)])
+            ->when($search, fn($q) => $q
+                ->where('tasks.title_task', 'like', "%$search%")
+                ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+            )
+            ->orderByRaw("CASE WHEN collections.status='Belum mengumpulkan' THEN 1 WHEN collections.status='Sudah mengumpulkan' THEN 2 WHEN collections.status='Tidak mengumpulkan' THEN 3 ELSE 4 END ASC")
+            ->orderBy('tasks.created_at', 'desc');
+
+        if ($status) {
+            if ($status === 'Belum mengumpulkan') {
+                $tasksQuery->where(fn($q) => $q->whereNull('collections.status')->orWhere('collections.status', 'Belum mengumpulkan'));
+            } else {
+                $tasksQuery->where('collections.status', $status);
+            }
+        }
+
+        $tasks = $tasksQuery->paginate(5);
+
+        $this->updateTaskStatus();
+
+        return view('Siswa.tugas', compact('tasks'));
+    }
+
+    private function updateTaskStatus()
+    {
+        $userId = auth()->id();
+        $now    = now();
+
+        Collection::whereHas('task', fn($q) => $q->where('date_collection', '<', $now))
+            ->where('user_id', $userId)
+            ->where('status', 'Belum mengumpulkan')
+            ->update(['status' => 'Tidak mengumpulkan']);
+
+        Task::whereDoesntHave('collections', fn($q) => $q->where('user_id', $userId))
+            ->where('date_collection', '<', $now)
+            ->get()
+            ->each(fn($task) => Collection::firstOrCreate(
+                ['task_id' => $task->id, 'user_id' => $userId],
+                ['status' => 'Tidak mengumpulkan']
+            ));
+    }
+
+    /**
+     * Menampilkan semua materi
+     */
+    public function showAllMateri(Request $request)
+    {
+        $user    = auth()->user();
+        $student = $user->student;
+
+        if (!$student) return redirect()->back()->with('error', 'Data siswa tidak ditemukan.');
+
+        $currentAssignment = $student->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->first();
+
+        if (!$currentAssignment) return redirect()->back()->with('error', 'Anda belum memiliki kelas.');
+
+        $kelasId = $currentAssignment->class_id;
+        $search  = $request->input('search');
+
+        $materis = Materi::with(['subject', 'classes'])
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+            ->when($search, fn($q) => $q
+                ->where('title_materi', 'like', "%$search%")
+                ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+            )
+            ->orderBy('created_at', 'desc')
+            ->paginate(6);
+
+        return view('Siswa.semuamateri', compact('materis'));
+    }
+
+    /**
+     * Menampilkan detail materi
+     */
+    public function showMateri($id)
+    {
+        $user    = auth()->user();
+        $student = $user->student;
+
+        if (!$student) abort(403, 'Data siswa tidak ditemukan.');
+
+        $currentAssignment = $student->classAssignments()
+            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+            ->first();
+
+        if (!$currentAssignment) abort(403, 'Anda belum memiliki kelas.');
+
+        $kelasId = $currentAssignment->class_id;
+
+        $materi = Materi::with(['subject', 'classes'])
+            ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return view('Siswa.materi-detail', compact('materi'));
     }
 }

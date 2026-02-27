@@ -265,35 +265,91 @@
                             @foreach ($exam->questions->take(5) as $index => $question)
                                 <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                                     <div class="flex justify-between items-start mb-2">
-                                        <span
-                                            class="px-2 py-1 text-xs font-medium rounded
-                                {{ $question->type === 'PG' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700' }}">
-                                            {{ $question->type === 'PG' ? 'Pilihan Ganda' : 'Isian Singkat' }}
-                                        </span>
+                                        @php
+                                        $typeLabels = [
+                                            'PG'  => ['label' => 'Pilihan Ganda',  'class' => 'bg-blue-100 text-blue-700'],
+                                            'PGK' => ['label' => 'PG Kompleks',    'class' => 'bg-indigo-100 text-indigo-700'],
+                                            'BS'  => ['label' => 'Benar / Salah',  'class' => 'bg-purple-100 text-purple-700'],
+                                            'DD'  => ['label' => 'Dropdown',       'class' => 'bg-cyan-100 text-cyan-700'],
+                                            'IS'  => ['label' => 'Isian Singkat',  'class' => 'bg-amber-100 text-amber-700'],
+                                            'ES'  => ['label' => 'Esai',           'class' => 'bg-rose-100 text-rose-700'],
+                                            'SK'  => ['label' => 'Skala Linear',   'class' => 'bg-teal-100 text-teal-700'],
+                                            'MJ'  => ['label' => 'Menjodohkan',    'class' => 'bg-orange-100 text-orange-700'],
+                                        ];
+                                        $tInfo = $typeLabels[$question->type] ?? ['label' => $question->type, 'class' => 'bg-slate-100 text-slate-700'];
+                                        // short_answers sudah berupa array karena accessor di model
+                                        $sa = $question->short_answers ?? [];
+                                    @endphp
+                                    <span class="px-2 py-1 text-xs font-medium rounded {{ $tInfo['class'] }}">
+                                        {{ $tInfo['label'] }}
+                                    </span>
                                         <span class="text-sm text-slate-600">Skor: {{ $question->score }}</span>
                                     </div>
                                     <p class="text-slate-800 mb-3">{{ $question->question }}</p>
 
-                                    @if ($question->type === 'PG')
+                                    @if (in_array($question->type, ['PG', 'PGK', 'DD']))
+                                        {{-- Tampilkan pilihan jawaban --}}
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                             @foreach ($question->choices as $choice)
-                                                <div
-                                                    class="text-sm flex items-center {{ $choice->is_correct ? 'text-emerald-700 font-medium' : 'text-slate-600' }}">
+                                                <div class="text-sm flex items-center {{ $choice->is_correct ? 'text-emerald-700 font-medium' : 'text-slate-600' }}">
                                                     <span class="mr-2">{{ $choice->label }}.</span>
                                                     <span>{{ $choice->text }}</span>
+                                                    @if ($choice->is_correct)
+                                                        <span class="ml-1 text-emerald-500">✓</span>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
-                                    @else
+
+                                    @elseif ($question->type === 'BS')
+                                        {{-- Benar / Salah --}}
+                                        <div class="text-sm">
+                                            <span class="text-slate-600">Jawaban: </span>
+                                            <span class="font-medium text-slate-800">
+                                                {{ ucfirst($sa[0] ?? '-') }}
+                                            </span>
+                                        </div>
+
+                                    @elseif ($question->type === 'IS')
+                                        {{-- Isian Singkat --}}
                                         <div class="text-sm">
                                             <p class="text-slate-600 mb-1">Jawaban diterima:</p>
                                             <div class="flex flex-wrap gap-2">
-                                                @foreach (json_decode($question->short_answers ?? '[]') as $answer)
-                                                    <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">
-                                                        {{ $answer }}
-                                                    </span>
+                                                @foreach ($sa['answers'] ?? $sa as $answer)
+                                                    <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">{{ $answer }}</span>
                                                 @endforeach
                                             </div>
+                                        </div>
+
+                                    @elseif ($question->type === 'ES')
+                                        {{-- Esai --}}
+                                        <div class="text-sm text-slate-600 italic">
+                                            Dinilai manual oleh guru
+                                            @if (!empty($sa['rubric']))
+                                                — <span class="text-slate-500">{{ Str::limit($sa['rubric'], 80) }}</span>
+                                            @endif
+                                        </div>
+
+                                    @elseif ($question->type === 'SK')
+                                        {{-- Skala Linear --}}
+                                        <div class="text-sm text-slate-600">
+                                            Skala {{ $sa['min'] ?? 1 }} ({{ $sa['min_label'] ?? '' }})
+                                            — {{ $sa['max'] ?? 5 }} ({{ $sa['max_label'] ?? '' }})
+                                            @if (!empty($sa['correct']))
+                                                | Jawaban benar: <span class="font-medium">{{ $sa['correct'] }}</span>
+                                            @endif
+                                        </div>
+
+                                    @elseif ($question->type === 'MJ')
+                                        {{-- Menjodohkan --}}
+                                        <div class="text-sm space-y-1">
+                                            @foreach ($sa as $pair)
+                                                <div class="flex items-center gap-2 text-slate-600">
+                                                    <span class="font-medium">{{ $pair['left'] ?? '' }}</span>
+                                                    <span class="text-slate-400">→</span>
+                                                    <span>{{ $pair['right'] ?? '' }}</span>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     @endif
                                 </div>

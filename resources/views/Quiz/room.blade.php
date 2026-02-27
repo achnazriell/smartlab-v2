@@ -1,1395 +1,1115 @@
 @php
     $isGuru = auth()->user()->hasRole('Guru');
     $isMurid = auth()->user()->hasRole('Murid');
-
-    // Pastikan $participant tersedia untuk siswa
     $participant = null;
     if ($isMurid) {
-        $quiz->load([
-            'activeSession.participants' => function ($query) {
-                $query->where('student_id', auth()->id());
-            },
-        ]);
-
+        $quiz->load(['activeSession.participants' => function ($query) {
+            $query->where('student_id', auth()->id());
+        }]);
         if ($quiz->activeSession) {
             $participant = $quiz->activeSession->participants->first();
         }
     }
 @endphp
-
 <!DOCTYPE html>
-<html lang="id" x-data="roomData()" x-init="init()" :class="{ 'dark': isDarkMode }">
-
+<html lang="id" x-data="roomApp()" x-init="init()">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $quiz->title }} - Ruangan Quiz</title>
-    <link rel="icon" type="image/icon" href="{{ asset('image/logo.png') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>{{ $quiz->title }} — Ruang Quiz</title>
+    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
-        :root {
-            --primary-light: #3B82F6;
-            --primary-dark: #6366F1;
-            --bg-light: #FFFFFF;
-            --bg-dark: #1F2937;
-            --text-light: #111827;
-            --text-dark: #F3F4F6;
-            --accent-light: #EFF6FF;
-            --accent-dark: #1F2937;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+            background: #F4F4FE;
+            min-height: 100vh;
         }
 
-        body {
-            background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%);
-            color: var(--text-light);
+        /* ===== TOPBAR ===== */
+        .topbar {
+            background: linear-gradient(135deg, #6C3DE5 0%, #8B5CF6 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 20px rgba(108,61,229,0.35);
         }
 
-        body.dark {
-            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
-            color: var(--text-dark);
+        .topbar-left h1 {
+            font-size: 1.15rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
         }
 
-        .room-container {
-            background: var(--bg-light);
+        .topbar-left p {
+            font-size: 0.78rem;
+            opacity: 0.85;
+        }
+
+        .room-code-badge {
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 14px;
+            padding: 0.5rem 1.25rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .room-code-badge .code {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #FDE68A;
+            display: block;
+            font-family: 'Courier New', monospace;
+        }
+
+        .room-code-badge .label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        /* ===== STATUS INDICATOR ===== */
+        .status-bar {
+            background: white;
+            border-bottom: 2px solid #F3F4F6;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .room-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .status-dot.closed { background: #9CA3AF; animation: none; }
+        .status-dot.open { background: #10B981; }
+        .status-dot.started { background: #EF4444; }
+
+        /* ===== STAT CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .stat-card {
+            background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.1);
-            transition: all 0.3s ease;
+            padding: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1.5px solid #F3F4F6;
         }
 
-        body.dark .room-container {
-            background: var(--bg-dark);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
         }
 
-        .participant-card {
-            background: var(--bg-light);
+        .stat-icon.blue { background: #EFF6FF; color: #2563EB; }
+        .stat-icon.green { background: #ECFDF5; color: #059669; }
+        .stat-icon.purple { background: #F5F3FF; color: #7C3AED; }
+        .stat-icon.yellow { background: #FFFBEB; color: #D97706; }
+
+        .stat-value { font-size: 1.75rem; font-weight: 900; color: #111827; line-height: 1; }
+        .stat-label { font-size: 0.75rem; color: #6B7280; font-weight: 600; margin-top: 2px; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            padding: 0 1.5rem 2rem;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .actions-bar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 16px;
+            margin: 0 1.5rem 1rem;
+            border: 1.5px solid #F3F4F6;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.25rem;
             border-radius: 12px;
-            border: 1px solid rgba(59, 130, 246, 0.1);
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.05);
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
         }
 
-        body.dark .participant-card {
-            background: #374151;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+        .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-open { background: #6C3DE5; color: white; }
+        .btn-open:hover:not(:disabled) { background: #5B21B6; }
+        .btn-start { background: #10B981; color: white; }
+        .btn-start:hover:not(:disabled) { background: #059669; }
+        .btn-stop { background: #EF4444; color: white; }
+        .btn-stop:hover:not(:disabled) { background: #DC2626; }
+        .btn-close-room { background: #F59E0B; color: white; }
+        .btn-secondary { background: #F3F4F6; color: #374151; }
+        .btn-secondary:hover:not(:disabled) { background: #E5E7EB; }
+        .btn-ready { background: #10B981; color: white; }
+        .btn-join { background: #6C3DE5; color: white; }
+        .btn-back { background: #6B7280; color: white; }
+
+        /* ===== TABS ===== */
+        .tabs-container {
+            display: flex;
+            border-bottom: 2px solid #E5E7EB;
+            margin-bottom: 1rem;
         }
 
-        .participant-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
+        .tab-btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #6B7280;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
         }
 
-        /* ✅ FIX: Card merah saat ada pelanggaran */
-        .participant-card.has-violation {
-            border: 3px solid #EF4444 !important;
-            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%) !important;
-            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3) !important;
-            animation: pulseRed 2s ease-in-out infinite;
+        .tab-btn.active { color: #6C3DE5; border-bottom-color: #6C3DE5; }
+
+        /* ===== PARTICIPANT GRID ===== */
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
         }
 
-        body.dark .participant-card.has-violation {
-            border: 3px solid #DC2626 !important;
-            background: linear-gradient(135deg, #7F1D1D 0%, #991B1B 100%) !important;
-            box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3) !important;
+        @media (max-width: 640px) {
+            .participants-grid { grid-template-columns: 1fr 1fr; }
         }
 
-        @keyframes pulseRed {
-
-            0%,
-            100% {
-                box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
-            }
-
-            50% {
-                box-shadow: 0 4px 24px rgba(239, 68, 68, 0.6);
-            }
+        .p-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            border: 2px solid #F3F4F6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            position: relative;
         }
 
-        /* ✅ FIX: Badge pelanggaran merah */
+        .p-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+        .p-card.violation-card {
+            border-color: #FCA5A5;
+            background: linear-gradient(135deg, #FEF2F2, #FECACA);
+            animation: pulseViolation 2s infinite;
+        }
+
+        @keyframes pulseViolation {
+            0%,100% { box-shadow: 0 2px 10px rgba(239,68,68,0.2); }
+            50% { box-shadow: 0 4px 20px rgba(239,68,68,0.5); }
+        }
+
+        .p-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .p-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .p-status-dot.waiting { background: #F59E0B; animation: blink 1.5s infinite; }
+        .p-status-dot.ready { background: #10B981; animation: blink 1.5s infinite; }
+        .p-status-dot.started { background: #3B82F6; animation: blink 0.8s infinite; }
+        .p-status-dot.submitted { background: #8B5CF6; }
+
         .violation-badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             background: #EF4444;
             color: white;
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 0.65rem;
+            font-weight: 800;
             padding: 2px 8px;
-            border-radius: 9999px;
+            border-radius: 999px;
         }
 
-        /* ✅ FIX: Summary bar total pelanggaran */
-        .violation-summary-bar {
-            background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
-            border: 1px solid #FECACA;
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .status-pill.waiting { background: #FEF3C7; color: #92400E; }
+        .status-pill.ready { background: #D1FAE5; color: #065F46; }
+        .status-pill.started { background: #DBEAFE; color: #1E40AF; }
+        .status-pill.submitted { background: #EDE9FE; color: #5B21B6; }
+
+        .p-actions { display: flex; gap: 0.4rem; margin-top: 0.75rem; }
+
+        .p-btn {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .p-btn.ready-btn { background: #D1FAE5; color: #065F46; }
+        .p-btn.ready-btn:hover { background: #A7F3D0; }
+        .p-btn.kick-btn { background: #FEE2E2; color: #991B1B; }
+        .p-btn.kick-btn:hover { background: #FECACA; }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-participants {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6B7280;
+        }
+
+        .empty-participants .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: #F3F4F6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        }
+
+        /* ===== LEADERBOARD ===== */
+        .lb-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .lb-row:hover { transform: translateX(4px); }
+        .lb-row.rank-1 { background: linear-gradient(135deg, #FEF3C7, #FDE68A); border: 2px solid #F59E0B; }
+        .lb-row.rank-2 { background: linear-gradient(135deg, #F3F4F6, #E5E7EB); border: 2px solid #9CA3AF; }
+        .lb-row.rank-3 { background: linear-gradient(135deg, #FEF3C7, #FDE68A); border: 2px solid #D97706; opacity: 0.8; }
+        .lb-row.rank-other { background: white; border: 1.5px solid #F3F4F6; }
+
+        .lb-rank {
+            font-size: 1.25rem;
+            width: 36px;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        /* ===== VIOLATION BAR ===== */
+        .violation-bar {
+            background: linear-gradient(135deg, #FEE2E2, #FECACA);
+            border: 1.5px solid #FCA5A5;
             border-radius: 12px;
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #991B1B;
         }
 
-        body.dark .violation-summary-bar {
-            background: linear-gradient(135deg, rgba(127, 29, 29, 0.3), rgba(153, 27, 27, 0.2));
-            border-color: rgba(239, 68, 68, 0.4);
+        /* ===== WAITING ROOM (SISWA) ===== */
+        .waiting-room {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(108,61,229,0.1);
+            border: 2px solid #EDE9FE;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
-        .action-button {
-            background: linear-gradient(135deg, var(--primary-light) 0%, #1D4ED8 100%);
-            color: white;
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            display: inline-flex;
+        .pulse-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            gap: 0.5rem;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            font-size: 2rem;
         }
 
-        body.dark .action-button {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #818CF8 100%);
-        }
-
-        .action-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
-        }
-
-        .action-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .action-button.success {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-        }
-
-        .action-button.danger {
-            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-        }
-
-        .action-button.warning {
-            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-        }
-
-        .action-button.secondary {
-            background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
-        }
-
-        body.dark .action-button.secondary {
-            background: linear-gradient(135deg, #4B5563 0%, #1F2937 100%);
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.375rem 0.875rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .status-badge.waiting {
-            background: #FEF3C7;
-            color: #92400E;
-        }
-
-        .status-badge.ready {
-            background: #DCFCE7;
-            color: #166534;
-        }
-
-        .status-badge.started {
-            background: #DBEAFE;
-            color: #0C4A6E;
-        }
-
-        .status-badge.submitted {
-            background: #EDE9FE;
-            color: #5B21B6;
-        }
-
-        body.dark .status-badge {
-            opacity: 0.9;
-        }
-
-        .status-indicator {
-            width: 10px;
-            height: 10px;
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
             border-radius: 50%;
-            display: inline-block;
-            animation: pulse-dot 2s infinite;
+            border: 3px solid #6C3DE5;
+            animation: ringPulse 2s infinite;
         }
 
-        .status-indicator.waiting {
-            background-color: #FBBF24;
+        @keyframes ringPulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
         }
 
-        .status-indicator.ready {
-            background-color: #10B981;
+        /* ===== QUIZ STARTED BANNER (SISWA) ===== */
+        .quiz-started-banner {
+            background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+            border: 2px solid #10B981;
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
         }
 
-        .status-indicator.started {
-            background-color: #3B82F6;
-        }
-
-        .status-indicator.submitted {
-            background-color: #8B5CF6;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes pulse-dot {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        .notification {
+        /* ===== NOTIFICATION ===== */
+        #notif-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 1rem;
+            right: 1rem;
             z-index: 9999;
-            padding: 1rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 320px;
+        }
+
+        .notif {
+            padding: 0.9rem 1.1rem;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            animation: slideIn 0.3s ease-out;
-            max-width: 400px;
-            font-weight: 500;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .notification.success {
-            background: #10B981;
             color: white;
-            border-left: 4px solid #059669;
-        }
-
-        .notification.error {
-            background: #EF4444;
-            color: white;
-            border-left: 4px solid #DC2626;
-        }
-
-        .notification.warning {
-            background: #F59E0B;
-            color: white;
-            border-left: 4px solid #D97706;
-        }
-
-        .notification.info {
-            background: #3B82F6;
-            color: white;
-            border-left: 4px solid #1D4ED8;
-        }
-
-        .section-title {
-            color: var(--text-light);
             font-weight: 700;
-            font-size: 1.25rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            animation: notifIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
         }
 
-        body.dark .section-title {
-            color: var(--text-dark);
+        @keyframes notifIn {
+            from { opacity: 0; transform: translateX(60px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
-        .header-gradient {
-            background: linear-gradient(135deg, var(--primary-light) 0%, #1D4ED8 100%);
+        .notif.success { background: #10B981; }
+        .notif.error { background: #EF4444; }
+        .notif.warning { background: #F59E0B; }
+        .notif.info { background: #6C3DE5; }
+
+        [x-cloak] { display: none !important; }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            border: 1.5px solid #F3F4F6;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }
 
-        body.dark .header-gradient {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #818CF8 100%);
+        .progress-bar {
+            height: 6px;
+            background: #EDE9FE;
+            border-radius: 999px;
+            overflow: hidden;
         }
 
-        .stat-card {
-            background: var(--accent-light);
-            border-radius: 12px;
-            padding: 1rem;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-        }
-
-        body.dark .stat-card {
-            background: #374151;
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-
-        [x-cloak] {
-            display: none !important;
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6C3DE5, #A78BFA);
+            border-radius: 999px;
+            transition: width 0.5s ease;
         }
     </style>
 </head>
+<body>
 
-<body class="antialiased">
-    <div class="min-h-screen p-4 md:p-8">
-        <div class="max-w-7xl mx-auto">
+{{-- ===== TOPBAR ===== --}}
+<div class="topbar">
+    <div class="topbar-left">
+        <h1><i class="fas fa-gamepad mr-2" style="color:#FDE68A"></i>{{ Str::limit($quiz->title, 40) }}</h1>
+        <p>{{ $quiz->subject->name_subject ?? '' }} • Kelas {{ $quiz->class->name_class ?? '' }}
+           • {{ $quiz->questions->count() }} Soal • {{ $quiz->time_per_question ?? 0 }}s/soal</p>
+    </div>
 
-            <!-- Header Card -->
-            <div class="room-container p-6 md:p-8 mb-8 animate-fadeIn">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-4 mb-6">
-                            <div
-                                class="header-gradient w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-graduation-cap text-white text-2xl"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ $quiz->title }}</h1>
-                                <div class="flex flex-wrap gap-2">
-                                    <span class="status-badge ready">
-                                        <i class="fas fa-book"></i> {{ $quiz->subject->name_subject }}
-                                    </span>
-                                    <span class="status-badge started">
-                                        <i class="fas fa-users"></i> {{ $quiz->class->name_class }}
-                                    </span>
-                                    <span class="status-badge submitted">
-                                        <i class="fas fa-question-circle"></i> {{ $quiz->questions()->count() }} Soal
-                                    </span>
-                                    <span class="status-badge waiting">
-                                        <i class="fas fa-clock"></i> {{ $quiz->duration }} Menit
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+    {{-- Room Code --}}
+    @if($quiz->activeSession && $quiz->is_room_open)
+    <div class="room-code-badge">
+        <span class="label">Kode Ruangan</span>
+        <span class="code">{{ $quiz->activeSession->session_code ?? '------' }}</span>
+    </div>
+    @endif
 
-                        <!-- Room Status -->
-                        <div class="flex flex-wrap items-center gap-4">
-                            <div class="flex items-center space-x-2">
-                                <div :class="{
-                                    'bg-green-500 animate-pulse': roomOpen && !quizStarted,
-                                    'bg-blue-500 animate-pulse': quizStarted,
-                                    'bg-red-500': !roomOpen
-                                }"
-                                    class="w-3 h-3 rounded-full"></div>
-                                <span class="font-medium" x-text="roomStatusText"></span>
-                            </div>
+    {{-- User badge --}}
+    <div style="display:flex;align-items:center;gap:0.75rem">
+        <div x-show="quizStarted" class="text-sm font-bold" style="background:rgba(255,255,255,0.2);padding:0.4rem 0.9rem;border-radius:8px">
+            <i class="fas fa-stopwatch mr-1"></i> <span x-text="timeRemainingText"></span>
+        </div>
+        <div style="background:rgba(255,255,255,0.2);padding:0.5rem 1rem;border-radius:10px;font-weight:800;font-size:0.85rem">
+            <i class="fas {{ $isGuru ? 'fa-chalkboard-teacher' : 'fa-user-graduate' }} mr-1"></i>{{ $isGuru ? 'Guru' : 'Siswa' }}
+        </div>
+        <button onclick="document.querySelector('#notif-container').innerHTML=''"
+            style="background:rgba(255,255,255,0.15);border:none;color:white;padding:0.5rem 0.75rem;border-radius:8px;cursor:pointer;font-size:0.8rem">
+            <i class="fas fa-bell"></i>
+        </button>
+    </div>
+</div>
 
-                            <div class="text-sm text-gray-600" x-show="quizStarted">
-                                <i class="fas fa-clock mr-1"></i>
-                                Sisa waktu: <span class="font-bold" x-text="timeRemainingText"></span>
-                            </div>
-                        </div>
-                    </div>
+{{-- ===== STATUS BAR ===== --}}
+<div class="status-bar">
+    <div class="room-status">
+        <div class="status-dot"
+            :class="quizStarted ? 'started' : (roomOpen ? 'open' : 'closed')"></div>
+        <span x-text="roomOpen ? (quizStarted ? 'Quiz Sedang Berlangsung' : 'Ruangan Terbuka') : 'Ruangan Tertutup'"></span>
+    </div>
 
-                    <!-- User Role Badge -->
-                    <div class="flex items-center">
-                        <div
-                            class="{{ $isGuru ? 'bg-yellow-500' : 'bg-blue-500' }} text-white px-4 py-2 rounded-full font-bold flex items-center space-x-2">
-                            <i class="fas {{ $isGuru ? 'fa-chalkboard-teacher' : 'fa-user-graduate' }}"></i>
-                            <span>{{ $isGuru ? 'Guru' : 'Siswa' }}</span>
-                        </div>
-                    </div>
-                </div>
+    <div class="progress-bar" style="flex:1;max-width:250px" x-show="quizStarted">
+        <div class="progress-fill" :style="`width: ${Math.min((stats.submitted / Math.max(stats.joined,1)) * 100, 100)}%`"></div>
+    </div>
+    <span class="text-sm text-gray-500" x-show="quizStarted">
+        <span x-text="stats.submitted"></span>/<span x-text="stats.joined"></span> selesai
+    </span>
 
-                <!-- Action Buttons -->
-                <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-                    <div class="flex flex-wrap gap-2 md:gap-3 items-center">
-                        @if ($isGuru)
-                            <!-- Teacher Actions -->
-                            <button @click="openRoom()" x-show="!roomOpen"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-door-open"></i> Buka Ruangan
-                            </button>
+    <div class="ml-auto text-sm text-gray-400" x-text="lastUpdatedText ? 'Update: ' + lastUpdatedText : ''"></div>
+</div>
 
-                            <template x-if="roomOpen">
-                                <div class="flex flex-wrap gap-2 md:gap-3">
-                                    <button @click="startQuiz()" x-show="!quizStarted" :disabled="!canStartQuiz"
-                                        :class="canStartQuiz ?
-                                            'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600' :
-                                            'bg-gray-400 cursor-not-allowed'"
-                                        class="inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-lg font-medium text-sm transition-all"
-                                        :title="canStartQuiz ? 'Klik untuk memulai quiz' : 'Tunggu minimal 1 siswa siap'">
-                                        <i class="fas fa-play"></i>
-                                        <span
-                                            x-text="canStartQuiz ? 'Mulai Quiz (' + stats.ready + ')' : 'Tunggu Siswa (' + stats.ready + ')'"></span>
-                                    </button>
+{{-- ===== ACTION BUTTONS ===== --}}
+<div class="actions-bar">
+    @if($isGuru)
+        <button @click="openRoom()" x-show="!roomOpen" class="btn-action btn-open">
+            <i class="fas fa-door-open"></i> Buka Ruangan
+        </button>
 
-                                    <button @click="closeRoom()" x-show="!quizStarted"
-                                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg font-medium text-sm transition-all">
-                                        <i class="fas fa-door-closed"></i> Tutup Ruangan
-                                    </button>
-                                </div>
-                            </template>
+        <button @click="startQuiz()" x-show="roomOpen && !quizStarted"
+            :disabled="stats.ready === 0"
+            :class="stats.ready > 0 ? 'btn-start' : 'btn-secondary'"
+            class="btn-action">
+            <i class="fas fa-play"></i>
+            <span x-text="stats.ready > 0 ? 'Mulai Quiz (' + stats.ready + ' siap)' : 'Tunggu Siswa Siap'"></span>
+        </button>
 
-                            <button @click="stopQuiz()" x-show="quizStarted"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-stop"></i> Hentikan Quiz
-                            </button>
+        <button @click="closeRoom()" x-show="roomOpen && !quizStarted" class="btn-action btn-close-room">
+            <i class="fas fa-door-closed"></i> Tutup Ruangan
+        </button>
 
-                            <button @click="refreshData()"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-sync-alt"></i> Refresh
-                            </button>
+        <button @click="stopQuiz()" x-show="quizStarted" class="btn-action btn-stop">
+            <i class="fas fa-stop-circle"></i> Hentikan Quiz
+        </button>
 
-                            <a href="{{ route('guru.quiz.index') }}"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-arrow-left"></i> Kembali
-                            </a>
-                        @else
-                            <!-- Student Actions -->
-                            <template x-if="!isJoined && roomOpen && !quizStarted">
-                                <button @click="joinRoom()"
-                                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-all">
-                                    <i class="fas fa-sign-in-alt"></i> Bergabung
-                                </button>
-                            </template>
+        <button @click="loadRoomData(); showNotif('info', 'Data diperbarui!')" class="btn-action btn-secondary">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
 
-                            <template x-if="isJoined && participantStatus === 'waiting' && !quizStarted">
-                                <button @click="markAsReady()"
-                                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium text-sm transition-all">
-                                    <i class="fas fa-check-circle"></i> Saya Sudah Siap
-                                </button>
-                            </template>
+        <a href="{{ route('guru.quiz.index') }}" class="btn-action btn-back">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </a>
 
-                            <button @click="refreshData()"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-sync-alt"></i> Refresh
-                            </button>
+        @if($quiz->status === 'finished')
+        <a href="{{ route('guru.quiz.results', $quiz->id) }}" class="btn-action" style="background:#8B5CF6;color:white">
+            <i class="fas fa-chart-bar"></i> Hasil Quiz
+        </a>
+        @endif
+    @else
+        {{-- SISWA ACTIONS --}}
+        <button @click="joinRoom()" x-show="!isJoined && roomOpen && !quizStarted" class="btn-action btn-join">
+            <i class="fas fa-sign-in-alt"></i> Bergabung ke Ruangan
+        </button>
 
-                            <a href="{{ route('quiz.index') }}"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium text-sm transition-all">
-                                <i class="fas fa-arrow-left"></i> Kembali
-                            </a>
+        <button @click="markAsReady()" x-show="isJoined && participantStatus === 'waiting' && !quizStarted"
+            class="btn-action btn-ready">
+            <i class="fas fa-check-circle"></i> Saya Siap!
+        </button>
 
-                            <!-- Status Messages -->
-                            <template x-if="!roomOpen">
-                                <div class="flex items-center gap-2 text-amber-600 dark:text-amber-400 ml-2 text-sm">
-                                    <i class="fas fa-clock"></i>
-                                    <span>Tunggu guru membuka ruangan...</span>
-                                </div>
-                            </template>
+        <button @click="loadRoomData()" class="btn-action btn-secondary">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
 
-                            <template x-if="roomOpen && isJoined && participantStatus === 'ready' && !quizStarted">
-                                <div
-                                    class="flex items-center gap-2 text-green-600 dark:text-green-400 ml-2 text-sm animate-pulse">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Siap! Tunggu guru mulai quiz...</span>
-                                </div>
-                            </template>
-                        @endif
-                    </div>
-                </div>
+        <a href="{{ route('quiz.index') }}" class="btn-action btn-back">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </a>
 
-                <!-- Start Now Button for Students (not auto redirect) -->
-                @if ($isMurid)
-                    <div x-show="quizStarted && participantStatus === 'started'" x-cloak
-                        class="mt-4 p-4 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-xl border border-green-200 dark:border-green-700">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-play-circle text-green-600 dark:text-green-400 text-xl"></i>
-                                <div>
-                                    <div class="font-bold text-green-800 dark:text-green-200">Quiz telah dimulai!</div>
-                                    <div class="text-sm text-green-600 dark:text-green-300">Klik tombol di samping untuk
-                                        mulai mengerjakan.</div>
-                                </div>
-                            </div>
-                            <a :href="PLAY_QUIZ_URL"
-                                class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl">
-                                <i class="fas fa-external-link-alt mr-2"></i> Mulai Sekarang
-                            </a>
-                        </div>
-                    </div>
-                @endif
+        {{-- Status messages siswa --}}
+        <div x-show="!roomOpen" class="flex items-center gap-2 text-yellow-600 text-sm font-semibold">
+            <i class="fas fa-clock animate-pulse"></i> Tunggu guru membuka ruangan...
+        </div>
+
+        <div x-show="isJoined && participantStatus === 'ready' && !quizStarted"
+            class="flex items-center gap-2 text-green-600 text-sm font-semibold">
+            <i class="fas fa-check-circle"></i> Kamu sudah siap! Tunggu quiz dimulai...
+        </div>
+    @endif
+</div>
+
+{{-- ===== QUIZ STARTED BANNER UNTUK SISWA ===== --}}
+@if($isMurid)
+<div class="quiz-started-banner mx-6" x-show="quizStarted && (participantStatus === 'started' || participantStatus === 'ready')" x-cloak>
+    <div class="flex items-center gap-3">
+        <div style="font-size:2rem"><i class="fas fa-play-circle" style="color:#065F46"></i></div>
+        <div>
+            <div class="font-bold text-green-800 text-base">Quiz telah dimulai!</div>
+            <div class="text-sm text-green-700">Klik tombol untuk mulai mengerjakan soal.</div>
+        </div>
+    </div>
+    <a :href="PLAY_QUIZ_URL" class="btn-action btn-start" style="white-space:nowrap">
+        <i class="fas fa-play"></i> Mulai Sekarang!
+    </a>
+</div>
+@endif
+
+{{-- ===== STATS CARDS ===== --}}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value" x-text="stats.joined">0</div>
+            <div class="stat-label">Bergabung</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div>
+            <div class="stat-value" x-text="stats.ready">0</div>
+            <div class="stat-label">Siap</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-pencil-alt"></i></div>
+        <div>
+            <div class="stat-value" x-text="stats.started">0</div>
+            <div class="stat-label">Mengerjakan</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-flag-checkered"></i></div>
+        <div>
+            <div class="stat-value" x-text="stats.submitted">0</div>
+            <div class="stat-label">Selesai</div>
+        </div>
+    </div>
+</div>
+
+{{-- ===== MAIN CONTENT ===== --}}
+<div class="main-content">
+
+    {{-- VIOLATION BAR --}}
+    <div id="violation-bar" class="violation-bar hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        Total <span id="viol-count" class="text-red-900">0</span> pelanggaran dari
+        <span id="viol-users" class="text-red-900">0</span> peserta terdeteksi
+    </div>
+
+    {{-- WAITING ROOM UNTUK SISWA (jika belum ada yang mulai) --}}
+    @if($isMurid)
+    <div x-show="!quizStarted" x-cloak class="mb-6">
+        <div class="waiting-room">
+            <div class="pulse-ring"><i class="fas fa-gamepad" style="color:white;font-size:2rem"></i></div>
+            <h2 class="text-xl font-black text-gray-900 mb-2" x-text="roomOpen ? 'Ruangan Terbuka!' : 'Menunggu Guru...'"></h2>
+            <p class="text-gray-500 text-sm mb-4"
+                x-text="roomOpen ? (isJoined ? 'Kamu sudah bergabung. ' + (participantStatus === \'ready\' ? \'Tunggu quiz dimulai!\' : \'Klik Saya Siap saat kamu siap!\') : \'Klik Bergabung untuk masuk ruangan.\'): \'Guru akan segera membuka ruangan quiz.\'"
+            ></p>
+
+            @if($quiz->activeSession)
+            <div style="background:#F5F3FF;border-radius:12px;padding:1rem;margin-bottom:1rem">
+                <p class="text-xs text-purple-600 font-bold mb-1">KODE BERGABUNG</p>
+                <p class="text-2xl font-black text-purple-700 letter-spacing-4" style="letter-spacing:4px;font-family:'Courier New'">
+                    {{ $quiz->activeSession->session_code ?? '' }}
+                </p>
             </div>
+            @endif
 
-            <!-- Statistics Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="room-container p-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-users text-blue-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="stat-joined" x-text="stats.joined"></div>
-                            <div class="text-sm text-gray-600">Bergabung</div>
-                        </div>
-                    </div>
+            <div class="flex justify-center gap-4 text-sm text-gray-500">
+                <div class="flex items-center gap-1.5">
+                    <div class="p-status-dot" :class="isJoined ? 'ready' : 'waiting'"></div>
+                    <span x-text="isJoined ? 'Bergabung' : 'Belum bergabung'"></span>
                 </div>
-                <div class="room-container p-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="stat-ready" x-text="stats.ready"></div>
-                            <div class="text-sm text-gray-600">Siap</div>
-                        </div>
-                    </div>
+                <div class="flex items-center gap-1.5">
+                    <span>Status:</span>
+                    <span class="status-pill" :class="participantStatus" x-text="getStatusText(participantStatus)"></span>
                 </div>
-                <div class="room-container p-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-pencil-alt text-purple-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="stat-started" x-text="stats.started"></div>
-                            <div class="text-sm text-gray-600">Mengerjakan</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="room-container p-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-user-check text-yellow-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-2xl font-bold" id="stat-submitted" x-text="stats.submitted"></div>
-                            <div class="text-sm text-gray-600">Selesai</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ✅ FIX: Violation Summary Bar -->
-            <div id="violation-summary-bar" class="violation-summary-bar hidden mb-4">
-                <i class="fas fa-exclamation-triangle text-red-500"></i>
-                <span class="text-red-700 dark:text-red-400 font-semibold text-sm">
-                    Total Pelanggaran: <span id="total-violation-count" class="font-bold">0</span>
-                    dari <span id="total-violators" class="font-bold">0</span> peserta
-                </span>
-            </div>
-
-            <!-- Tab: Participants / Leaderboard -->
-            <div class="room-container p-6 animate-fadeIn">
-                <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-                    <button @click="activeTab = 'participants'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'participants' }"
-                        class="px-4 py-2 font-medium text-sm border-b-2 border-transparent transition-colors">
-                        <i class="fas fa-users mr-2"></i> Peserta
-                    </button>
-                    @if ($quiz->show_leaderboard)
-                        <button @click="activeTab = 'leaderboard'; loadLeaderboard()"
-                            :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'leaderboard' }"
-                            class="px-4 py-2 font-medium text-sm border-b-2 border-transparent transition-colors">
-                            <i class="fas fa-trophy mr-2"></i> Leaderboard
-                        </button>
-                    @endif
-                </div>
-
-                <!-- Participants Grid (untuk semua role) -->
-                <div x-show="activeTab === 'participants'">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                                Daftar Peserta
-                                <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-                                    (<span x-text="stats.joined"></span> dari <span x-text="stats.total"></span>
-                                    siswa)
-                                </span>
-                            </h2>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm">Update otomatis setiap 3 detik</p>
-                        </div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400" x-text="lastUpdatedText"></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <template x-if="participants.length === 0">
-                            <div class="col-span-full flex flex-col items-center justify-center py-12 px-4">
-                                <div
-                                    class="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
-                                    <i class="fas fa-users text-blue-400 text-2xl"></i>
-                                </div>
-                                <p class="text-gray-600 dark:text-gray-300 text-center">Belum ada peserta yang
-                                    bergabung</p>
-                            </div>
-                        </template>
-
-                        <template x-for="participant in sortedParticipants" :key="participant.id">
-                            <!-- ✅ FIX: Participant Card dengan violation badge -->
-                            <div class="participant-card p-4 md:p-5"
-                                :class="{ 'has-violation': participant.has_violation }"
-                                :data-student-id="participant.student_id">
-
-                                <!-- ✅ Violation badge -->
-                                <div x-show="participant.has_violation" class="mb-2">
-                                    <span class="violation-badge">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <span x-text="participant.violation_count + ' ⚠️'"></span>
-                                    </span>
-                                </div>
-
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                                        <div
-                                            class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm md:text-base flex-shrink-0">
-                                            <span
-                                                x-text="participant.initial || (participant.name ? participant.name.charAt(0).toUpperCase() : '?')"></span>
-                                        </div>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="font-semibold text-sm md:text-base truncate"
-                                                x-text="participant.name || 'Unknown'"></div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400 truncate"
-                                                x-text="participant.email || ''"></div>
-                                        </div>
-                                    </div>
-                                    <div class="flex-shrink-0 ml-2">
-                                        <div :class="{
-                                            'bg-yellow-400': participant.status === 'waiting',
-                                            'bg-green-500': participant.status === 'ready',
-                                            'bg-blue-500': participant.status === 'started',
-                                            'bg-purple-600': participant.status === 'submitted'
-                                        }"
-                                            class="w-3 h-3 rounded-full animate-pulse"></div>
-                                    </div>
-                                </div>
-
-                                <div
-                                    class="flex items-center justify-between text-xs md:text-sm mb-3 pb-3 border-b border-gray-200 dark:border-gray-600">
-                                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                        <i class="fas fa-clock text-blue-500"></i>
-                                        <span x-text="participant.joined_time || '-'"></span>
-                                    </span>
-                                    <span
-                                        :class="{
-                                            'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30': participant
-                                                .status === 'waiting',
-                                            'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30': participant
-                                                .status === 'ready',
-                                            'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30': participant
-                                                .status === 'started',
-                                            'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30': participant
-                                                .status === 'submitted'
-                                        }"
-                                        class="px-2 py-1 rounded font-medium text-xs capitalize"
-                                        x-text="getStatusText(participant.status)"></span>
-                                </div>
-
-                                @if ($isGuru)
-                                    <div class="flex gap-2">
-                                        <button @click="markParticipantAsReady(participant.id)"
-                                            x-show="participant.status === 'waiting'"
-                                            class="flex-1 text-xs py-1.5 px-2 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors font-medium">
-                                            <i class="fas fa-check mr-1"></i> Siapkan
-                                        </button>
-                                        <button @click="kickParticipant(participant.id)"
-                                            class="flex-1 text-xs py-1.5 px-2 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors font-medium">
-                                            <i class="fas fa-times mr-1"></i> Keluarkan
-                                        </button>
-                                    </div>
-                                @endif
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Leaderboard (hanya jika diaktifkan) -->
-                @if ($quiz->show_leaderboard)
-                    <div x-show="activeTab === 'leaderboard'" x-cloak>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                                <i class="fas fa-trophy mr-2 text-yellow-500"></i> Leaderboard
-                            </h2>
-                            <button @click="loadLeaderboard()"
-                                class="text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600">
-                                <i class="fas fa-sync-alt mr-1"></i> Refresh
-                            </button>
-                        </div>
-
-                        <!-- ✅ FIX: Leaderboard container -->
-                        <div id="leaderboard-container"
-                            class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Rank</th>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Nama</th>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Skor</th>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Waktu</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="leaderboard-table-body"
-                                    class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    <template x-if="leaderboard.length === 0">
-                                        <tr>
-                                            <td colspan="4"
-                                                class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Belum
-                                                ada data leaderboard.</td>
-                                        </tr>
-                                    </template>
-                                    <template x-for="(entry, index) in leaderboard" :key="index">
-                                        <tr :class="{ 'bg-yellow-50 dark:bg-yellow-900/20': entry.rank === 1 }">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span x-show="entry.rank === 1">🥇</span>
-                                                <span x-show="entry.rank === 2">🥈</span>
-                                                <span x-show="entry.rank === 3">🥉</span>
-                                                <span x-show="entry.rank > 3" x-text="entry.rank"></span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"
-                                                x-text="entry.student_name || entry.name || 'Unknown'"></td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm"
-                                                x-text="entry.score != null ? parseFloat(entry.score).toFixed(2) : '0.00'">
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm"
-                                                x-text="entry.time_taken ? formatTime(entry.time_taken) : '--:--'">
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
             </div>
         </div>
     </div>
-
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
-
-    <script>
-        // Route URLs
-        @if ($isGuru)
-            const BASE_URL = '{{ url('/') }}';
-            const ROOM_STATUS_URL = '{{ route('guru.quiz.room.status', $quiz->id) }}';
-            const OPEN_ROOM_URL = '{{ route('guru.quiz.room.open', $quiz->id) }}';
-            const CLOSE_ROOM_URL = '{{ route('guru.quiz.room.close', $quiz->id) }}';
-            const START_QUIZ_URL = '{{ route('guru.quiz.room.start', $quiz->id) }}';
-            const STOP_QUIZ_URL = '{{ route('guru.quiz.room.stop', $quiz->id) }}';
-            const KICK_PARTICIPANT_URL = '{{ route('guru.quiz.room.kick', [$quiz->id, 'PARTICIPANT_ID']) }}';
-            const MARK_PARTICIPANT_READY_URL = '{{ route('guru.quiz.room.mark-ready', [$quiz->id, 'PARTICIPANT_ID']) }}';
-            const LEADERBOARD_URL = '{{ route('guru.quiz.leaderboard', $quiz->id) }}';
-            const CSRF_TOKEN = '{{ csrf_token() }}';
-        @elseif ($isMurid)
-            const BASE_URL = '{{ url('/') }}';
-            const ROOM_STATUS_URL = '{{ route('quiz.room.status', $quiz->id) }}';
-            const JOIN_ROOM_URL = '{{ route('quiz.join-room', $quiz->id) }}';
-            const MARK_READY_URL = '{{ route('quiz.room.mark-ready', $quiz->id) }}';
-            const PLAY_QUIZ_URL = '{{ route('quiz.play', $quiz->id) }}';
-            const LEADERBOARD_URL = '{{ route('quiz.leaderboard', $quiz->id) }}';
-            const CSRF_TOKEN = '{{ csrf_token() }}';
-        @endif
-
-        function roomData() {
-            return {
-                isDarkMode: localStorage.getItem('darkMode') === 'true',
-                roomOpen: {{ $quiz->is_room_open ? 'true' : 'false' }},
-                quizStarted: {{ $quiz->is_quiz_started ? 'true' : 'false' }},
-                participantStatus: '{{ $participant->status ?? 'not_joined' }}',
-                canStartQuiz: false,
-                lastUpdated: null,
-                timeRemainingText: '--:--',
-                participants: [],
-                stats: {
-                    total: {{ $quiz->class->students()->count() ?? 0 }},
-                    joined: 0,
-                    ready: 0,
-                    started: 0,
-                    submitted: 0
-                },
-                activeTab: 'participants',
-                leaderboard: [],
-
-                get isJoined() {
-                    return this.participantStatus !== 'not_joined' && this.participantStatus !== '';
-                },
-
-                get roomStatusText() {
-                    if (this.quizStarted) return 'Quiz Sedang Berlangsung';
-                    if (this.roomOpen) return 'Ruangan Terbuka';
-                    return 'Ruangan Tertutup';
-                },
-
-                get sortedParticipants() {
-                    return [...this.participants].sort((a, b) => {
-                        if (a.has_violation && !b.has_violation) return -1;
-                        if (!a.has_violation && b.has_violation) return 1;
-                        if (a.has_violation && b.has_violation) {
-                            return (b.violation_count || 0) - (a.violation_count || 0);
-                        }
-                        return 0;
-                    });
-                },
-
-                get lastUpdatedText() {
-                    if (!this.lastUpdated) return '';
-                    const now = new Date();
-                    const diffMs = now - this.lastUpdated;
-                    const diffSecs = Math.floor(diffMs / 1000);
-                    if (diffSecs < 60) return `${diffSecs} detik lalu`;
-                    return `${Math.floor(diffSecs / 60)} menit lalu`;
-                },
-
-                async init() {
-                    console.log('[INIT] Room initialized for:', '{{ $isGuru ? 'Guru' : 'Siswa' }}');
-
-                    await this.loadRoomData();
-
-                    setInterval(() => {
-                        this.loadRoomData();
-                    }, 3000);
-
-                    setInterval(() => {
-                        if (this.activeTab === 'leaderboard' && typeof this.loadLeaderboard === 'function') {
-                            this.loadLeaderboard();
-                        }
-                    }, 5000);
-
-                    if (this.isDarkMode) {
-                        document.body.classList.add('dark');
-                    }
-
-                    @if ($isMurid)
-                        if (this.roomOpen && !this.isJoined && !this.quizStarted) {
-                            console.log('[AUTO-JOIN] Attempting to auto-join...');
-                            setTimeout(() => {
-                                this.joinRoom();
-                            }, 1000);
-                        }
-                    @endif
-                },
-
-                // ✅ FIX: updateFromResponse dengan violation_count
-                async loadRoomData() {
-                    try {
-                        const response = await fetch(ROOM_STATUS_URL, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': CSRF_TOKEN,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            cache: 'no-cache'
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-
-                        const data = await response.json();
-                        if (data.success) {
-                            this.updateFromResponse(data);
-                        }
-                    } catch (error) {
-                        console.error('[LOAD] Error:', error);
-                    }
-                },
-
-                updateFromResponse(data) {
-                    if (data.is_room_open !== undefined) this.roomOpen = Boolean(data.is_room_open);
-                    if (data.is_quiz_started !== undefined) this.quizStarted = Boolean(data.is_quiz_started);
-
-                    if (data.stats) {
-                        this.stats = {
-                            total: data.stats.total_students || data.stats.total || 0,
-                            joined: data.stats.joined || 0,
-                            ready: data.stats.ready || 0,
-                            started: data.stats.started || 0,
-                            submitted: data.stats.submitted || 0
-                        };
-                    }
-
-                    if (Array.isArray(data.participants)) {
-                        this.participants = data.participants.map(p => {
-                            const name = p.student_name || p.name || 'Unknown';
-                            const email = p.student_email || p.email || '';
-                            const violationCount = parseInt(p.violation_count) || 0;
-
-                            // Debug violation
-                            if (violationCount > 0) {
-                                console.log('⚠️ Participant with violation:', name, '-', violationCount,
-                                    'violations');
-                            }
-
-                            return {
-                                id: p.id,
-                                student_id: p.student_id,
-                                name: name,
-                                email: email,
-                                status: p.status || 'waiting',
-                                joined_time: p.joined_at || p.joined_time || '-',
-                                initial: name.charAt(0).toUpperCase(),
-                                violation_count: violationCount,
-                                has_violation: p.has_violation || violationCount > 0
-                            };
-                        });
-
-                        // ✅ Update violation summary
-                        this.updateViolationSummary(this.participants);
-                    }
-
-                    @if ($isMurid)
-                        if (data.participant) {
-                            this.participantStatus = data.participant.status || 'not_joined';
-                            console.log('Participant status updated to:', this.participantStatus);
-                        }
-                    @endif
-
-                    if (data.time_remaining !== undefined && data.time_remaining !== null) {
-                        this.timeRemainingText = this.formatTime(data.time_remaining);
-                    }
-
-                    this.canStartQuiz = this.stats.ready > 0 && this.roomOpen && !this.quizStarted;
-                    this.lastUpdated = new Date();
-                },
-
-                // ✅ FIX: Update violation summary bar
-                updateViolationSummary(participants) {
-                    const bar = document.getElementById('violation-summary-bar');
-                    if (!bar) return;
-
-                    const violators = participants.filter(p => (p.violation_count || 0) > 0);
-                    const totalViolations = participants.reduce((sum, p) => sum + (p.violation_count || 0), 0);
-
-                    if (violators.length > 0) {
-                        bar.classList.remove('hidden');
-                        const countEl = document.getElementById('total-violation-count');
-                        const violatorsEl = document.getElementById('total-violators');
-                        if (countEl) countEl.textContent = totalViolations;
-                        if (violatorsEl) violatorsEl.textContent = violators.length;
-                    } else {
-                        bar.classList.add('hidden');
-                    }
-                },
-
-                formatTime(seconds) {
-                    const s = parseInt(seconds);
-                    if (isNaN(s) || s <= 0) return '00:00';
-                    const minutes = Math.floor(s / 60);
-                    const secs = s % 60;
-                    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                },
-
-                getStatusText(status) {
-                    const texts = {
-                        'not_joined': 'Belum Bergabung',
-                        'waiting': 'Menunggu',
-                        'ready': 'Siap',
-                        'started': 'Mengerjakan',
-                        'submitted': 'Selesai',
-                        'disconnected': 'Terputus'
-                    };
-                    return texts[status] || 'Tidak diketahui';
-                },
-
-                // ✅ FIX: loadLeaderboard untuk guru
-                @if ($isGuru)
-                    async openRoom() {
-                            if (confirm('Buka ruangan quiz? Siswa akan bisa bergabung.')) {
-                                try {
-                                    const response = await fetch(OPEN_ROOM_URL, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': CSRF_TOKEN,
-                                            'Accept': 'application/json'
-                                        }
-                                    });
-
-                                    const data = await response.json();
-
-                                    if (data.success) {
-                                        this.roomOpen = true;
-                                        this.showNotification('success', data.message);
-                                        await this.loadRoomData();
-                                    } else {
-                                        this.showNotification('error', data.message || 'Gagal membuka ruangan');
-                                    }
-                                } catch (error) {
-                                    console.error('Error opening room:', error);
-                                    this.showNotification('error', 'Terjadi kesalahan');
-                                }
-                            }
-                        },
-
-                        async closeRoom() {
-                                if (confirm('Tutup ruangan quiz? Semua peserta akan dikeluarkan.')) {
-                                    try {
-                                        const response = await fetch(CLOSE_ROOM_URL, {
-                                            method: 'POST',
-                                            headers: {
-                                                'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                'Accept': 'application/json'
-                                            }
-                                        });
-
-                                        const data = await response.json();
-
-                                        if (data.success) {
-                                            this.roomOpen = false;
-                                            this.showNotification('success', data.message);
-                                            await this.loadRoomData();
-                                        }
-                                    } catch (error) {
-                                        console.error('Error closing room:', error);
-                                        this.showNotification('error', 'Terjadi kesalahan');
-                                    }
-                                }
-                            },
-
-                            async startQuiz() {
-                                    if (!this.canStartQuiz) {
-                                        this.showNotification('warning', 'Belum ada siswa yang siap');
-                                        return;
-                                    }
-
-                                    if (confirm(
-                                            `Mulai quiz sekarang? ${this.stats.ready} siswa yang siap akan mulai mengerjakan.`
-                                            )) {
-                                        try {
-                                            const response = await fetch(START_QUIZ_URL, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                    'Accept': 'application/json'
-                                                }
-                                            });
-
-                                            const data = await response.json();
-
-                                            if (data.success) {
-                                                this.quizStarted = true;
-                                                this.showNotification('success', data.message);
-                                                await this.loadRoomData();
-                                            } else {
-                                                this.showNotification('error', data.message);
-                                            }
-                                        } catch (error) {
-                                            console.error('Error starting quiz:', error);
-                                            this.showNotification('error', 'Terjadi kesalahan');
-                                        }
-                                    }
-                                },
-
-                                async stopQuiz() {
-                                        if (confirm(
-                                                'Hentikan quiz sekarang? Semua siswa yang belum selesai akan dipaksa submit.'
-                                                )) {
-                                            try {
-                                                const response = await fetch(STOP_QUIZ_URL, {
-                                                    method: 'POST',
-                                                    headers: {
-                                                        'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                        'Accept': 'application/json'
-                                                    }
-                                                });
-
-                                                const data = await response.json();
-
-                                                if (data.success) {
-                                                    this.quizStarted = false;
-                                                    this.roomOpen = false;
-                                                    this.showNotification('success', data.message);
-                                                    await this.loadRoomData();
-                                                } else {
-                                                    this.showNotification('error', data.message ||
-                                                        'Gagal menghentikan quiz');
-                                                }
-                                            } catch (error) {
-                                                console.error('Error stopping quiz:', error);
-                                                this.showNotification('error', 'Terjadi kesalahan');
-                                            }
-                                        }
-                                    },
-
-                                    async kickParticipant(participantId) {
-                                            if (confirm('Keluarkan peserta ini dari ruangan?')) {
-                                                try {
-                                                    const url = KICK_PARTICIPANT_URL.replace('PARTICIPANT_ID',
-                                                        participantId);
-                                                    const response = await fetch(url, {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                            'Accept': 'application/json'
-                                                        }
-                                                    });
-
-                                                    const data = await response.json();
-
-                                                    if (data.success) {
-                                                        this.showNotification('success', data.message);
-                                                        await this.loadRoomData();
-                                                    }
-                                                } catch (error) {
-                                                    console.error('Error kicking participant:', error);
-                                                    this.showNotification('error', 'Terjadi kesalahan');
-                                                }
-                                            }
-                                        },
-
-                                        async markParticipantAsReady(participantId) {
-                                                try {
-                                                    const url = MARK_PARTICIPANT_READY_URL.replace('PARTICIPANT_ID',
-                                                        participantId);
-                                                    const response = await fetch(url, {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                            'Accept': 'application/json'
-                                                        }
-                                                    });
-
-                                                    const data = await response.json();
-
-                                                    if (data.success) {
-                                                        this.showNotification('success', data.message);
-                                                        await this.loadRoomData();
-                                                    }
-                                                } catch (error) {
-                                                    console.error('Error marking participant as ready:', error);
-                                                    this.showNotification('error', 'Terjadi kesalahan');
-                                                }
-                                            },
-
-                                            // ✅ FIX: Load leaderboard dari endpoint guru yang sudah diperbaiki
-                                            async loadLeaderboard() {
-                                                    try {
-                                                        const response = await fetch(LEADERBOARD_URL, {
-                                                            headers: {
-                                                                'Accept': 'application/json',
-                                                                'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                                'X-Requested-With': 'XMLHttpRequest'
-                                                            }
-                                                        });
-                                                        const data = await response.json();
-                                                        console.log('🏆 [GURU] Leaderboard API Response:', data);
-                                                        if (data.success) {
-                                                            this.leaderboard = data.leaderboard;
-                                                            console.log('✅ [GURU] Leaderboard loaded:', this.leaderboard
-                                                                .length, 'entries');
-                                                            this.renderLeaderboardTable(this.leaderboard);
-                                                        } else {
-                                                            console.warn('⚠️ [GURU] Leaderboard not successful:', data
-                                                                .message);
-                                                            this.leaderboard = [];
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('❌ [GURU] Error loading leaderboard:', error);
-                                                        this.leaderboard = [];
-                                                    }
-                                                },
-
-                                                renderLeaderboardTable(leaderboard) {
-                                                    const tbody = document.getElementById('leaderboard-table-body');
-                                                    if (!tbody) return;
-
-                                                    if (!leaderboard || leaderboard.length === 0) {
-                                                        tbody.innerHTML =
-                                                            '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Belum ada data leaderboard.</td></tr>';
-                                                        return;
-                                                    }
-
-                                                    let html = '';
-                                                    leaderboard.forEach((entry, index) => {
-                                                        const rankClass = entry.rank === 1 ?
-                                                            'bg-yellow-50 dark:bg-yellow-900/20' : '';
-                                                        html += `<tr class="${rankClass}">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    ${entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${entry.student_name || entry.name || 'Unknown'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">${(entry.score || 0).toFixed(2)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">${this.formatTime(entry.time_taken || 0)}</td>
-                            </tr>`;
-                                                    });
-                                                    tbody.innerHTML = html;
-                                                },
-                @endif
-
-                @if ($isMurid)
-                    async loadLeaderboard() {
-                            try {
-                                const response = await fetch(LEADERBOARD_URL, {
-                                    headers: {
-                                        'Accept': 'application/json',
-                                        'X-CSRF-TOKEN': CSRF_TOKEN
-                                    }
-                                });
-                                const data = await response.json();
-                                console.log('🏆 [MURID] Leaderboard API Response:', data);
-                                if (data.success) {
-                                    this.leaderboard = data.leaderboard;
-                                    console.log('✅ [MURID] Leaderboard loaded:', this.leaderboard.length, 'entries');
-                                } else {
-                                    console.warn('⚠️ [MURID] Leaderboard not successful:', data.message);
-                                    this.leaderboard = [];
-                                }
-                            } catch (error) {
-                                console.error('❌ [MURID] Error loading leaderboard:', error);
-                                this.leaderboard = [];
-                            }
-                        },
-
-                        async joinRoom() {
-                                try {
-                                    const response = await fetch(JOIN_ROOM_URL, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': CSRF_TOKEN,
-                                            'Accept': 'application/json'
-                                        }
-                                    });
-
-                                    const data = await response.json();
-
-                                    if (data.success) {
-                                        this.participantStatus = data.participant_status || 'waiting';
-                                        this.showNotification('success', data.message);
-                                        await this.loadRoomData();
-                                    } else {
-                                        this.showNotification('error', data.message || 'Gagal bergabung');
-                                    }
-                                } catch (error) {
-                                    console.error('[JOIN] Error:', error);
-                                    this.showNotification('error', 'Terjadi kesalahan saat bergabung');
-                                }
-                            },
-
-                            async markAsReady() {
-                                    try {
-                                        const response = await fetch(MARK_READY_URL, {
-                                            method: 'POST',
-                                            headers: {
-                                                'X-CSRF-TOKEN': CSRF_TOKEN,
-                                                'Accept': 'application/json'
-                                            }
-                                        });
-
-                                        const data = await response.json();
-
-                                        if (data.success) {
-                                            this.participantStatus = 'ready';
-                                            this.showNotification('success', data.message);
-                                            await this.loadRoomData();
-                                        } else {
-                                            this.showNotification('error', data.message || 'Gagal mengubah status');
-                                        }
-                                    } catch (error) {
-                                        console.error('[READY] Error:', error);
-                                        this.showNotification('error', 'Terjadi kesalahan');
-                                    }
-                                },
-                @endif
-
-                refreshData() {
-                    this.loadRoomData();
-                    this.showNotification('info', 'Memperbarui data...');
-                },
-
-                showNotification(type, message) {
-                    const container = document.getElementById('notification-container');
-                    if (!container) return;
-
-                    const oldNotifications = container.querySelectorAll('.notification');
-                    oldNotifications.forEach(notif => notif.remove());
-
-                    const notification = document.createElement('div');
-                    notification.className = `notification ${type}`;
-                    notification.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas ${
-                                    type === 'success' ? 'fa-check-circle' :
-                                    type === 'error' ? 'fa-exclamation-circle' :
-                                    type === 'warning' ? 'fa-exclamation-triangle' :
-                                    'fa-info-circle'
-                                }"></i>
-                                <span>${message}</span>
-                            </div>
-                            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 hover:opacity-80">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    `;
-
-                    container.appendChild(notification);
-                    setTimeout(() => {
-                        if (notification.parentElement) {
-                            notification.style.opacity = '0';
-                            notification.style.transform = 'translateX(100%)';
-                            setTimeout(() => notification.remove(), 300);
-                        }
-                    }, 5000);
-                }
-            };
-        }
-    </script>
-    @if (session('error'))
-        <script>
-            window.addEventListener('load', function() {
-                const container = document.getElementById('notification-container');
-                if (container) {
-                    const notification = document.createElement('div');
-                    notification.className = 'notification error';
-                    notification.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span>{{ session('error') }}</span>
-                            </div>
-                            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 hover:opacity-80">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(notification);
-                    setTimeout(() => notification.remove(), 5000);
-                }
-            });
-        </script>
     @endif
-</body>
 
+    {{-- TABS --}}
+    <div class="card p-4">
+        <div class="tabs-container">
+            <button @click="activeTab = 'participants'" class="tab-btn" :class="{ 'active': activeTab === 'participants' }">
+                <i class="fas fa-users mr-2"></i> Peserta (<span x-text="participants.length"></span>)
+            </button>
+            @if($quiz->show_leaderboard ?? true)
+            <button @click="activeTab = 'leaderboard'; loadLeaderboard()" class="tab-btn" :class="{ 'active': activeTab === 'leaderboard' }">
+                <i class="fas fa-trophy mr-2 text-yellow-500"></i> Leaderboard
+            </button>
+            @endif
+        </div>
+
+        {{-- PARTICIPANTS TAB --}}
+        <div x-show="activeTab === 'participants'">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-sm text-gray-500">Update otomatis setiap 3 detik</p>
+                <div class="text-sm font-semibold text-purple-600" x-show="stats.total > 0">
+                    <span x-text="stats.joined"></span>/<span x-text="stats.total"></span> siswa bergabung
+                </div>
+            </div>
+
+            <div class="participants-grid">
+                {{-- EMPTY STATE --}}
+                <template x-if="participants.length === 0">
+                    <div class="empty-participants">
+                        <div class="empty-icon"><i class="fas fa-users" style="color:#D1D5DB"></i></div>
+                        <h3 class="font-bold text-gray-700 mb-1">Belum ada peserta</h3>
+                        <p class="text-sm">@if($isGuru) Buka ruangan dan siswa akan muncul di sini. @else Bergabung ke ruangan untuk tampil di sini. @endif</p>
+                    </div>
+                </template>
+
+                <template x-for="p in sortedParticipants" :key="p.id">
+                    <div class="p-card" :class="{ 'violation-card': p.has_violation }">
+                        {{-- Violation badge --}}
+                        <div x-show="p.has_violation" class="mb-2">
+                            <span class="violation-badge">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span x-text="p.violation_count + ' Pelanggaran'"></span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                                <div class="p-avatar" x-text="p.initial">?</div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-bold text-sm truncate text-gray-900" x-text="p.name"></div>
+                                    <div class="text-xs text-gray-400 truncate" x-text="p.email"></div>
+                                </div>
+                            </div>
+                            <div class="p-status-dot" :class="p.status"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-gray-400">
+                                <i class="fas fa-clock mr-1"></i>
+                                <span x-text="p.joined_time || '-'"></span>
+                            </span>
+                            <span class="status-pill" :class="p.status" x-text="getStatusText(p.status)"></span>
+                        </div>
+
+                        @if($isGuru)
+                        <div class="p-actions">
+                            <button @click="markParticipantAsReady(p.id)"
+                                x-show="p.status === 'waiting' || p.status === 'not_joined'"
+                                class="p-btn ready-btn">
+                                <i class="fas fa-check mr-1"></i> Siapkan
+                            </button>
+                            <button @click="kickParticipant(p.id)" class="p-btn kick-btn">
+                                <i class="fas fa-times mr-1"></i> Keluarkan
+                            </button>
+                        </div>
+                        @endif
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {{-- LEADERBOARD TAB --}}
+        @if($quiz->show_leaderboard ?? true)
+        <div x-show="activeTab === 'leaderboard'" x-cloak>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-900"><i class="fas fa-trophy mr-2" style="color:#D97706"></i> Leaderboard</h3>
+                <button @click="loadLeaderboard()" class="btn-action btn-secondary text-sm px-3 py-2">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div x-show="leaderboard.length === 0" class="text-center py-8 text-gray-500">
+                <i class="fas fa-trophy text-4xl text-gray-300 mb-3 block"></i>
+                <p>Belum ada data. Mulai quiz untuk melihat leaderboard.</p>
+            </div>
+
+            <div class="space-y-2" x-show="leaderboard.length > 0">
+                <template x-for="(entry, idx) in leaderboard" :key="idx">
+                    <div class="lb-row" :class="{
+                        'rank-1': entry.rank === 1,
+                        'rank-2': entry.rank === 2,
+                        'rank-3': entry.rank === 3,
+                        'rank-other': entry.rank > 3
+                    }">
+                        <div class="lb-rank">
+                            <span x-show="entry.rank === 1"><i class="fas fa-medal" style="color:#D97706"></i></span>
+                            <span x-show="entry.rank === 2"><i class="fas fa-medal" style="color:#9CA3AF"></i></span>
+                            <span x-show="entry.rank === 3"><i class="fas fa-medal" style="color:#B45309"></i></span>
+                            <span x-show="entry.rank > 3" x-text="'#' + entry.rank" class="text-gray-500 text-base"></span>
+                        </div>
+                        <div class="p-avatar" x-text="(entry.student_name || entry.name || 'U').charAt(0).toUpperCase()"></div>
+                        <div class="flex-1">
+                            <div class="font-bold text-sm" x-text="entry.student_name || entry.name || 'Peserta'"></div>
+                            <div class="text-xs text-gray-500" x-text="'Waktu: ' + formatTime(entry.time_taken || 0)"></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-black text-purple-600 text-lg" x-text="(entry.score || 0) + ' pts'"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
+
+{{-- ===== NOTIFICATION CONTAINER ===== --}}
+<div id="notif-container"></div>
+
+<script>
+    // URLs
+    @if($isGuru)
+    const ROOM_STATUS_URL = '{{ route('guru.quiz.room.status', $quiz->id) }}';
+    const OPEN_ROOM_URL   = '{{ route('guru.quiz.room.open', $quiz->id) }}';
+    const CLOSE_ROOM_URL  = '{{ route('guru.quiz.room.close', $quiz->id) }}';
+    const START_QUIZ_URL  = '{{ route('guru.quiz.room.start', $quiz->id) }}';
+    const STOP_QUIZ_URL   = '{{ route('guru.quiz.room.stop', $quiz->id) }}';
+    const KICK_URL        = '{{ route('guru.quiz.room.kick', [$quiz->id, 'PART_ID']) }}';
+    const READY_URL       = '{{ route('guru.quiz.room.mark-ready', [$quiz->id, 'PART_ID']) }}';
+    const LEADERBOARD_URL = '{{ route('guru.quiz.leaderboard', $quiz->id) }}';
+    @elseif($isMurid)
+    const ROOM_STATUS_URL = '{{ route('quiz.room.status', $quiz->id) }}';
+    const JOIN_ROOM_URL   = '{{ route('quiz.join-room', $quiz->id) }}';
+    const MARK_READY_URL  = '{{ route('quiz.room.mark-ready', $quiz->id) }}';
+    const PLAY_QUIZ_URL   = '{{ route('quiz.play', $quiz->id) }}';
+    const LEADERBOARD_URL = '{{ route('quiz.leaderboard', $quiz->id) }}';
+    @endif
+    const CSRF_TOKEN = '{{ csrf_token() }}';
+
+    function roomApp() {
+        return {
+            roomOpen: {{ $quiz->is_room_open ? 'true' : 'false' }},
+            quizStarted: {{ $quiz->is_quiz_started ? 'true' : 'false' }},
+            participants: [],
+            leaderboard: [],
+            activeTab: 'participants',
+            lastUpdated: null,
+            timeRemainingText: '--:--',
+            stats: {
+                total: {{ optional($quiz->class)->students()->count() ?? 0 }},
+                joined: 0, ready: 0, started: 0, submitted: 0
+            },
+            participantStatus: '{{ $participant->status ?? 'not_joined' }}',
+            _pollInterval: null,
+            _lbInterval: null,
+
+            get isJoined() {
+                return this.participantStatus !== 'not_joined' && this.participantStatus !== '';
+            },
+            get sortedParticipants() {
+                return [...this.participants].sort((a, b) => {
+                    if (a.has_violation && !b.has_violation) return -1;
+                    if (!a.has_violation && b.has_violation) return 1;
+                    if (a.has_violation && b.has_violation) return (b.violation_count||0) - (a.violation_count||0);
+                    const order = ['started','ready','waiting','submitted'];
+                    return order.indexOf(a.status) - order.indexOf(b.status);
+                });
+            },
+            get lastUpdatedText() {
+                if (!this.lastUpdated) return '';
+                const s = Math.floor((Date.now() - this.lastUpdated) / 1000);
+                return s < 60 ? `${s}d lalu` : `${Math.floor(s/60)}m lalu`;
+            },
+
+            async init() {
+                await this.loadRoomData();
+
+                this._pollInterval = setInterval(() => this.loadRoomData(), 3000);
+                this._lbInterval = setInterval(() => {
+                    if (this.activeTab === 'leaderboard') this.loadLeaderboard();
+                }, 5000);
+
+                @if($isMurid)
+                if (this.roomOpen && !this.isJoined && !this.quizStarted) {
+                    setTimeout(() => this.joinRoom(), 1200);
+                }
+                // Auto-redirect jika quiz sudah dimulai dan status started
+                if (this.quizStarted && (this.participantStatus === 'started')) {
+                    // Don't auto-redirect, let user click
+                }
+                @endif
+            },
+
+            async loadRoomData() {
+                try {
+                    const r = await fetch(ROOM_STATUS_URL, {
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }
+                    });
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    if (data.success) this.applyResponse(data);
+                } catch(e) {}
+            },
+
+            applyResponse(data) {
+                if (data.is_room_open !== undefined) this.roomOpen = Boolean(data.is_room_open);
+                if (data.is_quiz_started !== undefined) this.quizStarted = Boolean(data.is_quiz_started);
+
+                if (data.stats) {
+                    this.stats = {
+                        total: data.stats.total_students || data.stats.total || this.stats.total,
+                        joined: data.stats.joined || 0,
+                        ready: data.stats.ready || 0,
+                        started: data.stats.started || 0,
+                        submitted: data.stats.submitted || 0,
+                    };
+                }
+
+                if (Array.isArray(data.participants)) {
+                    this.participants = data.participants.map(p => {
+                        const name = p.student_name || p.name || 'Unknown';
+                        const vc = parseInt(p.violation_count) || 0;
+                        return {
+                            id: p.id,
+                            student_id: p.student_id,
+                            name, email: p.student_email || p.email || '',
+                            status: p.status || 'waiting',
+                            joined_time: p.joined_at || p.joined_time || '-',
+                            initial: name.charAt(0).toUpperCase(),
+                            violation_count: vc,
+                            has_violation: vc > 0 || p.has_violation,
+                        };
+                    });
+                    this.updateViolationBar();
+                }
+
+                @if($isMurid)
+                if (data.participant) {
+                    const prevStatus = this.participantStatus;
+                    this.participantStatus = data.participant.status || 'not_joined';
+                    // Auto redirect when quiz starts and user is ready/started
+                    if (this.quizStarted && prevStatus !== 'started' && this.participantStatus === 'started') {
+                        this.showNotif('success', 'Quiz dimulai! Klik tombol untuk mengerjakan.');
+                    }
+                }
+                @endif
+
+                if (data.time_remaining !== undefined && data.time_remaining !== null) {
+                    this.timeRemainingText = this.formatTime(data.time_remaining);
+                }
+
+                this.lastUpdated = Date.now();
+            },
+
+            updateViolationBar() {
+                const bar = document.getElementById('violation-bar');
+                if (!bar) return;
+                const violators = this.participants.filter(p => p.violation_count > 0);
+                const total = this.participants.reduce((s,p) => s + (p.violation_count||0), 0);
+                if (violators.length > 0) {
+                    bar.classList.remove('hidden');
+                    document.getElementById('viol-count').textContent = total;
+                    document.getElementById('viol-users').textContent = violators.length;
+                } else {
+                    bar.classList.add('hidden');
+                }
+            },
+
+            formatTime(secs) {
+                const s = parseInt(secs);
+                if (isNaN(s) || s <= 0) return '00:00';
+                return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+            },
+
+            getStatusText(status) {
+                const map = { not_joined:'Belum Bergabung', waiting:'Menunggu', ready:'Siap', started:'Mengerjakan', submitted:'Selesai', disconnected:'Terputus' };
+                return map[status] || status;
+            },
+
+            // ===== GURU ACTIONS =====
+            @if($isGuru)
+            async openRoom() {
+                if (!confirm('Buka ruangan quiz sekarang? Siswa akan bisa bergabung.')) return;
+                try {
+                    const r = await fetch(OPEN_ROOM_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.roomOpen = true; this.showNotif('success', data.message); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal membuka ruangan');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async closeRoom() {
+                if (!confirm('Tutup ruangan? Semua siswa akan dikeluarkan.')) return;
+                try {
+                    const r = await fetch(CLOSE_ROOM_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.roomOpen = false; this.showNotif('success', data.message); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal menutup ruangan');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async startQuiz() {
+                if (this.stats.ready === 0) { this.showNotif('warning', 'Belum ada siswa yang siap!'); return; }
+                if (!confirm(`Mulai quiz? ${this.stats.ready} siswa siap.`)) return;
+                try {
+                    const r = await fetch(START_QUIZ_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.quizStarted = true; this.showNotif('success', data.message || 'Quiz dimulai!'); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal memulai quiz');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async stopQuiz() {
+                if (!confirm('Hentikan quiz? Semua siswa yang belum selesai akan dipaksa submit.')) return;
+                try {
+                    const r = await fetch(STOP_QUIZ_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.quizStarted = false; this.roomOpen = false; this.showNotif('success', data.message); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal menghentikan quiz');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async kickParticipant(participantId) {
+                if (!confirm('Keluarkan peserta ini?')) return;
+                try {
+                    const url = KICK_URL.replace('PART_ID', participantId);
+                    const r = await fetch(url, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.showNotif('success', data.message); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async markParticipantAsReady(participantId) {
+                try {
+                    const url = READY_URL.replace('PART_ID', participantId);
+                    const r = await fetch(url, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.showNotif('success', data.message || 'Status diubah!'); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            @endif
+
+            // ===== SISWA ACTIONS =====
+            @if($isMurid)
+            async joinRoom() {
+                try {
+                    const r = await fetch(JOIN_ROOM_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.participantStatus = data.participant_status || 'waiting'; this.showNotif('success', data.message); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal bergabung');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            async markAsReady() {
+                try {
+                    const r = await fetch(MARK_READY_URL, { method:'POST', headers:{ 'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json' }});
+                    const data = await r.json();
+                    if (data.success) { this.participantStatus = 'ready'; this.showNotif('success', data.message || 'Kamu siap!'); await this.loadRoomData(); }
+                    else this.showNotif('error', data.message || 'Gagal');
+                } catch(e) { this.showNotif('error', 'Terjadi kesalahan'); }
+            },
+            @endif
+
+            // ===== LEADERBOARD =====
+            async loadLeaderboard() {
+                try {
+                    const r = await fetch(LEADERBOARD_URL, { headers: { 'Accept':'application/json', 'X-CSRF-TOKEN':CSRF_TOKEN }});
+                    const data = await r.json();
+                    if (data.success) this.leaderboard = data.leaderboard || [];
+                    else this.leaderboard = [];
+                } catch(e) { this.leaderboard = []; }
+            },
+
+            // ===== NOTIFICATION =====
+            showNotif(type, msg) {
+                const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+                const el = document.createElement('div');
+                el.className = `notif ${type}`;
+                el.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i><span style="flex:1">${msg}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer;font-size:0.875rem;flex-shrink:0"><i class="fas fa-times"></i></button>`;
+                document.getElementById('notif-container').appendChild(el);
+                setTimeout(() => { if (el.parentElement) { el.style.opacity='0'; el.style.transform='translateX(60px)'; el.style.transition='all 0.3s'; setTimeout(() => el.remove(), 300); } }, 5000);
+            }
+        }
+    }
+</script>
+
+@if(session('error'))
+<script>
+window.addEventListener('load', () => {
+    const app = document.querySelector('[x-data]').__x;
+    if (app) app.$data.showNotif('error', '{{ session('error') }}');
+});
+</script>
+@endif
+
+</body>
 </html>

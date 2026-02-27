@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="space-y-6">
-        <!-- Back button yang lebih jelas dan prominent -->
+        <!-- Back button -->
         <div class="flex items-center gap-3 mb-4">
             <a href="{{ route('tasks.index') }}"
                 class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded-lg transition-all duration-200 font-medium text-sm">
@@ -13,7 +13,7 @@
             </a>
         </div>
 
-        <!-- Header - Warna lebih subtle, biru soft dengan putih -->
+        <!-- Header -->
         <div class="bg-blue-50 border-l-4 border-blue-400 rounded-xl shadow-sm p-4 md:p-8">
             <div class="min-w-0">
                 <h1 class="text-xl md:text-3xl font-bold text-blue-900">Tambah Tugas Baru</h1>
@@ -44,7 +44,7 @@
             <form action="{{ route('tasks.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
 
-                <!-- Judul Tugas (Full Width) -->
+                <!-- Judul Tugas -->
                 <div>
                     <label for="title_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         Judul Tugas <span class="text-red-600">*</span>
@@ -57,7 +57,7 @@
                     @enderror
                 </div>
 
-                <!-- Grid: Mapel, Materi, Tanggal -->
+                <!-- Grid: Mapel, Materi, Tanggal, Kelas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <!-- Mapel -->
                     <div>
@@ -69,7 +69,7 @@
                             required>
                             <option value="">Pilih Mapel</option>
                             @foreach ($mapels as $mapel)
-                                <option value="{{ $mapel->id }}">
+                                <option value="{{ $mapel->id }}" {{ old('subject_id') == $mapel->id ? 'selected' : '' }}>
                                     {{ $mapel->name_subject }}
                                 </option>
                             @endforeach
@@ -79,16 +79,17 @@
                         @enderror
                     </div>
 
-                    <!-- Materi -->
+                    <!-- Materi (OPSIONAL) -->
                     <div>
                         <label for="materi_id" class="block text-sm font-semibold text-gray-900 mb-2.5">
-                            Materi <span class="text-red-600">*</span>
+                            Materi
+                            <span class="text-gray-400 font-normal text-xs">(Opsional)</span>
                         </label>
                         <select id="materi_id" name="materi_id"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white"
-                            required>
-                            <option value="">Pilih Mapel terlebih dahulu</option>
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
+                            <option value="">— Tanpa Materi —</option>
                         </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih mapel terlebih dahulu untuk melihat daftar materi</p>
                         @error('materi_id')
                             <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
                         @enderror
@@ -102,12 +103,15 @@
                         <input type="datetime-local" id="date_collection" name="date_collection"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                             value="{{ old('date_collection') }}" required>
+                        <p class="text-xs text-gray-500 mt-1" id="date-hint">
+                            ⏱ Minimal 30 menit dari sekarang
+                        </p>
                         @error('date_collection')
                             <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    <!-- Improved class multi-select with search and select-all -->
+                    <!-- Kelas Multi-Select -->
                     <div>
                         <label for="class_id" class="block text-sm font-semibold text-gray-900 mb-2.5">
                             Kelas <span class="text-red-600">*</span>
@@ -117,9 +121,7 @@
                             <button type="button" @click="open = !open"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white text-left flex justify-between items-center hover:border-gray-400">
                                 <div class="flex flex-wrap gap-1.5 flex-1 items-center">
-                                    <div id="button-chips" class="flex flex-wrap gap-1.5">
-                                        <!-- Chips will be populated by JavaScript -->
-                                    </div>
+                                    <div id="button-chips" class="flex flex-wrap gap-1.5"></div>
                                     <span id="selected-count" class="text-gray-500 text-xs">Pilih Kelas</span>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-400 transition-transform flex-shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,15 +155,14 @@
                         </div>
 
                         <!-- Hidden select for form submission -->
-                        <select id="class_id" name="class_id[]" multiple class="hidden" required>
-                        </select>
+                        <select id="class_id" name="class_id[]" multiple class="hidden" required></select>
                         @error('class_id')
                             <span class="text-red-600 text-xs mt-1.5 block">{{ $message }}</span>
                         @enderror
                     </div>
                 </div>
 
-                                <!-- Deskripsi (Full Width) -->
+                <!-- Deskripsi -->
                 <div>
                     <label for="description_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         Deskripsi Tugas
@@ -174,7 +175,7 @@
                     @enderror
                 </div>
 
-                <!-- File Tugas (Full Width) -->
+                <!-- File Tugas -->
                 <div>
                     <label for="file_task" class="block text-sm font-semibold text-gray-900 mb-2.5">
                         File Tugas
@@ -208,14 +209,50 @@
     </div>
 
     <script>
-        const subjectSelect = document.getElementById('subject_id');
-        const materiSelect = document.getElementById('materi_id');
-        const classSelect = document.getElementById('class_id');
+        const subjectSelect  = document.getElementById('subject_id');
+        const materiSelect   = document.getElementById('materi_id');
+        const classSelect    = document.getElementById('class_id');
         const classOptionsDiv = document.getElementById('class-options');
         const selectAllCheckbox = document.getElementById('select-all-classes');
         const buttonChipsDiv = document.getElementById('button-chips');
         const selectedCountSpan = document.getElementById('selected-count');
+        const dateInput      = document.getElementById('date_collection');
 
+        // ============================================================
+        // SET MIN DATE: 30 menit dari sekarang
+        // ============================================================
+        function setMinDate() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + 30);
+            // Format: YYYY-MM-DDTHH:MM
+            const pad = n => String(n).padStart(2, '0');
+            const minVal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            dateInput.min = minVal;
+
+            // Update hint text
+            const hint = document.getElementById('date-hint');
+            if (hint) {
+                hint.textContent = `⏱ Minimal 30 menit dari sekarang (${pad(now.getHours())}:${pad(now.getMinutes())})`;
+            }
+        }
+        setMinDate();
+        // Refresh setiap menit agar min selalu akurat
+        setInterval(setMinDate, 60000);
+
+        // Validasi saat submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const selectedDate = new Date(dateInput.value);
+            const minDate = new Date(dateInput.min);
+            if (selectedDate < minDate) {
+                e.preventDefault();
+                alert('Tanggal pengumpulan harus minimal 30 menit dari sekarang.');
+                dateInput.focus();
+            }
+        });
+
+        // ============================================================
+        // EVENTS
+        // ============================================================
         subjectSelect.addEventListener('change', loadBySubject);
         materiSelect.addEventListener('change', loadByMateri);
 
@@ -242,11 +279,13 @@
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 rounded-md cursor-pointer transition-colors class-option';
                 label.setAttribute('data-name', option.textContent);
+                label.setAttribute('data-value', option.value);
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = option.value;
                 checkbox.className = 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 checkbox-class';
+
                 checkbox.addEventListener('change', function() {
                     option.selected = this.checked;
                     updateButtonChips();
@@ -262,7 +301,6 @@
                 classOptionsDiv.appendChild(label);
             });
 
-            // Setup search
             setupSearch();
             updateSelectAllState();
         }
@@ -327,9 +365,7 @@
                 if (document.querySelector(`.class-option[data-value="${checkbox.value}"]`)?.style.display !== 'none') {
                     checkbox.checked = isChecked;
                     const option = classSelect.querySelector(`option[value="${checkbox.value}"]`);
-                    if (option) {
-                        option.selected = isChecked;
-                    }
+                    if (option) option.selected = isChecked;
                 }
             });
             updateButtonChips();
@@ -338,10 +374,12 @@
         function loadBySubject() {
             const subjectId = subjectSelect.value;
             resetClass();
-            materiSelect.innerHTML = '<option value="">Pilih Materi</option>';
+            // Reset materi tapi tetap ada opsi kosong
+            materiSelect.innerHTML = '<option value="">— Tanpa Materi —</option>';
 
             if (!subjectId) return;
 
+            // Load kelas
             fetch(`/guru/subjects/${subjectId}/classes`)
                 .then(res => res.json())
                 .then(data => {
@@ -358,6 +396,7 @@
                     renderClassOptions();
                 });
 
+            // Load materi (opsional)
             fetch(`/guru/subjects/${subjectId}/materi`)
                 .then(res => res.json())
                 .then(data => {
@@ -371,6 +410,7 @@
             const materiId = materiSelect.value;
             resetClass();
 
+            // Jika tidak ada materi dipilih, load kelas berdasarkan mapel
             if (!materiId) {
                 loadBySubject();
                 return;

@@ -379,10 +379,28 @@
             </p>
             <div class="mt-8 md:mt-12 flex flex-col sm:flex-row justify-center gap-4 md:gap-5 animate-on-scroll">
 
-                <a href="{{ route('login') }}"
-                    class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
-                    <span class="relative z-10">Masuk</span>
-                </a>
+                {{-- Tombol yang berubah berdasarkan status login --}}
+                @guest
+                    <a href="{{ route('login') }}"
+                        class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-gray-50 font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 hover:text-white transform hover:scale-105">
+                        <span class="relative z-10">Masuk</span>
+                    </a>
+                @else
+                    @php
+                        $dashboardRoute = '#';
+                        if(auth()->user()->hasRole('Admin')) {
+                            $dashboardRoute = route('home');
+                        } elseif(auth()->user()->hasRole('Guru')) {
+                            $dashboardRoute = route('homeguru');
+                        } elseif(auth()->user()->hasRole('Murid')) {
+                            $dashboardRoute = route('dashboard');
+                        }
+                    @endphp
+                    <a href="{{ $dashboardRoute }}"
+                        class="btn-hover pulse-hover text-gray-700 text-lg md:text-xl bg-blue-600 text-white font-medium rounded-xl px-8 md:px-16 py-3 transition-all duration-300 ease-in-out hover:bg-blue-800 transform hover:scale-105">
+                        <span class="relative z-10">Dashboard</span>
+                    </a>
+                @endguest
             </div>
         </div>
 

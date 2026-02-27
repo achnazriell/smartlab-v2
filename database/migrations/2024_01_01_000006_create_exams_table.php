@@ -1,12 +1,12 @@
 <?php
-// File: 2024_01_01_000006_create_exams_table.php
+// File: 2024_01_01_000006_create_exams_table.php (FINAL VERSION)
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-
+return new class extends Migration
+{
     public function up(): void
     {
         /*
@@ -18,12 +18,12 @@ return new class extends Migration {
             $table->id();
 
             // === BASIC INFO ===
-            $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('class_id')->constrained();
-            $table->foreignId('subject_id')->nullable()->constrained();
+            $table->foreignId('teacher_id')->constrained('teachers')->cascadeOnDelete();
+            $table->foreignId('class_id')->constrained('classes');
+            $table->foreignId('subject_id')->nullable()->constrained('subjects');
             $table->string('title');
             $table->enum('type', ['UH', 'UTS', 'UAS', 'QUIZ', 'LAINNYA']);
-            $table->string('custom_type')->nullable(); // Untuk type LAINNYA
+            $table->string('custom_type')->nullable();
             $table->integer('duration'); // menit
 
             // === TIMING (optional untuk QUIZ, wajib untuk exam lain) ===
@@ -43,8 +43,8 @@ return new class extends Migration {
             $table->boolean('fullscreen_mode')->default(true);
             $table->boolean('block_new_tab')->default(true);
             $table->boolean('prevent_copy_paste')->default(true);
-            $table->boolean('disable_violations')->default(false); // Matikan semua pelanggaran
-            $table->integer('violation_limit')->default(3); // Auto-submit ketika tercapai
+            $table->boolean('disable_violations')->default(false);
+            $table->integer('violation_limit')->default(3);
 
             // === PROCTORING ===
             $table->boolean('enable_proctoring')->default(false);
@@ -53,12 +53,12 @@ return new class extends Migration {
 
             // === RESULT SETTINGS ===
             $table->boolean('show_score')->default(false);
-            $table->boolean('show_correct_answer')->default(false); // Master control
+            $table->boolean('show_correct_answer')->default(false);
             $table->enum('show_result_after', [
-                'never',           // Tidak pernah
-                'immediately',     // Setelah submit (langsung)
-                'after_submit',    // Setelah semua siswa submit
-                'after_exam'       // Setelah waktu ujian berakhir
+                'never',
+                'immediately',
+                'after_submit',
+                'after_exam'
             ])->default('never');
             $table->integer('limit_attempts')->default(1);
             $table->decimal('min_pass_grade', 5, 2)->default(0);
@@ -74,39 +74,53 @@ return new class extends Migration {
             $table->boolean('enable_retake')->default(false);
 
             // === ROOM SETTINGS (untuk quiz live) ===
-            $table->boolean('is_room_open')->default(false); // Ruangan dibuka untuk siswa masuk
-            $table->timestamp('room_opened_at')->nullable(); // Waktu ruangan dibuka
-            $table->boolean('is_quiz_started')->default(false); // Quiz dimulai oleh guru
-            $table->timestamp('quiz_started_at')->nullable(); // Waktu quiz dimulai
-            $table->integer('quiz_remaining_time')->nullable(); // Sisa waktu quiz (detik)
+            $table->boolean('is_room_open')->default(false);
+            $table->timestamp('room_opened_at')->nullable();
+            $table->boolean('is_quiz_started')->default(false);
+            $table->timestamp('quiz_started_at')->nullable();
+            $table->integer('quiz_remaining_time')->nullable(); // detik
 
             // === STATUS ===
             $table->enum('status', ['draft', 'active', 'finished', 'inactive'])->default('draft');
             $table->timestamps();
             $table->softDeletes();
 
-            // === INDEXES ===
             $table->index(['type', 'is_room_open', 'is_quiz_started']);
             $table->index(['teacher_id', 'status']);
         });
 
         /*
         |--------------------------------------------------------------------------
-        | EXAM QUESTIONS - COMPLETE VERSION
+        | EXAM STUDENT (Pivot assignment quiz ke siswa)
+        |--------------------------------------------------------------------------
+        */
+        Schema::create('exam_student', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('exam_id')->constrained('exams')->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete(); // student_id = user_id
+            $table->timestamps();
+
+            $table->unique(['exam_id', 'student_id']);
+            $table->index('exam_id');
+            $table->index('student_id');
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXAM QUESTIONS
         |--------------------------------------------------------------------------
         */
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
 
-            // === QUESTION CONTENT ===
-            $table->enum('type', ['PG', 'IS']);
+            // Gunakan string agar dapat menampung semua tipe soal
+            $table->string('type', 10);
             $table->text('question');
             $table->integer('score')->default(1);
             $table->json('short_answers')->nullable(); // Untuk soal IS
             $table->text('explanation')->nullable();
 
-            // === QUESTION SETTINGS ===
             $table->boolean('show_explanation')->default(false);
             $table->boolean('enable_skip')->default(true);
             $table->boolean('enable_mark_review')->default(true);
@@ -115,10 +129,7 @@ return new class extends Migration {
             $table->boolean('enable_timer')->default(false);
             $table->integer('time_limit')->nullable();
 
-            // === MEDIA ===
             $table->string('image_path')->nullable();
-
-            // === ORDER ===
             $table->integer('order')->default(0);
 
             $table->timestamps();
@@ -144,24 +155,20 @@ return new class extends Migration {
         /*
         |--------------------------------------------------------------------------
         | QUIZ SESSIONS (untuk monitoring live quiz)
-        | HARUS DIBUAT SEBELUM exam_attempts karena ada foreign key constraint
         |--------------------------------------------------------------------------
         */
         Schema::create('quiz_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('teacher_id')->constrained('teachers')->cascadeOnDelete();
 
-            // === SESSION INFO ===
-            $table->string('session_code', 10)->unique()->nullable();
-            $table->enum('session_status', ['waiting', 'active', 'paused', 'finished'])->default('waiting');
+            $table->string('session_code', 6)->unique();
+            $table->enum('session_status', ['waiting', 'active', 'finished'])->default('waiting');
 
-            // === TIMING ===
             $table->datetime('session_started_at')->nullable();
             $table->datetime('session_ended_at')->nullable();
-            $table->integer('total_duration')->nullable(); // Total durasi sesi (detik)
+            $table->integer('total_duration')->nullable(); // detik
 
-            // === STATS ===
             $table->integer('total_students')->default(0);
             $table->integer('students_joined')->default(0);
             $table->integer('students_ready')->default(0);
@@ -170,7 +177,6 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            // === INDEXES ===
             $table->index('session_code');
             $table->index('session_status');
             $table->index(['exam_id', 'session_status']);
@@ -178,7 +184,7 @@ return new class extends Migration {
 
         /*
         |--------------------------------------------------------------------------
-        | QUIZ ROOM PARTICIPANTS (siswa yang masuk ruangan quiz)
+        | QUIZ PARTICIPANTS (siswa yang masuk ruangan)
         |--------------------------------------------------------------------------
         */
         Schema::create('quiz_participants', function (Blueprint $table) {
@@ -187,22 +193,19 @@ return new class extends Migration {
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
 
-            // === STATUS ===
             $table->enum('status', ['waiting', 'ready', 'started', 'submitted', 'disconnected'])->default('waiting');
 
-            // === TIMING ===
             $table->timestamp('joined_at')->nullable();
             $table->timestamp('ready_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('disqualified_at')->nullable();
 
-            // === MONITORING ===
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
             $table->boolean('is_present')->default(true);
 
-            // === VIOLATION TRACKING ===
+            // Violation tracking
             $table->boolean('is_violation')->default(false);
             $table->string('violation_type')->nullable();
             $table->integer('violation_count')->default(0);
@@ -210,7 +213,6 @@ return new class extends Migration {
 
             $table->timestamps();
 
-            // === INDEXES ===
             $table->index(['quiz_session_id', 'student_id']);
             $table->index(['exam_id', 'student_id']);
             $table->index('status');
@@ -218,8 +220,7 @@ return new class extends Migration {
 
         /*
         |--------------------------------------------------------------------------
-        | EXAM ATTEMPTS (Snapshot)
-        | DIBUAT SETELAH quiz_sessions karena ada foreign key constraint
+        | EXAM ATTEMPTS
         |--------------------------------------------------------------------------
         */
         Schema::create('exam_attempts', function (Blueprint $table) {
@@ -228,23 +229,19 @@ return new class extends Migration {
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('quiz_session_id')->nullable()->constrained('quiz_sessions')->nullOnDelete();
 
-            // === TIMING ===
             $table->datetime('started_at')->nullable();
             $table->datetime('ended_at')->nullable();
             $table->integer('remaining_time')->default(0); // detik
             $table->enum('status', ['in_progress', 'submitted', 'timeout']);
 
-            // === SNAPSHOT SETTINGS ===
             $table->json('exam_settings')->nullable();
 
-            // === MONITORING ===
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
             $table->integer('violation_count')->default(0);
             $table->json('violation_log')->nullable();
             $table->boolean('is_cheating_detected')->default(false);
 
-            // === RESULT ===
             $table->decimal('score', 5, 2)->default(0.00);
             $table->decimal('final_score', 5, 2)->default(0.00);
 
@@ -264,7 +261,9 @@ return new class extends Migration {
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
 
             $table->foreignId('choice_id')->nullable()->constrained('exam_choices');
-            $table->text('answer_text')->nullable();
+            // Kolom answer untuk menyimpan jawaban mentah
+            $table->text('answer')->nullable();
+            $table->text('answer_text')->nullable(); // tetap dipertahankan untuk kompatibilitas
 
             $table->integer('score')->default(0);
             $table->boolean('is_correct')->default(false);
@@ -277,13 +276,13 @@ return new class extends Migration {
 
     public function down(): void
     {
-        // Hapus dalam urutan yang benar untuk menghindari foreign key constraint error
         Schema::dropIfExists('exam_answers');
         Schema::dropIfExists('exam_attempts');
         Schema::dropIfExists('quiz_participants');
         Schema::dropIfExists('quiz_sessions');
         Schema::dropIfExists('exam_choices');
         Schema::dropIfExists('exam_questions');
+        Schema::dropIfExists('exam_student');
         Schema::dropIfExists('exams');
     }
 };

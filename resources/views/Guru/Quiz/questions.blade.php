@@ -1,1826 +1,1523 @@
 @extends('layouts.appTeacher')
 
 @section('content')
-    <style>
-        /* Base Styles */
-        .question-card {
-            transition: all 0.3s ease;
-            border: 2px solid rgba(37, 99, 235, 0.1);
-        }
+<style>
+    :root {
+        --primary: #6C3DE5;
+        --primary-light: #8B5CF6;
+        --primary-dark: #5B21B6;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+    }
 
-        .question-card:hover {
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
-            border-color: rgba(37, 99, 235, 0.3);
-        }
+    * { box-sizing: border-box; }
 
-        .badge-blue {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-        }
+    body { font-family: 'Inter', 'Poppins', sans-serif; }
 
-        .tab-blue-active {
-            border-color: #2563eb;
-            color: #2563eb;
-        }
+    /* ===== STICKY HEADER ===== */
+    .quiz-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: white;
+        border-bottom: 2px solid #F3F4F6;
+        padding: 1rem 1.5rem;
+        margin: -1.5rem -1.5rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        box-shadow: 0 2px 16px rgba(108,61,229,0.08);
+    }
 
-        .btn-blue {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            transition: all 0.3s ease;
-        }
+    .quiz-header-left h1 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 0.15rem;
+    }
 
-        .btn-blue:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
+    .quiz-header-left p {
+        font-size: 0.8rem;
+        color: #6B7280;
+    }
 
-        .stat-box-blue {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 2px solid #93c5fd;
-        }
+    .header-stats {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
-        /* Fixed Progress Bar Styles */
-        .progress-bar-container {
-            width: 100%;
-            background-color: #e5e7eb;
-            border-radius: 9999px;
-            overflow: hidden;
-            height: 0.5rem;
-            position: relative;
-        }
+    .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
 
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-            border-radius: 9999px;
-            transition: width 0.3s ease;
-            min-width: 0.5rem;
-            max-width: 100%;
-        }
+    .stat-pill.blue { background: #EFF6FF; color: #1D4ED8; }
+    .stat-pill.green { background: #ECFDF5; color: #059669; }
+    .stat-pill.purple { background: #F5F3FF; color: #7C3AED; }
 
-        .progress-bar-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
+    /* ===== MAIN LAYOUT ===== */
+    .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 1.5rem;
+        align-items: start;
+    }
 
-        .progress-percentage {
-            font-weight: 600;
-            color: #1d4ed8;
-        }
+    @media (max-width: 1024px) {
+        .main-layout { grid-template-columns: 1fr; }
+    }
 
-        /* Responsive Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
+    /* ===== CARD ===== */
+    .card {
+        background: white;
+        border-radius: 16px;
+        border: 1.5px solid #F3F4F6;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
 
-        @media (min-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 2fr 1fr;
-            }
-        }
+    .card-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #F3F4F6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        /* Fixed Header */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 40;
-            background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
-            backdrop-filter: blur(8px);
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 1.5rem;
-            padding: 20px;
-            border-radius: 20px;
-        }
+    .card-header h2 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #111827;
+    }
 
-        /* Question List Container */
-        .question-list-container {
-            max-height: 600px;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
+    .card-body { padding: 1.25rem; }
 
-        .question-list-container::-webkit-scrollbar {
-            width: 6px;
-        }
+    /* ===== FORM FIELD ===== */
+    .form-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.4rem;
+    }
 
-        .question-list-container::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 3px;
-        }
+    .form-input, .form-textarea, .form-select {
+        width: 100%;
+        padding: 0.65rem 0.9rem;
+        border: 1.5px solid #E5E7EB;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        color: #111827;
+        background: white;
+        transition: all 0.2s;
+        outline: none;
+    }
 
-        .question-list-container::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(108,61,229,0.1);
+    }
 
-        .question-list-container::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+    .form-textarea { resize: vertical; min-height: 80px; }
 
-        /* Custom Modal Styles - Optimized */
-        .custom-modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 9998;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease-out;
-            padding: 1rem;
-            align-items: center;
-            justify-content: center;
-        }
+    /* ===== CHOICE ITEM ===== */
+    .choice-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border: 1.5px solid #E5E7EB;
+        border-radius: 12px;
+        background: #FAFAFA;
+        transition: all 0.2s;
+        margin-bottom: 0.5rem;
+    }
 
-        .custom-modal-backdrop.active {
-            display: flex;
-            opacity: 1;
-        }
+    .choice-item.correct-choice {
+        background: #F0FDF4;
+        border-color: #86EFAC;
+    }
 
-        .custom-modal {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
-            transform: translateY(-20px);
-            opacity: 0;
-            transition: all 0.3s ease-out;
-        }
+    .choice-label {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #EEF2FF;
+        color: #4338CA;
+        font-weight: 700;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
 
-        .custom-modal.active {
-            transform: translateY(0);
-            opacity: 1;
-        }
+    .choice-item.correct-choice .choice-label {
+        background: #10B981;
+        color: white;
+    }
 
-        .custom-modal-header {
-            padding: 1.5rem 1.5rem 1rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
+    /* ===== QUESTION CARD LIST ===== */
+    .question-list { max-height: 620px; overflow-y: auto; padding-right: 4px; }
 
-        .custom-modal-content {
-            max-height: calc(90vh - 120px);
-            overflow-y: auto;
-            padding: 1rem 1.5rem;
-        }
+    .question-list::-webkit-scrollbar { width: 5px; }
+    .question-list::-webkit-scrollbar-track { background: #F9FAFB; }
+    .question-list::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
 
-        .custom-modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-        }
+    .q-card {
+        border: 1.5px solid #E5E7EB;
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: white;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
 
-        /* Alert Styles */
-        .custom-alert {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            left: 1rem;
-            background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 1rem 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            z-index: 9999;
-            transform: translateY(-100%);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
+    .q-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 16px rgba(108,61,229,0.1); }
 
-        @media (min-width: 640px) {
-            .custom-alert {
-                left: auto;
-                max-width: 400px;
-                transform: translateX(100%);
-            }
-        }
+    .q-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.6rem;
+    }
 
-        .custom-alert.show {
-            transform: translateY(0) translateX(0);
-            opacity: 1;
-        }
+    .q-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
 
-        .custom-alert.success {
-            border-left: 4px solid #10b981;
-        }
+    .q-type-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-weight: 600;
+        background: #EDE9FE;
+        color: #6D28D9;
+    }
 
-        .custom-alert.error {
-            border-left: 4px solid #ef4444;
-        }
+    .q-score-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-weight: 600;
+        background: #FEF3C7;
+        color: #92400E;
+    }
 
-        .custom-alert.warning {
-            border-left: 4px solid #f59e0b;
-        }
+    .q-text {
+        font-size: 0.85rem;
+        color: #374151;
+        font-weight: 500;
+        margin-bottom: 0.6rem;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 
-        .custom-alert.info {
-            border-left: 4px solid #3b82f6;
-        }
+    .q-choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
 
-        /* Form Field Improvements */
-        .form-field {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-        }
+    .q-choice-chip {
+        font-size: 0.72rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        background: #F3F4F6;
+        color: #6B7280;
+    }
 
-        .form-field:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
+    .q-choice-chip.correct {
+        background: #D1FAE5;
+        color: #065F46;
+        font-weight: 600;
+    }
 
-        /* Responsive Button Group */
-        .btn-group-responsive {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
+    .q-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-shrink: 0;
+    }
 
-        @media (min-width: 640px) {
-            .btn-group-responsive {
-                flex-direction: row;
-                align-items: center;
-            }
-        }
+    .btn-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
 
-        /* Choice Item */
-        .choice-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background-color: #f9fafb;
-            border-radius: 0.5rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s;
-        }
+    .btn-icon.edit { background: #EEF2FF; color: #4338CA; }
+    .btn-icon.edit:hover { background: #C7D2FE; }
+    .btn-icon.delete { background: #FEF2F2; color: #DC2626; }
+    .btn-icon.delete:hover { background: #FECACA; }
 
-        .choice-item:hover {
-            background-color: #f3f4f6;
-        }
+    /* ===== BUTTONS ===== */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
 
-        .choice-item.correct {
-            background-color: #d1fae5;
-            border-color: #a7f3d0;
-        }
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+    }
 
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
+    .btn-primary:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(108,61,229,0.35);
+    }
 
-        @media (min-width: 768px) {
-            .action-buttons {
-                flex-wrap: nowrap;
-            }
-        }
+    .btn-success { background: linear-gradient(135deg, #10B981, #059669); color: white; }
+    .btn-success:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(16,185,129,0.35); transform: translateY(-1px); }
 
-        /* Import Questions Styles */
-        .import-section {
-            border: 2px dashed #cbd5e1;
-            border-radius: 0.75rem;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
+    .btn-purple { background: linear-gradient(135deg, #7C3AED, #A78BFA); color: white; }
+    .btn-purple:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(124,58,237,0.35); transform: translateY(-1px); }
 
-        .import-section:hover {
-            border-color: #3b82f6;
-            background-color: #f8fafc;
-        }
+    .btn-outline {
+        background: white;
+        border: 1.5px solid #E5E7EB;
+        color: #374151;
+    }
 
-        .import-section.dragover {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-            transform: scale(1.02);
-        }
+    .btn-outline:hover { background: #F9FAFB; border-color: #D1D5DB; }
 
-        .import-preview {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            background-color: #f9fafb;
-        }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-        .import-preview-item {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e5e7eb;
-            transition: all 0.2s;
-        }
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.78rem; }
+    .btn-full { width: 100%; }
 
-        .import-preview-item:last-child {
-            border-bottom: none;
-        }
+    /* ===== PROGRESS ===== */
+    .progress-bar {
+        height: 6px;
+        background: #F3F4F6;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.4rem;
+    }
 
-        .import-preview-item:hover {
-            background-color: #f3f4f6;
-        }
+    .progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--primary), var(--primary-light));
+        transition: width 0.4s ease;
+    }
 
-        .import-preview-item.selected {
-            background-color: #dbeafe;
-            border-left: 4px solid #3b82f6;
-        }
-    </style>
+    /* ===== MODAL ===== */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="quizQuestionCreator()" x-init="init()">
-        <!-- Fixed Header -->
-        <div class="sticky-header shadow-md">
-            <div class="flex flex-col gap-4">
-                <!-- Title and Info -->
-                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    <div class="flex-1 min-w-0">
-                        <h1 class="text-2xl font-bold text-gray-900 truncate">Buat Soal Quiz: {{ $quiz->title }}</h1>
-                        <p class="text-gray-600 mt-1 text-sm">
-                            {{ $quiz->subject->name_subject }} • Kelas {{ $quiz->class->name_class }} •
-                            <span class="font-medium">
-                                {{ $quiz->difficulty_level == 'easy' ? 'Mudah' : ($quiz->difficulty_level == 'medium' ? 'Sedang' : 'Sulit') }}
-                            </span>
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg whitespace-nowrap">
-                            <span class="font-bold text-lg" x-text="questions.length"></span> Soal •
-                            <span class="font-bold text-lg" x-text="totalPoints"></span> Poin
-                        </div>
-                        <button @click="showImportModal = true"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 whitespace-nowrap">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span class="hidden sm:inline">Import Soal</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+    .modal {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+        width: 100%;
+        max-width: 620px;
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        animation: modalIn 0.25s ease;
+    }
+
+    .modal.modal-sm { max-width: 420px; }
+
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.95) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #F3F4F6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .modal-header h3 { font-size: 1rem; font-weight: 700; color: #111827; }
+
+    .modal-body {
+        padding: 1.25rem 1.5rem;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #F3F4F6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    /* ===== TABS ===== */
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid #F3F4F6;
+        margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6B7280;
+        border: none;
+        background: none;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* ===== IMPORT FILE DROP ZONE ===== */
+    .drop-zone {
+        border: 2px dashed #D1D5DB;
+        border-radius: 14px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--primary);
+        background: #F5F3FF;
+    }
+
+    .drop-zone input[type="file"] { display: none; }
+
+    /* ===== IMPORT PREVIEW LIST ===== */
+    .import-list { max-height: 300px; overflow-y: auto; }
+
+    .import-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-bottom: 1px solid #F3F4F6;
+        transition: background 0.15s;
+    }
+
+    .import-item:hover { background: #F9FAFB; }
+    .import-item.selected { background: #EDE9FE; border-left: 3px solid var(--primary); }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 340px;
+    }
+
+    .toast {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.9rem 1.1rem;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        border-left: 4px solid;
+        animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .toast.success { border-color: #10B981; }
+    .toast.error { border-color: #EF4444; }
+    .toast.warning { border-color: #F59E0B; }
+    .toast.info { border-color: #3B82F6; }
+
+    @keyframes toastIn {
+        from { opacity: 0; transform: translateX(60px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: #6B7280;
+    }
+
+    .empty-state svg { opacity: 0.3; margin: 0 auto 1rem; }
+    .empty-state h3 { font-size: 1rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+
+    /* ===== TEMPLATE DOWNLOAD HINT ===== */
+    .template-hint {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        font-size: 0.8rem;
+        color: #065F46;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    /* ===== DRAG HANDLE ===== */
+    .drag-handle { cursor: grab; color: #9CA3AF; flex-shrink: 0; }
+    .drag-handle:active { cursor: grabbing; }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+     x-data="quizQnA()"
+     x-init="init()">
+
+    {{-- ===== STICKY HEADER ===== --}}
+    <div class="quiz-header">
+        <div class="quiz-header-left">
+            <h1>Buat Soal: {{ Str::limit($quiz->title, 45) }}</h1>
+            <p>{{ $quiz->subject->name_subject }} &bull; Kelas {{ $quiz->class->name_class }} &bull;
+               {{ $quiz->time_per_question }}s/soal &bull;
+               {{ $quiz->difficulty_level == 'easy' ? 'Mudah' : ($quiz->difficulty_level == 'medium' ? 'Sedang' : 'Sulit') }}
+            </p>
         </div>
+        <div class="header-stats">
+            <div class="stat-pill blue">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span x-text="questions.length + ' Soal'"></span>
+            </div>
+            <div class="stat-pill green">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span x-text="totalPoints + ' Poin'"></span>
+            </div>
+            <button @click="showImportModal = true" class="btn btn-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg>
+                Import Soal
+            </button>
+            <a href="{{ route('guru.quiz.index') }}" class="btn btn-outline">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Kembali
+            </a>
+        </div>
+    </div>
 
-        <!-- Main Content Grid -->
-        <div class="main-grid">
-            <!-- Left Column: Question Form and List -->
-            <div class="space-y-6">
-                <!-- Question Form (PILIHAN GANDA SAJA) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Soal Pilihan Ganda</h2>
+    {{-- ===== MAIN GRID ===== --}}
+    <div class="main-layout">
 
-                    <div class="space-y-4">
-                        <!-- Question Text -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan</label>
-                            <textarea x-model="newQuestion.question" rows="3" placeholder="Masukkan pertanyaan..." class="form-field"></textarea>
-                        </div>
+        {{-- ===== LEFT: FORM + LIST ===== --}}
+        <div class="space-y-5">
 
-                        <!-- Score and Explanation -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Poin</label>
-                                <input type="number" x-model="newQuestion.score" min="1" max="100"
-                                    class="form-field">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Penjelasan (Opsional)</label>
-                                <input type="text" x-model="newQuestion.explanation" placeholder="Penjelasan jawaban..."
-                                    class="form-field">
-                            </div>
-                        </div>
-
-                        <!-- Multiple Choice Section -->
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <label class="block text-sm font-medium text-gray-700">Pilihan Jawaban</label>
-                                <button type="button" @click="addChoice()"
-                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    <span>Tambah Pilihan</span>
-                                </button>
-                            </div>
-
-                            <!-- Choices List -->
-                            <div class="space-y-3">
-                                <template x-for="(choice, index) in newQuestion.choices" :key="choice.id">
-                                    <div class="choice-item" :class="{ 'correct': choice.is_correct }">
-                                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                                            <!-- Correct Answer Radio -->
-                                            <input type="radio" :name="'correct_choice_' + newQuestion.id"
-                                                :checked="choice.is_correct" @change="setCorrectChoice(index)"
-                                                class="w-4 h-4 text-blue-600 flex-shrink-0">
-
-                                            <!-- Choice Label -->
-                                            <span
-                                                class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full font-bold"
-                                                x-text="String.fromCharCode(65 + index)"></span>
-
-                                            <!-- Choice Text -->
-                                            <input type="text" x-model="choice.text"
-                                                placeholder="Masukkan teks pilihan..." class="form-field flex-1 min-w-0">
-                                        </div>
-
-                                        <!-- Delete Choice Button -->
-                                        <button type="button" @click="removeChoice(index)"
-                                            :disabled="newQuestion.choices.length <= 2"
-                                            :class="newQuestion.choices.length <= 2 ? 'text-gray-400 cursor-not-allowed' :
-                                                'text-red-500 hover:text-red-700'"
-                                            class="p-1 flex-shrink-0">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
-
-                            <!-- Correct Answer Indicator -->
-                            <div x-show="hasCorrectAnswer" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div class="flex items-center text-blue-700">
-                                    <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="text-sm">Jawaban benar telah dipilih</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="pt-4 border-t border-gray-200">
-                        <button type="button" @click="addQuestion()" :disabled="!isQuestionValid"
-                            :class="isQuestionValid
-                                ?
-                                'bg-blue-600 hover:bg-blue-700 cursor-pointer' :
-                                'bg-gray-400 cursor-not-allowed'"
-                            class="w-full py-3 text-white font-medium rounded-lg transition-colors">
-                            Tambah Soal ke Daftar
-                        </button>
-                    </div>
+            {{-- FORM TAMBAH SOAL --}}
+            <div class="card">
+                <div class="card-header">
+                    <h2>Tambah Soal Pilihan Ganda</h2>
+                    <span class="stat-pill purple" x-show="questions.length > 0" x-text="questions.length + '/50'"></span>
                 </div>
+                <div class="card-body space-y-4">
 
-                <!-- Question List (hanya PG yang ditampilkan) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-semibold text-gray-800">Daftar Soal (Pilihan Ganda)</h2>
-                        <span class="text-sm text-gray-600" x-text="questions.length + ' soal'"></span>
+                    {{-- Pertanyaan --}}
+                    <div>
+                        <label class="form-label">Pertanyaan <span class="text-red-500">*</span></label>
+                        <textarea x-model="form.question" class="form-textarea" rows="3"
+                            placeholder="Tulis pertanyaan di sini..."></textarea>
+                        <div class="text-xs text-gray-400 mt-1 text-right" x-text="form.question.length + '/2000'"></div>
                     </div>
 
-                    <!-- Empty State -->
-                    <div x-show="questions.length === 0" class="text-center py-8">
-                        <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                            </path>
-                        </svg>
-                        <p class="text-gray-500 mb-4">Belum ada soal. Tambahkan soal pertama Anda!</p>
+                    {{-- Score + Explanation --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Poin <span class="text-red-500">*</span></label>
+                            <input type="number" x-model.number="form.score" min="1" max="100" class="form-input" placeholder="10">
+                        </div>
+                        <div>
+                            <label class="form-label">Penjelasan (Opsional)</label>
+                            <input type="text" x-model="form.explanation" class="form-input" placeholder="Alasan jawaban benar...">
+                        </div>
                     </div>
 
-                    <!-- Questions List Container -->
-                    <div x-show="questions.length > 0" class="question-list-container">
-                        <div class="space-y-4">
-                            <template x-for="(question, index) in questions" :key="question.id">
-                                <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                                    <div class="flex justify-between items-start mb-3 gap-3">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2 mb-2">
-                                                <span
-                                                    class="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
-                                                    Soal <span x-text="index + 1"></span>
-                                                </span>
-                                                <span
-                                                    class="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
-                                                    Pilihan Ganda
-                                                </span>
-                                                <span
-                                                    class="bg-yellow-100 text-yellow-800 text-sm font-medium px-2.5 py-0.5 rounded whitespace-nowrap">
-                                                    <span x-text="question.score"></span> Poin
-                                                </span>
-                                            </div>
-                                            <p class="text-gray-800 font-medium mb-2" x-text="question.question"></p>
-                                            <p x-show="question.explanation" class="text-sm text-gray-600">
-                                                <span class="font-medium">Penjelasan:</span> <span
-                                                    x-text="question.explanation"></span>
-                                            </p>
-                                        </div>
-                                        <div class="flex items-center gap-2 flex-shrink-0">
-                                            <button @click="editQuestion(index)"
-                                                class="p-1 text-blue-600 hover:text-blue-800">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                    </path>
-                                                </svg>
-                                            </button>
-                                            <button @click="showDeleteModal(index, question.question)"
-                                                class="p-1 text-red-600 hover:text-red-800">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                    </path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
+                    {{-- Pilihan Jawaban --}}
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="form-label mb-0">Pilihan Jawaban <span class="text-red-500">*</span></label>
+                            <button @click="addChoice()" :disabled="form.choices.length >= 6" class="btn btn-outline btn-sm" type="button">
+                                + Tambah Pilihan
+                            </button>
+                        </div>
 
-                                    <!-- Multiple Choice Answers -->
-                                    <div class="space-y-2">
-                                        <template x-for="(choice, choiceIndex) in question.choices" :key="choice.id">
-                                            <div class="flex items-center gap-3">
-                                                <div :class="choice.is_correct ?
-                                                    'bg-green-100 border-green-300 text-green-800' :
-                                                    'bg-gray-50 border-gray-200 text-gray-700'"
-                                                    class="w-8 h-8 flex items-center justify-center rounded-full border font-bold flex-shrink-0">
-                                                    <span x-text="String.fromCharCode(65 + choiceIndex)"></span>
-                                                </div>
-                                                <span
-                                                    :class="choice.is_correct ? 'text-green-700 font-medium' : 'text-gray-600'"
-                                                    class="break-words" x-text="choice.text"></span>
-                                                <span x-show="choice.is_correct" class="text-green-600 flex-shrink-0">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                </span>
-                                            </div>
-                                        </template>
-                                    </div>
+                        <div class="space-y-2">
+                            <template x-for="(choice, i) in form.choices" :key="choice._id">
+                                <div class="choice-item" :class="{ 'correct-choice': choice.is_correct }">
+                                    <input type="radio" :name="'correct_new'" :checked="choice.is_correct"
+                                        @change="setCorrect(i)" class="w-4 h-4 text-purple-600 flex-shrink-0" style="accent-color: #6C3DE5">
+                                    <div class="choice-label" x-text="String.fromCharCode(65+i)"></div>
+                                    <input type="text" x-model="choice.text" class="form-input"
+                                        :placeholder="'Pilihan ' + String.fromCharCode(65+i)">
+                                    <button @click="removeChoice(i)" :disabled="form.choices.length <= 2"
+                                        class="btn-icon delete flex-shrink-0" type="button">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
                                 </div>
                             </template>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Right Column: Sidebar -->
-            <div class="space-y-6">
-                <!-- Quiz Info -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Informasi Quiz</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Judul</span>
-                            <span class="font-medium text-right truncate ml-2"
-                                x-text="quizTitle">{{ $quiz->title }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Mata Pelajaran</span>
-                            <span class="font-medium">{{ $quiz->subject->name_subject }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Kelas</span>
-                            <span class="font-medium">{{ $quiz->class->name_class }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tingkat Kesulitan</span>
-                            <span class="font-medium capitalize">{{ $quiz->difficulty_level }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Mode Quiz</span>
-                            <span class="font-medium">{{ $quiz->quiz_mode == 'live' ? 'Live' : 'Homework' }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Waktu per Soal</span>
-                            <span class="font-medium">{{ $quiz->time_per_question }} detik</span>
+                        <div x-show="form.choices.some(c=>c.is_correct)"
+                            class="mt-2 flex items-center gap-1.5 text-emerald-600 text-sm">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Jawaban benar sudah dipilih
                         </div>
                     </div>
-                </div>
 
-                <!-- Statistics (hanya PG) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-gray-600">Total Soal</span>
-                                <span class="font-bold text-lg" x-text="questions.length">0</span>
-                            </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill" :style="'width: ' + (questions.length / 50) * 100 + '%'">
-                                </div>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                Maksimal 50 soal
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-gray-600">Total Poin</span>
-                                <span class="font-bold text-lg" x-text="totalPoints">0</span>
-                            </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill bg-green-500"
-                                    :style="'width: ' + Math.min((totalPoints / 1000) * 100, 100) + '%'"></div>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                Maksimal 1000 poin
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Actions</h3>
-                    <div class="space-y-3">
-                        <button @click="saveQuestions()" :disabled="questions.length === 0 || isSaving"
-                            :class="questions.length === 0 || isSaving ?
-                                'bg-gray-400 cursor-not-allowed' :
-                                'bg-blue-600 hover:bg-blue-700 cursor-pointer'"
-                            class="w-full py-3 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <span x-text="isSaving ? 'Menyimpan...' : 'Simpan Semua Soal'"></span>
-                            <svg x-show="isSaving" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                </path>
-                            </svg>
-                        </button>
-
-                        <button @click="previewQuiz()" :disabled="questions.length === 0"
-                            :class="questions.length === 0 ?
-                                'bg-gray-300 text-gray-500 cursor-not-allowed' :
-                                'bg-purple-500 hover:bg-purple-600 text-white cursor-pointer'"
-                            class="w-full py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                </path>
-                            </svg>
-                            <span>Preview Quiz</span>
-                        </button>
-
-                        <button @click="finalizeQuiz()" :disabled="questions.length === 0 || isFinalizing"
-                            :class="questions.length === 0 || isFinalizing ?
-                                'bg-gray-400 cursor-not-allowed' :
-                                'bg-green-600 hover:bg-green-700 cursor-pointer'"
-                            class="w-full py-3 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                                </path>
-                            </svg>
-                            <span x-text="isFinalizing ? 'Mempublikasikan...' : 'Publikasikan Quiz'"></span>
+                    {{-- Submit --}}
+                    <div class="pt-2 border-t border-gray-100">
+                        <button @click="addQuestion()" :disabled="!isFormValid || isSavingSingle"
+                            class="btn btn-primary btn-full py-3">
+                            <span x-show="!isSavingSingle">
+                                Tambah Soal ke Daftar
+                            </span>
+                            <span x-show="isSavingSingle" class="flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                Menyimpan...
+                            </span>
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Import Modal (hanya PG) -->
-        <div x-show="showImportModal" x-transition.opacity class="custom-modal-backdrop"
-            @click.self="showImportModal = false">
-            <div class="custom-modal" style="max-width: 600px;">
-                <div class="custom-modal-header">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800">Import Soal Pilihan Ganda</h3>
-                        <button @click="showImportModal = false" class="text-gray-400 hover:text-gray-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
+            {{-- DAFTAR SOAL --}}
+            <div class="card">
+                <div class="card-header">
+                    <h2>Daftar Soal</h2>
+                    <span class="text-sm text-gray-500" x-text="questions.length + ' soal'"></span>
                 </div>
-                <div class="custom-modal-content">
-                    <div class="space-y-4">
-                        <!-- Tabs for Import Options -->
-                        <div class="flex border-b border-gray-200">
-                            <button @click="importMode = 'from_exam'"
-                                :class="importMode === 'from_exam' ?
-                                    'border-b-2 border-blue-500 text-blue-600' :
-                                    'text-gray-500 hover:text-gray-700'"
-                                class="flex-1 py-2 text-center font-medium">
-                                Dari Quiz Lain
-                            </button>
-                            <button @click="importMode = 'from_file'"
-                                :class="importMode === 'from_file' ?
-                                    'border-b-2 border-blue-500 text-blue-600' :
-                                    'text-gray-500 hover:text-gray-700'"
-                                class="flex-1 py-2 text-center font-medium">
-                                Dari File
-                            </button>
-                        </div>
-
-                        <!-- Import from Exam (hanya PG) -->
-                        <div x-show="importMode === 'from_exam'" x-transition class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Quiz</label>
-                                <select x-model="selectedImportQuiz"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Pilih Quiz --</option>
-                                    @foreach ($otherQuizzes as $quiz)
-                                        <option value="{{ $quiz->id }}">
-                                            {{ $quiz->title }} ({{ $quiz->questions_count }} soal)
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div x-show="selectedImportQuiz && importPreview.length > 0" class="space-y-3">
-                                <h4 class="text-sm font-medium text-gray-700">Preview Soal (hanya Pilihan Ganda):</h4>
-                                <div class="import-preview">
-                                    <template x-for="(question, index) in importPreview" :key="index">
-                                        <div class="import-preview-item" :class="{ 'selected': question.selected }">
-                                            <div class="flex items-start gap-3">
-                                                <input type="checkbox" x-model="question.selected"
-                                                    class="mt-1 text-blue-600 focus:ring-blue-500">
-                                                <div class="flex-1">
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <span
-                                                            class="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                                                            PG
-                                                        </span>
-                                                        <span class="text-xs text-gray-500">
-                                                            <span x-text="question.score"></span> poin
-                                                        </span>
-                                                    </div>
-                                                    <p class="text-sm text-gray-800 line-clamp-2"
-                                                        x-text="question.question"></p>
-                                                    <div x-show="question.choices" class="mt-1">
-                                                        <p class="text-xs text-gray-600">Pilihan:</p>
-                                                        <div class="flex flex-wrap gap-1 mt-1">
-                                                            <template x-for="(choice, cIndex) in question.choices"
-                                                                :key="cIndex">
-                                                                <span class="text-xs px-2 py-0.5 rounded"
-                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' :
-                                                                        'bg-gray-100 text-gray-600'">
-                                                                    <span
-                                                                        x-text="String.fromCharCode(65 + cIndex)"></span>.
-                                                                    <span x-text="choice.text"></span>
-                                                                </span>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                <div class="card-body">
+                    <div x-show="questions.length === 0" class="empty-state">
+                        <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <h3>Belum ada soal</h3>
+                        <p class="text-sm">Tambahkan soal menggunakan form di atas atau import dari file.</p>
+                    </div>
+                    <div class="question-list" x-show="questions.length > 0">
+                        <template x-for="(q, idx) in questions" :key="q.id">
+                            <div class="q-card">
+                                <div class="q-card-header">
+                                    <div class="flex items-start gap-2 flex-1 min-w-0">
+                                        <span class="q-number" x-text="idx+1"></span>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex flex-wrap gap-1 mb-1">
+                                                <span class="q-type-badge">PG</span>
+                                                <span class="q-score-badge" x-text="q.score + ' poin'"></span>
                                             </div>
+                                            <p class="q-text" x-text="q.question"></p>
                                         </div>
-                                    </template>
-                                </div>
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">
-                                        Terpilih: <span x-text="selectedImportCount"></span> dari <span
-                                            x-text="importPreview.length"></span> soal
-                                    </span>
-                                    <button @click="selectAllImportQuestions(true)"
-                                        class="text-blue-600 hover:text-blue-800 text-sm">
-                                        Pilih Semua
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div x-show="selectedImportQuiz && !importPreview.length" class="bg-yellow-50 p-4 rounded-lg">
-                                <p class="text-sm text-yellow-700">
-                                    Quiz ini tidak memiliki soal Pilihan Ganda yang dapat diimport.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Import from File (hanya PG) -->
-                        <div x-show="importMode === 'from_file'" x-transition class="space-y-4">
-                            <div class="import-section" @dragover.prevent="handleDragOver($event)"
-                                @dragleave.prevent="handleDragLeave($event)" @drop.prevent="handleFileDrop($event)"
-                                :class="{ 'dragover': isDragging }">
-                                <div class="text-center">
-                                    <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                                        </path>
-                                    </svg>
-                                    <p class="text-sm text-gray-600 mb-2">
-                                        Drag & drop file Excel/CSV di sini atau
-                                    </p>
-                                    <label for="file-upload" class="cursor-pointer">
-                                        <span
-                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
-                                            Pilih File
-                                        </span>
-                                        <input id="file-upload" type="file" accept=".xlsx,.xls,.csv" class="hidden"
-                                            @change="handleFileSelect($event)">
-                                    </label>
-                                    <p class="text-xs text-gray-500 mt-3">
-                                        Format yang didukung: Excel (.xlsx, .xls), CSV
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div x-show="fileUploadLoading" class="text-center py-4">
-                                <svg class="w-8 h-8 text-blue-600 animate-spin mx-auto" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                    </path>
-                                </svg>
-                                <p class="text-sm text-gray-600 mt-2">Mengupload dan memproses file...</p>
-                            </div>
-
-                            <div x-show="fileImportPreview.length > 0" class="space-y-3">
-                                <h4 class="text-sm font-medium text-gray-700">Preview Soal dari File:</h4>
-                                <div class="import-preview">
-                                    <template x-for="(question, index) in fileImportPreview" :key="index">
-                                        <div class="import-preview-item">
-                                            <div class="flex items-start gap-3">
-                                                <div class="flex-1">
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <span
-                                                            class="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                                                            PG
-                                                        </span>
-                                                        <span class="text-xs text-gray-500">
-                                                            <span x-text="question.score"></span> poin
-                                                        </span>
-                                                    </div>
-                                                    <p class="text-sm text-gray-800" x-text="question.question"></p>
-                                                    <div x-show="question.choices" class="mt-2 space-y-1">
-                                                        <template x-for="(choice, cIndex) in question.choices"
-                                                            :key="cIndex">
-                                                            <div class="flex items-center gap-2 text-xs">
-                                                                <span
-                                                                    class="w-6 h-6 flex items-center justify-center rounded-full"
-                                                                    :class="choice.is_correct ? 'bg-green-100 text-green-800' :
-                                                                        'bg-gray-100 text-gray-600'">
-                                                                    <span x-text="String.fromCharCode(65 + cIndex)"></span>
-                                                                </span>
-                                                                <span
-                                                                    :class="choice.is_correct ? 'text-green-700 font-medium' :
-                                                                        'text-gray-600'"
-                                                                    x-text="choice.text"></span>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                                <div class="text-sm text-gray-600">
-                                    Total: <span x-text="fileImportPreview.length"></span> soal
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="custom-modal-footer">
-                    <button @click="showImportModal = false"
-                        class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
-                        Batal
-                    </button>
-                    <button @click="importQuestions()" :disabled="!canImport"
-                        :class="!canImport ?
-                            'bg-gray-400 cursor-not-allowed' :
-                            'bg-blue-600 hover:bg-blue-700 cursor-pointer'"
-                        class="px-4 py-2 text-white rounded-lg font-medium">
-                        Import Soal
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Edit Modal (PG ONLY) -->
-        <div x-show="showEditModal" x-transition.opacity class="custom-modal-backdrop" @click.self="cancelEdit()">
-            <div class="custom-modal" style="max-width: 800px;">
-                <div class="custom-modal-header">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800">Edit Soal Pilihan Ganda</h3>
-                        <button @click="cancelEdit()" class="text-gray-400 hover:text-gray-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="custom-modal-content">
-                    <div class="space-y-4">
-                        <!-- Question Text -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Pertanyaan</label>
-                            <textarea x-model="editingQuestion.question" rows="3" placeholder="Masukkan pertanyaan..." class="form-field"></textarea>
-                        </div>
-
-                        <!-- Score and Explanation -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Poin</label>
-                                <input type="number" x-model="editingQuestion.score" min="1" max="100"
-                                    class="form-field">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Penjelasan (Opsional)</label>
-                                <input type="text" x-model="editingQuestion.explanation"
-                                    placeholder="Penjelasan jawaban..." class="form-field">
-                            </div>
-                        </div>
-
-                        <!-- Multiple Choice Section -->
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <label class="block text-sm font-medium text-gray-700">Pilihan Jawaban</label>
-                                <button type="button" @click="addChoiceToEdit()"
-                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    <span>Tambah Pilihan</span>
-                                </button>
-                            </div>
-
-                            <!-- Choices List -->
-                            <div class="space-y-3">
-                                <template x-for="(choice, index) in editingQuestion.choices" :key="choice.id">
-                                    <div class="choice-item" :class="{ 'correct': choice.is_correct }">
-                                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                                            <!-- Correct Answer Radio -->
-                                            <input type="radio" :name="'edit_correct_choice'"
-                                                :checked="choice.is_correct" @change="setCorrectChoiceInEdit(index)"
-                                                class="w-4 h-4 text-blue-600 flex-shrink-0">
-
-                                            <!-- Choice Label -->
-                                            <span
-                                                class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-blue-100 text-blue-800 rounded-full font-bold"
-                                                x-text="String.fromCharCode(65 + index)"></span>
-
-                                            <!-- Choice Text -->
-                                            <input type="text" x-model="choice.text"
-                                                placeholder="Masukkan teks pilihan..." class="form-field flex-1 min-w-0">
-                                        </div>
-
-                                        <!-- Delete Choice Button -->
-                                        <button type="button" @click="removeChoiceFromEdit(index)"
-                                            :disabled="editingQuestion.choices.length <= 2"
-                                            :class="editingQuestion.choices.length <= 2 ? 'text-gray-400 cursor-not-allowed' :
-                                                'text-red-500 hover:text-red-700'"
-                                            class="p-1 flex-shrink-0">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
+                                    </div>
+                                    <div class="q-actions">
+                                        <button @click="openEditModal(idx)" class="btn-icon edit" title="Edit">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button @click="openDeleteModal(idx)" class="btn-icon delete" title="Hapus">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </div>
-                                </template>
-                            </div>
-
-                            <!-- Correct Answer Indicator -->
-                            <div x-show="hasCorrectAnswerInEdit" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div class="flex items-center text-blue-700">
-                                    <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="text-sm">Jawaban benar telah dipilih</span>
+                                </div>
+                                <div class="q-choices">
+                                    <template x-for="(c, ci) in q.choices" :key="ci">
+                                        <span class="q-choice-chip" :class="{ 'correct': c.is_correct }">
+                                            <span x-text="String.fromCharCode(65+ci)"></span>.
+                                            <span x-text="c.text.length > 20 ? c.text.substring(0,20)+'...' : c.text"></span>
+                                            <span x-show="c.is_correct">✓</span>
+                                        </span>
+                                    </template>
                                 </div>
                             </div>
-                        </div>
+                        </template>
                     </div>
-                </div>
-                <div class="custom-modal-footer">
-                    <button @click="cancelEdit()"
-                        class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium">
-                        Batal
-                    </button>
-                    <button @click="updateQuestionApi()"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
-                        Update Soal
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal (sama) -->
-        <div x-show="showDeleteModal" x-transition.opacity class="custom-modal-backdrop" @click.self="cancelDelete()">
-            <div class="custom-modal">
-                <div class="custom-modal-header">
-                    <div class="flex items-start gap-3">
-                        <div class="flex-shrink-0">
-                            <div
-                                class="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                        clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
+        {{-- ===== RIGHT: SIDEBAR ===== --}}
+        <div class="space-y-4">
+
+            {{-- Quiz Info --}}
+            <div class="card">
+                <div class="card-header"><h2>Info Quiz</h2></div>
+                <div class="card-body space-y-2.5 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Mapel</span>
+                        <span class="font-medium">{{ $quiz->subject->name_subject }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Kelas</span>
+                        <span class="font-medium">{{ $quiz->class->name_class }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Mode</span>
+                        <span class="font-medium">{{ $quiz->quiz_mode == 'live' ? 'Live' : 'Homework' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Waktu/Soal</span>
+                        <span class="font-medium">{{ $quiz->time_per_question }}s</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Status</span>
+                        <span class="font-medium">
+                            @if($quiz->status === 'published')
+                                <span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Published</span>
+                            @elseif($quiz->status === 'draft')
+                                <span class="text-yellow-600">Draft</span>
+                            @else
+                                <span class="text-gray-500">{{ $quiz->status }}</span>
+                            @endif
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Statistik --}}
+            <div class="card">
+                <div class="card-header"><h2>Statistik</h2></div>
+                <div class="card-body space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600">Total Soal</span>
+                            <span class="font-bold" x-text="questions.length + '/50'"></span>
                         </div>
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-900">Hapus Soal</h2>
-                            <p class="text-sm text-gray-600 mt-1" x-text="deleteQuestionText"></p>
-                            <p class="text-sm text-red-600 font-medium mt-2">Tindakan ini tidak dapat dibatalkan!</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" :style="'width: ' + Math.min((questions.length/50)*100, 100) + '%'"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600">Total Poin</span>
+                            <span class="font-bold text-purple-600" x-text="totalPoints + ' poin'"></span>
                         </div>
                     </div>
                 </div>
-                <div class="custom-modal-body">
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div class="flex items-center gap-2 text-red-700">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                            <p class="text-sm">Soal yang dihapus tidak dapat dikembalikan.</p>
-                        </div>
-                    </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="card">
+                <div class="card-header"><h2>Aksi</h2></div>
+                <div class="card-body space-y-3">
+                    <button @click="saveAllQuestions()" :disabled="questions.length === 0 || isSaving"
+                        class="btn btn-primary btn-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        <span x-text="isSaving ? 'Menyimpan...' : 'Simpan Semua Soal'"></span>
+                    </button>
+
+                    <button @click="previewQuiz()" :disabled="questions.length === 0"
+                        class="btn btn-purple btn-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        Preview Quiz
+                    </button>
+
+                    <button @click="finalizeQuiz()" :disabled="questions.length === 0 || isFinalizing"
+                        class="btn btn-success btn-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span x-text="isFinalizing ? 'Mempublikasikan...' : 'Publikasikan Quiz'"></span>
+                    </button>
+
+                    @if($quiz->quiz_mode === 'live')
+                    <a href="{{ route('guru.quiz.room', $quiz->id) }}"
+                        class="btn btn-outline btn-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+                        Buka Ruangan
+                    </a>
+                    @endif
                 </div>
-                <div class="custom-modal-footer">
-                    <button @click="cancelDelete()"
-                        class="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-                        Batal
-                    </button>
-                    <button @click="confirmDelete()"
-                        class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg font-medium transition-colors">
-                        Hapus
-                    </button>
+            </div>
+
+            {{-- Template Download --}}
+            <div class="template-hint">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div>
+                    <p class="font-semibold mb-1">Import dari Excel/CSV?</p>
+                    <p>Format kolom: <code>question, option_a, option_b, option_c, option_d, correct_answer (A/B/C/D), score, explanation</code></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        function quizQuestionCreator() {
-            return {
-                // ==================== STATE ====================
-                // Hanya menyimpan soal PG, IS akan difilter di init()
-                questions: @json($questionsData),
-                newQuestion: {
-                    id: null,
-                    type: 'PG', // fixed
-                    question: '',
-                    score: 1,
-                    explanation: '',
-                    choices: [{
-                            id: 1,
-                            text: '',
-                            is_correct: false
-                        },
-                        {
-                            id: 2,
-                            text: '',
-                            is_correct: false
-                        },
-                        {
-                            id: 3,
-                            text: '',
-                            is_correct: false
-                        },
-                        {
-                            id: 4,
-                            text: '',
-                            is_correct: false
-                        }
-                    ]
-                },
-                editingQuestion: null,
-                editingIndex: null,
-                quizTitle: '{{ $quiz->title }}',
-                showImportModal: false,
-                showEditModal: false,
-                showDeleteModal: false,
-                importMode: 'from_exam',
-                selectedImportQuiz: '',
-                importPreview: [],
-                fileImportPreview: [],
-                selectedFile: null,
-                isDragging: false,
-                fileUploadLoading: false,
-                isSaving: false,
-                isFinalizing: false,
-                deleteIndex: null,
-                deleteQuestionText: '',
+    {{-- ===== MODAL: IMPORT ===== --}}
+    <div x-show="showImportModal" class="modal-backdrop" @click.self="showImportModal = false" x-cloak>
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📥 Import Soal Pilihan Ganda</h3>
+                <button @click="showImportModal = false" class="btn-icon delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn" :class="{ 'active': importTab === 'from_exam' }" @click="importTab = 'from_exam'">
+                        Dari Quiz Lain
+                    </button>
+                    <button class="tab-btn" :class="{ 'active': importTab === 'from_file' }" @click="importTab = 'from_file'">
+                        Dari File Excel/CSV
+                    </button>
+                </div>
 
-                // ==================== COMPUTED ====================
-                get totalPoints() {
-                    return this.questions.reduce((sum, q) => sum + parseInt(q.score), 0);
-                },
-                get hasCorrectAnswer() {
-                    return this.newQuestion.choices.some(c => c.is_correct);
-                },
-                get hasCorrectAnswerInEdit() {
-                    return this.editingQuestion?.choices?.some(c => c.is_correct) ?? false;
-                },
-                get isQuestionValid() {
-                    if (!this.newQuestion.question.trim()) return false;
-                    if (this.newQuestion.score < 1) return false;
-                    if (this.newQuestion.choices.length < 2) return false;
-                    if (!this.newQuestion.choices.some(c => c.is_correct)) return false;
-                    if (this.newQuestion.choices.some(c => !c.text.trim())) return false;
-                    return true;
-                },
-                get isEditQuestionValid() {
-                    if (!this.editingQuestion) return false;
-                    if (!this.editingQuestion.question.trim()) return false;
-                    if (this.editingQuestion.score < 1) return false;
-                    if (this.editingQuestion.choices.length < 2) return false;
-                    if (!this.editingQuestion.choices.some(c => c.is_correct)) return false;
-                    if (this.editingQuestion.choices.some(c => !c.text.trim())) return false;
-                    return true;
-                },
-                get canImport() {
-                    if (this.importMode === 'from_exam') {
-                        return this.selectedImportQuiz && this.importPreview.some(q => q.selected);
-                    } else if (this.importMode === 'from_file') {
-                        return this.fileImportPreview.length > 0;
-                    }
-                    return false;
-                },
-                get selectedImportCount() {
-                    return this.importPreview.filter(q => q.selected).length;
-                },
-
-                // ==================== INIT ====================
-                init() {
-                    this.questions = this.questions.filter(q => q.type === 'PG');
-                    console.log('Alpine initialized, questions:', this.questions.length);
-                },
-
-                showDeleteModal(index, questionText) {
-                    console.log('Opening delete modal for index:', index);
-                    this.deleteIndex = index;
-                    this.deleteQuestionText = questionText.length > 100 ?
-                        questionText.substring(0, 100) + '...' : questionText;
-                    this.showDeleteModal = true;
-                },
-
-                // ==================== CHOICE MANAGEMENT ====================
-                addChoice() {
-                    this.newQuestion.choices.push({
-                        id: this.newQuestion.choices.length + 1,
-                        text: '',
-                        is_correct: false
-                    });
-                },
-                removeChoice(index) {
-                    if (this.newQuestion.choices.length > 2) {
-                        this.newQuestion.choices.splice(index, 1);
-                    }
-                },
-                setCorrectChoice(index) {
-                    this.newQuestion.choices.forEach((choice, i) => {
-                        choice.is_correct = i === index;
-                    });
-                },
-
-                // ==================== EDIT CHOICE MANAGEMENT ====================
-                addChoiceToEdit() {
-                    this.editingQuestion.choices.push({
-                        id: this.editingQuestion.choices.length + 1,
-                        text: '',
-                        is_correct: false
-                    });
-                },
-                removeChoiceFromEdit(index) {
-                    if (this.editingQuestion.choices.length > 2) {
-                        this.editingQuestion.choices.splice(index, 1);
-                    }
-                },
-                setCorrectChoiceInEdit(index) {
-                    this.editingQuestion.choices.forEach((choice, i) => {
-                        choice.is_correct = i === index;
-                    });
-                },
-
-                // ==================== TAMBAH SOAL ====================
-                async addQuestion() {
-                    if (!this.isQuestionValid) {
-                        showAlert('warning', 'Perhatian!', 'Harap lengkapi semua field yang diperlukan!');
-                        return;
-                    }
-
-                    const url = `/guru/quiz/{{ $quiz->id }}/question`; // route baru
-
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                type: 'PG',
-                                question: this.newQuestion.question.trim(),
-                                score: parseInt(this.newQuestion.score),
-                                explanation: this.newQuestion.explanation?.trim() || '',
-                                choices: this.newQuestion.choices
-                                    .map(c => ({
-                                        text: c.text.trim(),
-                                        is_correct: c.is_correct
-                                    }))
-                                    .filter(c => c.text !== '')
-                            })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            // Tambahkan soal ke daftar dengan ID dari server
-                            this.questions.push(data.question);
-                            this.resetNewQuestion();
-                            showAlert('success', 'Berhasil!', 'Soal berhasil ditambahkan dan disimpan.');
-
-                            // Scroll ke daftar soal
-                            setTimeout(() => {
-                                const questionList = document.querySelector('.question-list-container');
-                                if (questionList) questionList.scrollTop = questionList.scrollHeight;
-                            }, 100);
-                        } else {
-                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan saat menyimpan soal.');
-                        }
-                    } catch (error) {
-                        console.error('Error adding question:', error);
-                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
-                    }
-                },
-
-                resetNewQuestion() {
-                    this.newQuestion = {
-                        id: null,
-                        type: 'PG',
-                        question: '',
-                        score: 1,
-                        explanation: '',
-                        choices: [{
-                                id: 1,
-                                text: '',
-                                is_correct: false
-                            },
-                            {
-                                id: 2,
-                                text: '',
-                                is_correct: false
-                            },
-                            {
-                                id: 3,
-                                text: '',
-                                is_correct: false
-                            },
-                            {
-                                id: 4,
-                                text: '',
-                                is_correct: false
-                            }
-                        ]
-                    };
-                },
-
-                // ==================== EDIT SOAL ====================
-                editQuestion(index) {
-                    const question = this.questions[index];
-                    // Cegah edit soal yang bukan PG (tidak mungkin karena sudah difilter)
-                    if (question.type !== 'PG') {
-                        showAlert('warning', 'Tidak dapat diedit', 'Soal ini bukan Pilihan Ganda.');
-                        return;
-                    }
-                    this.editingIndex = index;
-
-                    // Deep clone dengan validasi choices
-                    this.editingQuestion = {
-                        id: question.id,
-                        type: question.type,
-                        question: question.question,
-                        score: parseInt(question.score),
-                        explanation: question.explanation || '',
-                        choices: (question.choices && question.choices.length > 0) ?
-                            question.choices.map(c => ({
-                                id: c.id || Date.now() + Math.random(),
-                                text: c.text || '',
-                                is_correct: !!c.is_correct
-                            })) : [{
-                                    id: Date.now() + 1,
-                                    text: '',
-                                    is_correct: false
-                                },
-                                {
-                                    id: Date.now() + 2,
-                                    text: '',
-                                    is_correct: false
-                                }
-                            ]
-                    };
-
-                    this.showEditModal = true;
-                    setTimeout(() => {
-                        const textarea = document.querySelector('.custom-modal textarea');
-                        if (textarea) textarea.focus();
-                    }, 100);
-                },
-                cancelEdit() {
-                    this.editingQuestion = null;
-                    this.editingIndex = null;
-                    this.showEditModal = false;
-                },
-
-                // ==================== UPDATE SOAL VIA API ====================
-                async updateQuestionApi() {
-                    if (!this.isEditQuestionValid) {
-                        showAlert('warning', 'Perhatian!', 'Harap lengkapi semua field yang diperlukan!');
-                        return;
-                    }
-                    const question = this.editingQuestion;
-                    const url = `/guru/quiz/{{ $quiz->id }}/questions/${question.id}`; // ← tanpa /update
-                    try {
-                        const response = await fetch(url, {
-                            method: 'PUT', // ← method PUT
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                type: 'PG',
-                                question: question.question.trim(),
-                                score: parseInt(question.score),
-                                explanation: question.explanation?.trim() || '',
-                                choices: question.choices
-                                    .map(c => ({
-                                        text: c.text.trim(),
-                                        is_correct: c.is_correct
-                                    }))
-                                    .filter(c => c.text !== '')
-                            })
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                            this.questions[this.editingIndex] = data.question;
-                            this.cancelEdit();
-                            showAlert('success', 'Berhasil!', 'Soal berhasil diperbarui.');
-                        } else {
-                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan');
-                        }
-                    } catch (error) {
-                        console.error('Update error:', error);
-                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
-                    }
-                },
-
-                // ==================== HAPUS SOAL ====================
-
-                cancelDelete() {
-                    this.deleteIndex = null;
-                    this.deleteQuestionText = '';
-                    this.showDeleteModal = false;
-                },
-                confirmDelete() {
-                    if (this.deleteIndex === null) return;
-                    const question = this.questions[this.deleteIndex];
-                    this.deleteQuestionApi(question.id, this.deleteIndex);
-                },
-                async deleteQuestionApi(questionId, index) {
-                    const url = `/guru/quiz/{{ $quiz->id }}/questions/${questionId}`;
-                    try {
-                        const response = await fetch(url, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json'
-                            }
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            this.questions.splice(index, 1);
-                            this.cancelDelete();
-                            showAlert('success', 'Berhasil!', 'Soal berhasil dihapus.');
-                        } else {
-                            showAlert('error', 'Gagal!', data.message || 'Terjadi kesalahan');
-                        }
-                    } catch (error) {
-                        console.error('Delete error:', error);
-                        showAlert('error', 'Kesalahan!', 'Gagal menghubungi server.');
-                    }
-                },
-
-                // ==================== IMPORT DARI QUIZ LAIN (PG SAJA) ====================
-                async loadImportPreview() {
-                    if (!this.selectedImportQuiz) {
-                        this.importPreview = [];
-                        return;
-                    }
-                    try {
-                        const response = await fetch(`/guru/quiz/${this.selectedImportQuiz}/questions-data`, {
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.success && data.questions) {
-                                // Hanya tampilkan soal PG
-                                this.importPreview = data.questions
-                                    .filter(q => q.type === 'PG')
-                                    .map(q => ({
-                                        ...q,
-                                        selected: true
-                                    }));
-                                showAlert('success', 'Berhasil!',
-                                    `Berhasil memuat ${this.importPreview.length} soal PG.`);
-                            } else {
-                                this.importPreview = [];
-                                showAlert('error', 'Error!', data.message || 'Gagal memuat preview soal.');
-                            }
-                        } else {
-                            this.importPreview = [];
-                            showAlert('error', 'Error!', 'Gagal memuat preview soal.');
-                        }
-                    } catch (error) {
-                        console.error('Error loading import preview:', error);
-                        this.importPreview = [];
-                        showAlert('error', 'Error!', 'Terjadi kesalahan saat memuat preview.');
-                    }
-                },
-                selectAllImportQuestions(select) {
-                    this.importPreview.forEach(q => q.selected = select);
-                },
-
-                // ==================== IMPORT DARI FILE (PG) ====================
-                handleDragOver(event) {
-                    event.preventDefault();
-                    this.isDragging = true;
-                },
-                handleDragLeave(event) {
-                    event.preventDefault();
-                    this.isDragging = false;
-                },
-                handleFileDrop(event) {
-                    event.preventDefault();
-                    this.isDragging = false;
-                    if (event.dataTransfer.files.length > 0) {
-                        this.uploadFile(event.dataTransfer.files[0]);
-                    }
-                },
-                handleFileSelect(event) {
-                    if (event.target.files.length > 0) {
-                        this.uploadFile(event.target.files[0]);
-                    }
-                },
-                async uploadFile(file) {
-                    const validExtensions = ['.xlsx', '.xls', '.csv'];
-                    const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-                    if (!validExtensions.includes(fileExt)) {
-                        showAlert('error', 'Error!', 'Format file tidak didukung. Gunakan Excel atau CSV.');
-                        return;
-                    }
-                    if (file.size > 5 * 1024 * 1024) {
-                        showAlert('error', 'Error!', 'Ukuran file terlalu besar. Maksimal 5MB.');
-                        return;
-                    }
-
-                    this.fileUploadLoading = true;
-                    this.fileImportPreview = [];
-
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('_token', '{{ csrf_token() }}');
-
-                    try {
-                        const response = await fetch('{{ route('guru.quiz.questions.import', $quiz->id) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: formData
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                            // Hanya ambil soal PG dari response
-                            this.fileImportPreview = data.questions.filter(q => q.type === 'PG');
-                            showAlert('success', 'Berhasil!',
-                                `Berhasil membaca ${this.fileImportPreview.length} soal PG dari file.`);
-                        } else {
-                            showAlert('error', 'Gagal!', data.message || 'Gagal memproses file.');
-                        }
-                    } catch (error) {
-                        console.error('Upload error:', error);
-                        showAlert('error', 'Kesalahan!', 'Gagal mengupload file.');
-                    } finally {
-                        this.fileUploadLoading = false;
-                    }
-                },
-
-                // ==================== IMPORT QUESTIONS (EKSEKUSI) ====================
-                async importQuestions() {
-                    let questionsToImport = [];
-                    if (this.importMode === 'from_exam') {
-                        questionsToImport = this.importPreview
-                            .filter(q => q.selected)
-                            .map(q => ({
-                                type: 'PG',
-                                question: q.question,
-                                score: q.score,
-                                explanation: q.explanation || '',
-                                choices: q.choices || []
-                            }));
-                    } else if (this.importMode === 'from_file') {
-                        questionsToImport = this.fileImportPreview;
-                    }
-
-                    if (questionsToImport.length === 0) {
-                        showAlert('warning', 'Perhatian!', 'Tidak ada soal PG yang dipilih untuk diimport.');
-                        return;
-                    }
-
-                    const totalAfterImport = this.questions.length + questionsToImport.length;
-                    if (totalAfterImport > 50) {
-                        showAlert('error', 'Error!',
-                            `Maksimal 50 soal. Anda akan memiliki ${totalAfterImport} soal setelah import.`);
-                        return;
-                    }
-
-                    questionsToImport.forEach(q => {
-                        this.questions.push({
-                            id: Date.now() + Math.random(),
-                            ...q
-                        });
-                    });
-
-                    showAlert('success', 'Berhasil!', `Berhasil mengimport ${questionsToImport.length} soal PG.`);
-                    this.showImportModal = false;
-                    this.selectedImportQuiz = '';
-                    this.importPreview = [];
-                    this.fileImportPreview = [];
-                    this.selectedFile = null;
-                },
-
-                // ==================== SIMPAN SEMUA SOAL (BULK) ====================
-                async saveQuestions() {
-                    if (this.questions.length === 0) {
-                        showAlert('warning', 'Perhatian!', 'Belum ada soal untuk disimpan!');
-                        return;
-                    }
-                    this.isSaving = true;
-                    showAlert('info', 'Menyimpan...', 'Sedang menyimpan soal ke server...');
-
-                    try {
-                        const formattedQuestions = this.questions
-                            .filter(q => q.type === 'PG') // hanya kirim PG
-                            .map(q => {
-                                const questionData = {
-                                    question: q.question,
-                                    type: 'PG',
-                                    score: parseInt(q.score),
-                                    explanation: q.explanation || null,
-                                    choices: q.choices
-                                        .map(c => ({
-                                            text: c.text.trim(),
-                                            is_correct: c.is_correct
-                                        }))
-                                        .filter(c => c.text !== '')
-                                };
-                                if (questionData.choices.length < 2) {
-                                    throw new Error(
-                                        `Soal "${q.question.substring(0, 50)}..." harus memiliki minimal 2 pilihan jawaban`
-                                    );
-                                }
-                                if (!questionData.choices.some(c => c.is_correct)) {
-                                    throw new Error(
-                                        `Soal "${q.question.substring(0, 50)}..." harus memiliki jawaban yang benar`
-                                    );
-                                }
-                                return questionData;
-                            });
-
-                        if (formattedQuestions.length === 0) {
-                            showAlert('warning', 'Perhatian!', 'Tidak ada soal PG yang valid untuk disimpan!');
-                            this.isSaving = false;
-                            return;
-                        }
-
-                        // ✅ FIX: Tambahkan parameter quiz.id ke route store
-                        const response = await fetch('{{ route('guru.quiz.questions.store', $quiz->id) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                questions: formattedQuestions,
-                                _method: 'POST'
-                            })
-                        });
-
-                        const responseText = await response.text();
-                        let data;
-                        try {
-                            data = JSON.parse(responseText);
-                        } catch (e) {
-                            throw new Error('Respon server tidak valid.');
-                        }
-
-                        if (data.success) {
-                            if (data.questions) {
-                                this.questions = data.questions
-                                    .filter(q => q.type === 'PG')
-                                    .map((q, index) => ({
-                                        id: q.id || Date.now() + index,
-                                        question: q.question,
-                                        type: 'PG',
-                                        score: q.score,
-                                        explanation: q.explanation,
-                                        choices: q.choices ? q.choices.map((c, cIndex) => ({
-                                            id: c.id || cIndex,
-                                            text: c.text,
-                                            is_correct: c.is_correct === true || c.is_correct ===
-                                                1 || c.is_correct === '1'
-                                        })) : []
-                                    }));
-                            }
-                            showAlert('success', 'Berhasil!', data.message || 'Soal berhasil disimpan!');
-                            window.scrollTo({
-                                top: 0,
-                                behavior: 'smooth'
-                            });
-                        } else {
-                            let errorMessage = data.message || 'Gagal menyimpan soal';
-                            if (data.errors) {
-                                errorMessage += ': ' + Object.values(data.errors).flat().join(', ');
-                            }
-                            showAlert('error', 'Gagal!', errorMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error saving questions:', error);
-                        showAlert('error', 'Kesalahan!', 'Terjadi kesalahan saat menyimpan soal: ' + error.message);
-                    } finally {
-                        this.isSaving = false;
-                    }
-                },
-
-                // ==================== PREVIEW ====================
-                previewQuiz() {
-                    if (this.questions.length === 0) {
-                        showAlert('warning', 'Perhatian!', 'Belum ada soal untuk dipreview!');
-                        return;
-                    }
-                    this.saveQuestions().then(() => {
-                        window.location.href = '{{ route('guru.quiz.preview', $quiz->id) }}';
-                    });
-                },
-
-                // ==================== FINALIZE / PUBLISH ====================
-                async finalizeQuiz() {
-                    if (this.questions.length === 0) {
-                        showAlert('warning', 'Perhatian!', 'Minimal harus ada 1 soal sebelum mempublish quiz!');
-                        return;
-                    }
-                    if (!confirm(
-                            'Apakah Anda yakin ingin mempublikasikan quiz ini? Quiz akan aktif dan dapat diakses oleh siswa.'
-                        )) {
-                        return;
-                    }
-                    this.isFinalizing = true;
-                    try {
-                        await this.saveQuestions();
-                        const response = await fetch('{{ route('guru.quiz.finalize', $quiz->id) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                action: 'publish'
-                            })
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            showAlert('success', 'Berhasil!', data.message);
-                            setTimeout(() => {
-                                window.location.href = data.redirect || '{{ route('guru.quiz.index') }}';
-                            }, 1500);
-                        } else {
-                            showAlert('error', 'Gagal!', data.message || 'Gagal mempublish quiz');
-                        }
-                    } catch (error) {
-                        console.error('Error finalizing quiz:', error);
-                        showAlert('error', 'Kesalahan!', 'Terjadi kesalahan saat mempublish quiz');
-                    } finally {
-                        this.isFinalizing = false;
-                    }
-                }
-            };
-        }
-
-        // Watch for selectedImportQuiz changes
-        document.addEventListener('alpine:init', () => {
-            Alpine.effect(() => {
-                const app = Alpine.$data(document.querySelector('[x-data="quizQuestionCreator()"]'));
-                if (app && app.selectedImportQuiz) {
-                    app.loadImportPreview();
-                }
-            });
-        });
-
-        // Fungsi showAlert (sama)
-        function showAlert(type, title, message, duration = 5000) {
-            const existingAlert = document.querySelector('.custom-alert');
-            if (existingAlert) existingAlert.remove();
-
-            const alertTypes = {
-                success: {
-                    icon: '✓',
-                    color: 'success',
-                    bgColor: 'bg-green-50'
-                },
-                error: {
-                    icon: '✗',
-                    color: 'error',
-                    bgColor: 'bg-red-50'
-                },
-                warning: {
-                    icon: '⚠',
-                    color: 'warning',
-                    bgColor: 'bg-yellow-50'
-                },
-                info: {
-                    icon: 'ℹ',
-                    color: 'info',
-                    bgColor: 'bg-blue-50'
-                }
-            };
-            const alertType = alertTypes[type] || alertTypes.info;
-
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `custom-alert ${alertType.color} show`;
-            alertDiv.innerHTML = `
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <span class="text-lg font-bold ${type === 'success' ? 'text-green-600' : type === 'error' ? 'text-red-600' : type === 'warning' ? 'text-yellow-600' : 'text-blue-600'}">
-                            ${alertType.icon}
-                        </span>
+                {{-- TAB: From Exam --}}
+                <div x-show="importTab === 'from_exam'" class="space-y-4">
+                    <div>
+                        <label class="form-label">Pilih Quiz Sumber</label>
+                        <select x-model="importSourceQuizId" @change="loadImportPreview()"
+                            class="form-select">
+                            <option value="">-- Pilih Quiz --</option>
+                            @foreach($otherQuizzes as $otherQuiz)
+                            <option value="{{ $otherQuiz->id }}">
+                                {{ $otherQuiz->title }} ({{ $otherQuiz->questions_count }} soal)
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium ${type === 'success' ? 'text-green-800' : type === 'error' ? 'text-red-800' : type === 'warning' ? 'text-yellow-800' : 'text-blue-800'}">
-                            ${title}
-                        </h3>
-                        <div class="mt-2 text-sm ${type === 'success' ? 'text-green-700' : type === 'error' ? 'text-red-700' : type === 'warning' ? 'text-yellow-700' : 'text-blue-700'}">
-                            <p>${message}</p>
+
+                    <div x-show="isLoadingPreview" class="text-center py-6 text-gray-500">
+                        <svg class="w-8 h-8 animate-spin mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Memuat soal...
+                    </div>
+
+                    <div x-show="!isLoadingPreview && importPreview.length > 0" class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">
+                                Terpilih: <strong x-text="importPreview.filter(q=>q.selected).length"></strong>
+                                dari <strong x-text="importPreview.length"></strong> soal PG
+                            </span>
+                            <div class="flex gap-2">
+                                <button @click="importPreview.forEach(q=>q.selected=true)" class="btn btn-outline btn-sm">Pilih Semua</button>
+                                <button @click="importPreview.forEach(q=>q.selected=false)" class="btn btn-outline btn-sm">Hapus Pilihan</button>
+                            </div>
+                        </div>
+                        <div class="import-list border border-gray-200 rounded-xl overflow-hidden">
+                            <template x-for="(q, idx) in importPreview" :key="idx">
+                                <div class="import-item" :class="{ 'selected': q.selected }" @click="q.selected = !q.selected">
+                                    <input type="checkbox" x-model="q.selected" @click.stop class="w-4 h-4 flex-shrink-0" style="accent-color: #6C3DE5">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex gap-1.5 mb-1">
+                                            <span class="q-type-badge text-xs">PG</span>
+                                            <span class="q-score-badge text-xs" x-text="q.score + ' poin'"></span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 font-medium" x-text="q.question"></p>
+                                        <div class="q-choices mt-1">
+                                            <template x-for="(c, ci) in q.choices" :key="ci">
+                                                <span class="q-choice-chip text-xs" :class="{ 'correct': c.is_correct }">
+                                                    <span x-text="String.fromCharCode(65+ci)"></span>. <span x-text="c.text && c.text.length > 15 ? c.text.substring(0,15)+'...' : c.text"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
-                    <div class="ml-auto pl-3">
-                        <button type="button" onclick="this.parentElement.parentElement.parentElement.remove()"
-                            class="inline-flex rounded-md p-1.5 ${type === 'success' ? 'text-green-500 hover:bg-green-100' : type === 'error' ? 'text-red-500 hover:bg-red-100' : type === 'warning' ? 'text-yellow-500 hover:bg-yellow-100' : 'text-blue-500 hover:bg-blue-100'} focus:outline-none">
-                            <span class="sr-only">Tutup</span>
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
+
+                    <div x-show="!isLoadingPreview && importSourceQuizId && importPreview.length === 0"
+                        class="text-center py-6 text-yellow-600 bg-yellow-50 rounded-xl text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Quiz ini tidak memiliki soal Pilihan Ganda.
                     </div>
                 </div>
-            `;
-            document.body.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), duration);
-        }
 
-        // Debug mode
-        document.addEventListener('DOMContentLoaded', function() {
-            const debugBtn = document.createElement('button');
-            debugBtn.textContent = 'Debug Console';
-            debugBtn.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg z-50 hidden';
-            debugBtn.onclick = function() {
-                const app = document.querySelector('[x-data="quizQuestionCreator()"]').__x.$data;
-                console.log('Current State:', app);
-            };
-            document.body.appendChild(debugBtn);
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                debugBtn.classList.remove('hidden');
+                {{-- TAB: From File --}}
+                <div x-show="importTab === 'from_file'" class="space-y-4">
+                    <div class="template-hint">
+                        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div>
+                            <p class="font-semibold">Format kolom Excel/CSV:</p>
+                            <p class="mt-0.5"><code>question | option_a | option_b | option_c | option_d | correct_answer | score | explanation</code></p>
+                            <p class="mt-0.5">correct_answer diisi: <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, atau <strong>D</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="drop-zone" :class="{ 'dragover': isDragging }"
+                        @dragover.prevent="isDragging = true"
+                        @dragleave.prevent="isDragging = false"
+                        @drop.prevent="handleFileDrop($event)"
+                        @click="$refs.fileInput.click()">
+                        <input type="file" x-ref="fileInput" accept=".xlsx,.xls,.csv" @change="handleFileSelect($event)">
+                        <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p class="text-sm text-gray-600 font-medium" x-text="selectedFileName || 'Klik atau drag & drop file Excel/CSV di sini'"></p>
+                        <p class="text-xs text-gray-400 mt-1">Format: .xlsx, .xls, .csv (maks. 5MB)</p>
+                    </div>
+
+                    <div x-show="isUploadingFile" class="text-center py-4 text-purple-600 text-sm">
+                        <svg class="w-6 h-6 animate-spin mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Memproses file...
+                    </div>
+
+                    <div x-show="fileImportPreview.length > 0" class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Ditemukan <strong x-text="fileImportPreview.length"></strong> soal valid</span>
+                        </div>
+                        <div class="import-list border border-gray-200 rounded-xl overflow-hidden">
+                            <template x-for="(q, idx) in fileImportPreview.slice(0, 10)" :key="idx">
+                                <div class="import-item">
+                                    <span class="q-number" x-text="idx+1"></span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-700 font-medium" x-text="q.question"></p>
+                                        <div class="q-choices mt-1">
+                                            <template x-for="(c, ci) in q.choices" :key="ci">
+                                                <span class="q-choice-chip text-xs" :class="{ 'correct': c.is_correct }">
+                                                    <span x-text="String.fromCharCode(65+ci)"></span>. <span x-text="c.text && c.text.length > 15 ? c.text.substring(0,15)+'...' : c.text"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <span class="q-score-badge text-xs flex-shrink-0" x-text="q.score + ' poin'"></span>
+                                </div>
+                            </template>
+                            <div x-show="fileImportPreview.length > 10" class="text-center py-2 text-sm text-gray-500 border-t">
+                                + <span x-text="fileImportPreview.length - 10"></span> soal lainnya
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button @click="showImportModal = false" class="btn btn-outline">Batal</button>
+                <button @click="executeImport()" :disabled="!canImport || isImporting"
+                    class="btn btn-primary">
+                    <span x-show="!isImporting" x-text="'Import ' + importCount + ' Soal'"></span>
+                    <span x-show="isImporting" class="flex items-center gap-2">
+                        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Mengimport...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== MODAL: EDIT ===== --}}
+    <div x-show="showEditModal" class="modal-backdrop" @click.self="showEditModal = false" x-cloak>
+        <div class="modal">
+            <div class="modal-header">
+                <h3>✏️ Edit Soal</h3>
+                <button @click="showEditModal = false" class="btn-icon delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body space-y-4" x-show="editForm">
+                <div>
+                    <label class="form-label">Pertanyaan</label>
+                    <textarea x-model="editForm.question" class="form-textarea" rows="3"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Poin</label>
+                        <input type="number" x-model.number="editForm.score" min="1" max="100" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Penjelasan</label>
+                        <input type="text" x-model="editForm.explanation" class="form-input">
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="form-label mb-0">Pilihan Jawaban</label>
+                        <button @click="addEditChoice()" :disabled="editForm.choices.length >= 6" class="btn btn-outline btn-sm">+ Tambah</button>
+                    </div>
+                    <div class="space-y-2">
+                        <template x-for="(c, i) in editForm.choices" :key="c._id || i">
+                            <div class="choice-item" :class="{ 'correct-choice': c.is_correct }">
+                                <input type="radio" name="edit_correct" :checked="c.is_correct"
+                                    @change="setEditCorrect(i)" class="w-4 h-4" style="accent-color: #6C3DE5">
+                                <div class="choice-label" x-text="String.fromCharCode(65+i)"></div>
+                                <input type="text" x-model="c.text" class="form-input">
+                                <button @click="removeEditChoice(i)" :disabled="editForm.choices.length <= 2" class="btn-icon delete flex-shrink-0">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button @click="showEditModal = false" class="btn btn-outline">Batal</button>
+                <button @click="saveEdit()" :disabled="!isEditFormValid || isSavingEdit" class="btn btn-primary">
+                    <span x-show="!isSavingEdit">Simpan Perubahan</span>
+                    <span x-show="isSavingEdit">Menyimpan...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== MODAL: DELETE ===== --}}
+    <div x-show="showDeleteModal" class="modal-backdrop" @click.self="showDeleteModal = false" x-cloak>
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3 class="text-red-600">🗑️ Hapus Soal</h3>
+                <button @click="showDeleteModal = false" class="btn-icon delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Soal ini akan dihapus permanen dan tidak dapat dikembalikan.
+                </div>
+                <p class="text-sm text-gray-600 font-medium" x-text="deleteQuestionText"></p>
+            </div>
+            <div class="modal-footer">
+                <button @click="showDeleteModal = false" class="btn btn-outline">Batal</button>
+                <button @click="confirmDelete()" :disabled="isDeleting"
+                    class="btn" style="background: #EF4444; color: white">
+                    <span x-show="!isDeleting">Ya, Hapus</span>
+                    <span x-show="isDeleting">Menghapus...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== TOAST CONTAINER ===== --}}
+    <div id="toast-container" class="toast-container"></div>
+
+</div>
+
+<script>
+function quizQnA() {
+    return {
+        // ===== STATE =====
+        questions: @json($questionsData).filter(q => q.type === 'PG'),
+
+        // Form tambah soal baru
+        form: {
+            question: '',
+            score: 10,
+            explanation: '',
+            choices: [
+                { _id: 1, text: '', is_correct: false },
+                { _id: 2, text: '', is_correct: false },
+                { _id: 3, text: '', is_correct: false },
+                { _id: 4, text: '', is_correct: false },
+            ]
+        },
+
+        // Edit
+        showEditModal: false,
+        editForm: null,
+        editIndex: null,
+        editQuestionId: null,
+        isSavingEdit: false,
+
+        // Delete
+        showDeleteModal: false,
+        deleteIndex: null,
+        deleteQuestionId: null,
+        deleteQuestionText: '',
+        isDeleting: false,
+
+        // Import
+        showImportModal: false,
+        importTab: 'from_exam',
+        importSourceQuizId: '',
+        importPreview: [],
+        isLoadingPreview: false,
+        fileImportPreview: [],
+        selectedFileName: '',
+        isUploadingFile: false,
+        isDragging: false,
+        isImporting: false,
+
+        // Saving
+        isSavingSingle: false,
+        isSaving: false,
+        isFinalizing: false,
+
+        // ===== COMPUTED =====
+        get totalPoints() {
+            return this.questions.reduce((s, q) => s + (parseInt(q.score) || 0), 0);
+        },
+        get isFormValid() {
+            if (!this.form.question.trim()) return false;
+            if (this.form.score < 1) return false;
+            if (this.form.choices.length < 2) return false;
+            if (!this.form.choices.some(c => c.is_correct)) return false;
+            if (this.form.choices.some(c => !c.text.trim())) return false;
+            return true;
+        },
+        get isEditFormValid() {
+            if (!this.editForm) return false;
+            if (!this.editForm.question.trim()) return false;
+            if (this.editForm.score < 1) return false;
+            if (!this.editForm.choices.some(c => c.is_correct)) return false;
+            if (this.editForm.choices.some(c => !c.text.trim())) return false;
+            return true;
+        },
+        get canImport() {
+            if (this.importTab === 'from_exam') return this.importPreview.some(q => q.selected);
+            if (this.importTab === 'from_file') return this.fileImportPreview.length > 0;
+            return false;
+        },
+        get importCount() {
+            if (this.importTab === 'from_exam') return this.importPreview.filter(q => q.selected).length;
+            return this.fileImportPreview.length;
+        },
+
+        // ===== INIT =====
+        init() {
+            console.log('[INIT] quizQnA ready, questions:', this.questions.length);
+        },
+
+        // ===== FORM: CHOICES =====
+        addChoice() {
+            if (this.form.choices.length >= 6) return;
+            this.form.choices.push({ _id: Date.now(), text: '', is_correct: false });
+        },
+        removeChoice(i) {
+            if (this.form.choices.length <= 2) return;
+            this.form.choices.splice(i, 1);
+        },
+        setCorrect(i) {
+            this.form.choices.forEach((c, idx) => c.is_correct = idx === i);
+        },
+
+        // ===== FORM: ADD QUESTION =====
+        async addQuestion() {
+            if (!this.isFormValid) {
+                showToast('warning', 'Perhatian', 'Lengkapi semua field. Pilih 1 jawaban benar!');
+                return;
             }
-        });
-    </script>
+            if (this.questions.length >= 50) {
+                showToast('error', 'Batas Soal', 'Maksimal 50 soal per quiz.');
+                return;
+            }
+            this.isSavingSingle = true;
+            try {
+                const res = await fetch(`/guru/quiz/{{ $quiz->id }}/question`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'PG',
+                        question: this.form.question.trim(),
+                        score: parseInt(this.form.score),
+                        explanation: this.form.explanation.trim() || null,
+                        choices: this.form.choices.map(c => ({ text: c.text.trim(), is_correct: c.is_correct }))
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.questions.push({
+                        ...data.question,
+                        choices: data.question.choices || this.form.choices.map(c => ({ text: c.text, is_correct: c.is_correct }))
+                    });
+                    this.resetForm();
+                    showToast('success', 'Berhasil!', 'Soal berhasil ditambahkan.');
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Terjadi kesalahan');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Gagal menghubungi server');
+            } finally {
+                this.isSavingSingle = false;
+            }
+        },
+
+        resetForm() {
+            this.form = {
+                question: '',
+                score: 10,
+                explanation: '',
+                choices: [
+                    { _id: 1, text: '', is_correct: false },
+                    { _id: 2, text: '', is_correct: false },
+                    { _id: 3, text: '', is_correct: false },
+                    { _id: 4, text: '', is_correct: false },
+                ]
+            };
+        },
+
+        // ===== EDIT =====
+        openEditModal(idx) {
+            const q = this.questions[idx];
+            this.editIndex = idx;
+            this.editQuestionId = q.id;
+            this.editForm = {
+                question: q.question,
+                score: q.score,
+                explanation: q.explanation || '',
+                choices: (q.choices || []).map((c, i) => ({
+                    _id: c.id || Date.now() + i,
+                    text: c.text,
+                    is_correct: c.is_correct
+                }))
+            };
+            this.showEditModal = true;
+        },
+        addEditChoice() {
+            if (this.editForm.choices.length >= 6) return;
+            this.editForm.choices.push({ _id: Date.now(), text: '', is_correct: false });
+        },
+        removeEditChoice(i) {
+            if (this.editForm.choices.length <= 2) return;
+            this.editForm.choices.splice(i, 1);
+        },
+        setEditCorrect(i) {
+            this.editForm.choices.forEach((c, idx) => c.is_correct = idx === i);
+        },
+        async saveEdit() {
+            if (!this.isEditFormValid) {
+                showToast('warning', 'Perhatian', 'Lengkapi semua field. Pilih 1 jawaban benar!');
+                return;
+            }
+            this.isSavingEdit = true;
+            try {
+                const res = await fetch(`/guru/quiz/{{ $quiz->id }}/questions/${this.editQuestionId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'PG',
+                        question: this.editForm.question.trim(),
+                        score: parseInt(this.editForm.score),
+                        explanation: this.editForm.explanation.trim() || null,
+                        choices: this.editForm.choices.map(c => ({ text: c.text.trim(), is_correct: c.is_correct }))
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.questions[this.editIndex] = {
+                        ...data.question,
+                        choices: data.question.choices || this.editForm.choices
+                    };
+                    this.questions = [...this.questions]; // trigger reactivity
+                    this.showEditModal = false;
+                    showToast('success', 'Berhasil!', 'Soal berhasil diperbarui.');
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Terjadi kesalahan');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Gagal menghubungi server');
+            } finally {
+                this.isSavingEdit = false;
+            }
+        },
+
+        // ===== DELETE =====
+        openDeleteModal(idx) {
+            const q = this.questions[idx];
+            this.deleteIndex = idx;
+            this.deleteQuestionId = q.id;
+            this.deleteQuestionText = q.question.length > 100 ? q.question.substring(0, 100) + '...' : q.question;
+            this.showDeleteModal = true;
+        },
+        async confirmDelete() {
+            this.isDeleting = true;
+            try {
+                const res = await fetch(`/guru/quiz/{{ $quiz->id }}/questions/${this.deleteQuestionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.questions.splice(this.deleteIndex, 1);
+                    this.showDeleteModal = false;
+                    showToast('success', 'Dihapus!', 'Soal berhasil dihapus.');
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Terjadi kesalahan');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Gagal menghubungi server');
+            } finally {
+                this.isDeleting = false;
+            }
+        },
+
+        // ===== IMPORT: FROM EXAM =====
+        async loadImportPreview() {
+            if (!this.importSourceQuizId) { this.importPreview = []; return; }
+            this.isLoadingPreview = true;
+            try {
+                const res = await fetch(`/guru/quiz/${this.importSourceQuizId}/questions/list`, {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.importPreview = (data.questions || [])
+                        .filter(q => q.type === 'PG')
+                        .map(q => ({ ...q, selected: true }));
+                } else {
+                    this.importPreview = [];
+                }
+            } catch(e) {
+                this.importPreview = [];
+                showToast('error', 'Error', 'Gagal memuat soal');
+            } finally {
+                this.isLoadingPreview = false;
+            }
+        },
+
+        // ===== IMPORT: FROM FILE =====
+        handleFileDrop(e) {
+            this.isDragging = false;
+            if (e.dataTransfer.files.length > 0) this.uploadFile(e.dataTransfer.files[0]);
+        },
+        handleFileSelect(e) {
+            if (e.target.files.length > 0) this.uploadFile(e.target.files[0]);
+        },
+        async uploadFile(file) {
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!['.xlsx','.xls','.csv'].includes(ext)) {
+                showToast('error', 'Format Salah', 'Gunakan file .xlsx, .xls, atau .csv'); return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('error', 'File Terlalu Besar', 'Maksimal 5MB'); return;
+            }
+            this.selectedFileName = file.name;
+            this.isUploadingFile = true;
+            this.fileImportPreview = [];
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            try {
+                const res = await fetch('{{ route('guru.quiz.questions.import', $quiz->id) }}', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.fileImportPreview = (data.questions || []).filter(q => q.type === 'PG');
+                    showToast('success', 'File Dibaca!', `Ditemukan ${this.fileImportPreview.length} soal PG.`);
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Gagal memproses file');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Gagal mengupload file');
+            } finally {
+                this.isUploadingFile = false;
+            }
+        },
+
+        // ===== EXECUTE IMPORT =====
+        async executeImport() {
+            let questionsToImport = [];
+            if (this.importTab === 'from_exam') {
+                questionsToImport = this.importPreview.filter(q => q.selected).map(q => ({
+                    type: 'PG', question: q.question, score: q.score,
+                    explanation: q.explanation || '', choices: q.choices || []
+                }));
+            } else {
+                questionsToImport = this.fileImportPreview;
+            }
+
+            if (questionsToImport.length === 0) {
+                showToast('warning', 'Perhatian', 'Pilih minimal 1 soal untuk diimport.'); return;
+            }
+            if (this.questions.length + questionsToImport.length > 50) {
+                showToast('error', 'Melebihi Batas', `Setelah import akan ada ${this.questions.length + questionsToImport.length} soal (maks 50).`); return;
+            }
+
+            this.isImporting = true;
+            try {
+                // Send to server as bulk
+                const res = await fetch('{{ route('guru.quiz.questions.store', $quiz->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ questions: questionsToImport, append: true })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Reload questions from server
+                    await this.reloadQuestions();
+                    showToast('success', 'Import Berhasil!', `Berhasil mengimport ${questionsToImport.length} soal.`);
+                    this.showImportModal = false;
+                    this.importPreview = [];
+                    this.fileImportPreview = [];
+                    this.selectedFileName = '';
+                    this.importSourceQuizId = '';
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Gagal mengimport soal');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Gagal menghubungi server');
+            } finally {
+                this.isImporting = false;
+            }
+        },
+
+        async reloadQuestions() {
+            try {
+                const res = await fetch(`/guru/quiz/{{ $quiz->id }}/questions/list`, {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.questions = (data.questions || []).filter(q => q.type === 'PG');
+                }
+            } catch(e) {}
+        },
+
+        // ===== SAVE ALL =====
+        async saveAllQuestions() {
+            if (this.questions.length === 0) {
+                showToast('warning', 'Perhatian', 'Belum ada soal!'); return;
+            }
+            this.isSaving = true;
+            showToast('info', 'Menyimpan...', 'Sedang menyimpan soal ke server...');
+            try {
+                const formatted = this.questions.filter(q => q.type === 'PG').map(q => ({
+                    question: q.question,
+                    type: 'PG',
+                    score: parseInt(q.score),
+                    explanation: q.explanation || null,
+                    choices: (q.choices || []).map(c => ({ text: c.text, is_correct: c.is_correct }))
+                }));
+
+                const res = await fetch('{{ route('guru.quiz.questions.store', $quiz->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ questions: formatted })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.questions) {
+                        this.questions = data.questions.filter(q => q.type === 'PG');
+                    }
+                    showToast('success', 'Tersimpan!', `${formatted.length} soal berhasil disimpan.`);
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Gagal menyimpan soal');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Terjadi kesalahan: ' + e.message);
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        // ===== PREVIEW & FINALIZE =====
+        async previewQuiz() {
+            if (this.questions.length === 0) {
+                showToast('warning', 'Perhatian', 'Tambah minimal 1 soal dulu!'); return;
+            }
+            await this.saveAllQuestions();
+            window.location.href = '{{ route('guru.quiz.preview', $quiz->id) }}';
+        },
+
+        async finalizeQuiz() {
+            if (this.questions.length === 0) {
+                showToast('warning', 'Perhatian', 'Minimal harus ada 1 soal!'); return;
+            }
+            if (!confirm('Publikasikan quiz ini? Quiz akan aktif dan dapat diakses siswa.')) return;
+            this.isFinalizing = true;
+            try {
+                await this.saveAllQuestions();
+                const res = await fetch('{{ route('guru.quiz.finalize', $quiz->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'publish' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', 'Dipublikasikan!', data.message);
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '{{ route('guru.quiz.index') }}';
+                    }, 1500);
+                } else {
+                    showToast('error', 'Gagal', data.message || 'Gagal mempublish quiz');
+                }
+            } catch(e) {
+                showToast('error', 'Error', 'Terjadi kesalahan');
+            } finally {
+                this.isFinalizing = false;
+            }
+        }
+    }
+}
+
+// ===== TOAST HELPER =====
+function showToast(type, title, msg, duration = 4000) {
+    const icons = {
+        success: '<i class="fas fa-check-circle" style="color:#10B981"></i>',
+        error:   '<i class="fas fa-times-circle" style="color:#EF4444"></i>',
+        warning: '<i class="fas fa-exclamation-triangle" style="color:#F59E0B"></i>',
+        info:    '<i class="fas fa-info-circle" style="color:#3B82F6"></i>'
+    };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `
+        <div style="font-size:1.1rem;flex-shrink:0">${icons[type] || icons.info}</div>
+        <div style="flex:1;min-width:0">
+            <div style="font-size:0.82rem;font-weight:700;color:#111827;margin-bottom:2px">${title}</div>
+            <div style="font-size:0.78rem;color:#6B7280;word-break:break-word">${msg}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:0.875rem;flex-shrink:0;padding:0"><i class="fas fa-times"></i></button>
+    `;
+    const container = document.getElementById('toast-container');
+    container.appendChild(el);
+    setTimeout(() => {
+        el.style.transition = 'all 0.3s ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(60px)';
+        setTimeout(() => el.remove(), 300);
+    }, duration);
+}
+</script>
 @endsection

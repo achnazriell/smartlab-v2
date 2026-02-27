@@ -10,6 +10,7 @@ use App\Models\Subject;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreMateriRequest;
 use App\Http\Requests\UpdateMateriRequest;
+use App\Models\AcademicYear;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -69,21 +70,14 @@ class MateriController extends Controller
             abort(403, 'Bukan akun guru');
         }
 
-        // Mapel yang diajar guru
-        $mapels = $teacher->teacherClasses()
-            ->with('subjects')
-            ->get()
-            ->pluck('subjects')
-            ->flatten()
-            ->unique('id')
-            ->values();
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        // Kelas yang diajar guru
-        $classes = $teacher->teacherClasses
-            ->pluck('classes')
-            ->flatten()
-            ->unique('id')
-            ->values();
+        // Ambil mapel yang diajar guru di tahun ajaran aktif
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+
+        // Ambil kelas yang diajar guru di tahun ajaran aktif
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
         return view('Guru.Materi.create', compact('mapels', 'classes'));
     }
@@ -135,64 +129,34 @@ class MateriController extends Controller
     public function getClassesBySubject($subjectId)
     {
         $teacher = auth()->user()->teacher;
-
         if (!$teacher) {
             return response()->json(['classes' => []]);
         }
 
-        // Ambil kelas yang diajar guru untuk mapel tertentu
-        $classes = $teacher->teacherClasses()
-            ->whereHas('subjects', function ($query) use ($subjectId) {
-                $query->where('subjects.id', $subjectId);
-            })
-            ->with('classes')
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
+
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)
+            ->wherePivot('subject_id', $subjectId)  // hanya kelas yang mengajarkan mapel ini
             ->get()
-            ->pluck('classes')
-            ->flatten()
-            ->map(function ($class) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name_class
-                ];
-            })
-            ->values();
+            ->map(fn($c) => ['id' => $c->id, 'name' => $c->name_class]);
 
         return response()->json(['classes' => $classes]);
     }
 
     public function edit(Materi $materi)
     {
-        $user = auth()->user();
-        $teacher = $user->teacher;
+        $teacher = auth()->user()->teacher;
+        if (!$teacher) abort(403);
 
-        if (! $teacher) {
-            abort(403, 'Bukan akun guru');
-        }
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        // Ambil mapel yang diajar guru
-        $mapels = $teacher
-            ->teacherClasses()
-            ->with('subjects')
-            ->get()
-            ->pluck('subjects')
-            ->flatten()
-            ->unique('id')
-            ->values();
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
-        // Ambil kelas yang diajar guru
-        $classes = $teacher->teacherClasses
-            ->pluck('classes')
-            ->flatten()
-            ->unique('id')
-            ->values();
-
-        return view('Guru.Materi.edit', compact(
-            'materi',
-            'classes',
-            'mapels'
-        ));
+        return view('Guru.Materi.edit', compact('materi', 'mapels', 'classes'));
     }
-
 
     /**
      * Update the specified resource in storage.

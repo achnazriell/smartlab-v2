@@ -422,29 +422,27 @@
         @endif
 
         <!-- Action Buttons -->
-        <!-- Action Buttons -->
         <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-stretch">
             @php
-                // Cek apakah ujian bisa diakses - GUNAKAN METHOD YANG SUDAH ADA
-                // Ganti $exam->isAccessibleForStudent() dengan method yang ada di model
+                // Cek apakah ujian masih bisa diakses berdasarkan waktu dan status
+                $canAccess =
+                    $exam->status === 'active' &&
+                    (!$exam->start_at || now() >= $exam->start_at) &&
+                    (!$exam->end_at || now() <= $exam->end_at);
 
-                // Untuk exam biasa (non-quiz)
-                if ($exam->is_quiz) {
-                    // Untuk quiz, gunakan method canAccessQuiz() atau canStartNow()
-                    $canAccess = $exam->canAccessQuiz() || $exam->canStartNow();
-                } else {
-                    // Untuk exam biasa, gunakan method canAccessRegularExam() atau canStartNow()
-                    $canAccess = $exam->canAccessRegularExam() || $exam->canStartNow();
-                }
+                // Cek attempt yang sedang berlangsung
+                $hasOngoingAttempt = $latestAttempt && $latestAttempt->status === 'in_progress';
 
-                $hasOngoingAttempt = $latestAttempt && $latestAttempt->status == 'in_progress';
+                // Cek attempt yang sudah selesai (submitted atau timeout)
                 $hasCompletedAttempt = $latestAttempt && in_array($latestAttempt->status, ['submitted', 'timeout']);
+
+                // Tentukan apakah bisa memulai attempt baru (jika belum pernah atau boleh mengulang)
                 $canStartNewAttempt =
                     $canAccess && !$hasOngoingAttempt && (!$hasCompletedAttempt || ($canRetake ?? false));
             @endphp
 
             @if ($canStartNewAttempt)
-                <!-- Tombol Mulai Ujian - Tampilkan tombol dengan modal -->
+                <!-- Tombol Mulai Ujian (dengan modal konfirmasi) -->
                 <button type="button" id="btnStartExam"
                     class="px-10 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 inline-flex items-center justify-center gap-3 min-w-64 text-lg">
                     <i class="fas fa-play-circle text-xl"></i>
@@ -457,6 +455,13 @@
                     <i class="fas fa-arrow-right-long text-xl"></i>
                     Lanjutkan Ujian
                 </a>
+            @elseif($hasCompletedAttempt)
+                <!-- Tombol Lihat Hasil -->
+                <a href="{{ route('soal.result', $latestAttempt->id) }}"
+                    class="px-10 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 inline-flex items-center justify-center gap-3 min-w-64 text-lg">
+                    <i class="fas fa-chart-line text-xl"></i>
+                    Lihat Hasil
+                </a>
             @else
                 <!-- Tombol Ujian Tidak Tersedia -->
                 <button disabled
@@ -464,15 +469,6 @@
                     <i class="fas fa-lock text-xl"></i>
                     Ujian Tidak Tersedia
                 </button>
-            @endif
-
-            @if ($hasCompletedAttempt)
-                <!-- Tombol Lihat Hasil -->
-                <a href="{{ route('soal.hasil', ['exam' => $exam->id, 'attempt' => $latestAttempt->id]) }}"
-                    class="px-10 py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 inline-flex items-center justify-center gap-3 min-w-64 text-lg">
-                    <i class="fas fa-chart-line text-xl"></i>
-                    Lihat Hasil
-                </a>
             @endif
 
             <!-- Tombol Kembali -->

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\Exam;
 use App\Models\Subject;
 use App\Models\Classes;
@@ -114,29 +115,14 @@ class ExamController extends Controller
      */
     public function create()
     {
-        $user = auth()->user();
-        $teacher = $user->teacher;
+        $teacher = auth()->user()->teacher;
+        if (!$teacher) abort(403);
 
-        if (!$teacher) {
-            abort(403, 'Anda harus login sebagai guru');
-        }
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        // Dapatkan semua mata pelajaran yang diajar oleh guru ini
-        $teacherId = $teacher->id;
-
-        // Ambil ID kelas yang diajar guru
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-
-        // Ambil ID subjects dari kelas-kelas tersebut
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-
-        // Ambil data subjects
-        $mapels = Subject::whereIn('id', $subjectIds)->get();
-
-        // Ambil kelas yang diajar
-        $classes = $teacher->classes;
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
         return view('Guru.Exam.create', compact('mapels', 'classes'));
     }
@@ -348,33 +334,16 @@ class ExamController extends Controller
      */
     public function edit($id)
     {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
-            ->findOrFail($id);
-
-        // Cek apakah exam masih draft
-        if ($exam->status !== 'draft') {
-            return redirect()->route('guru.exams.show', $exam->id)
-                ->with('error', 'Hanya ujian dalam status draft yang bisa diedit');
-        }
-
+        $exam = Exam::where('teacher_id', $this->teacherId())->findOrFail($id);
         $teacher = auth()->user()->teacher;
 
-        // Ambil semua subjects yang diajar guru
-        $teacherId = $teacher->id;
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-        $mapels = Subject::whereIn('id', $subjectIds)->get();
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
 
-        // Ambil kelas berdasarkan subject yang dipilih
-        $classes = Classes::whereHas('teacherClasses', function ($q) use ($teacher, $exam) {
-            $q->where('teacher_id', $teacher->id)
-                ->whereHas('subjects', function ($q2) use ($exam) {
-                    $q2->where('subjects.id', $exam->subject_id);
-                });
-        })->get();
+        $mapels = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)
+            ->wherePivot('subject_id', $exam->subject_id)
+            ->get();
 
         return view('Guru.Exam.edit', compact('exam', 'mapels', 'classes'));
     }
@@ -555,28 +524,19 @@ class ExamController extends Controller
     public function getClassesBySubject($subjectId)
     {
         $teacher = auth()->user()->teacher;
+        if (!$teacher) {
+            return response()->json(['classes' => []]);
+        }
 
-        $classes = $teacher
-            ->teacherClasses()
-            ->whereHas('subjects', function ($q) use ($subjectId) {
-                $q->where('subjects.id', $subjectId);
-            })
-            ->with('classes')
+        $activeYear = AcademicYear::active()->first();
+        $yearId = $activeYear?->id;
+
+        $classes = $teacher->classesTaughtInAcademicYear($yearId)
+            ->wherePivot('subject_id', $subjectId)
             ->get()
-            ->pluck('classes')
-            ->unique('id')
-            ->values()
-            ->map(function ($class) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name_class
-                ];
-            });
+            ->map(fn($c) => ['id' => $c->id, 'name' => $c->name_class]);
 
-        return response()->json([
-            'success' => true,
-            'classes' => $classes
-        ]);
+        return response()->json(['success' => true, 'classes' => $classes]);
     }
 
     /**
@@ -914,76 +874,130 @@ class ExamController extends Controller
      * POST /guru/exams/{id}/soal
      * Simpan soal baru (AJAX)
      */
+    /** Tipe soal yang valid */
+    private const VALID_QUESTION_TYPES = ['PG', 'PGK', 'BS', 'DD', 'IS', 'ES', 'SK', 'MJ'];
+
     public function storeQuestion(Request $request, $id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ')
             ->findOrFail($id);
 
-        $request->validate([
-            'question' => 'required|string',
-            'type' => 'required|in:PG,IS',
-            'score' => 'required|integer|min:1|max:100',
-            'options' => 'required_if:type,PG|array|min:2',
-            'options.*' => 'required_if:type,PG|string',
-            'correct_answer' => 'required_if:type,PG|integer',
-            'short_answer' => 'required_if:type,IS|string',
+        $validator = validator($request->all(), [
+            'question' => 'required|string|min:3',
+            'type'     => 'required|in:' . implode(',', self::VALID_QUESTION_TYPES),
+            'score'    => 'required|integer|min:0|max:100',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();
 
+            $type = $request->type;
             $lastOrder = ExamQuestion::where('exam_id', $exam->id)->max('order') ?? 0;
 
-            // HAPUS show_explanation dari data yang disimpan
             $questionData = [
-                'exam_id' => $exam->id,
-                'type' => $request->type,
-                'question' => $request->question,
-                'score' => $request->score,
-                'order' => $lastOrder + 1,
-                'enable_skip' => $request->boolean('enable_skip', true),
+                'exam_id'            => $exam->id,
+                'type'               => $type,
+                'question'           => trim($request->question),
+                'score'              => (int) $request->score,
+                'explanation'        => trim($request->explanation ?? ''),
+                'order'              => $lastOrder + 1,
+                'enable_skip'        => $request->boolean('enable_skip', true),
                 'enable_mark_review' => $request->boolean('enable_mark_review', true),
-                // 'show_explanation' => $request->boolean('show_explanation', false), // HAPUS BARIS INI
-                'randomize_choices' => $request->boolean('randomize_choices', false),
+                'randomize_choices'  => $request->boolean('randomize_choices', false),
             ];
 
-            // Untuk soal ISIAN SINGKAT
-            if ($request->type === 'IS') {
-                $answers = array_map('trim', explode(',', $request->short_answer));
-                $questionData['short_answers'] = json_encode($answers);
-            }
+            switch ($type) {
+                case 'PG':
+                case 'DD':
+                    $this->validateChoicesExam($request);
+                    $question = ExamQuestion::create($questionData);
+                    $this->saveChoicesExam($question->id, $request->options, [$request->correct_answer]);
+                    break;
 
-            $question = ExamQuestion::create($questionData);
+                case 'PGK':
+                    $this->validateChoicesExam($request, true);
+                    $question = ExamQuestion::create($questionData);
+                    $this->saveChoicesExam($question->id, $request->options, $request->correct_answers ?? []);
+                    break;
 
-            // Untuk soal PILIHAN GANDA
-            if ($request->type === 'PG') {
-                foreach ($request->options as $index => $option) {
-                    if (!empty($option)) {
-                        ExamChoice::create([
-                            'question_id' => $question->id,
-                            'label' => chr(65 + $index), // A, B, C, D
-                            'text' => $option,
-                            'is_correct' => $index == $request->correct_answer,
-                            'order' => $index,
-                        ]);
+                case 'BS':
+                    if (!in_array($request->short_answer, ['benar', 'salah'])) {
+                        throw new \Exception('Jawaban Benar/Salah harus "benar" atau "salah"');
                     }
-                }
+                    $questionData['short_answers'] = json_encode([$request->short_answer]);
+                    $question = ExamQuestion::create($questionData);
+                    break;
+
+                case 'IS':
+                    if (empty(trim($request->short_answer ?? ''))) {
+                        throw new \Exception('Jawaban tidak boleh kosong untuk soal Isian Singkat');
+                    }
+                    $answers = array_values(array_filter(array_map('trim', explode(',', $request->short_answer))));
+                    $questionData['short_answers'] = json_encode([
+                        'answers'        => $answers,
+                        'case_sensitive' => (bool) ($request->case_sensitive ?? false),
+                    ]);
+                    $question = ExamQuestion::create($questionData);
+                    break;
+
+                case 'ES':
+                    $questionData['short_answers'] = json_encode(['rubric' => trim($request->rubric ?? '')]);
+                    $question = ExamQuestion::create($questionData);
+                    break;
+
+                case 'SK':
+                    $scaleMin = (int) ($request->scale_min ?? 1);
+                    $scaleMax = (int) ($request->scale_max ?? 5);
+                    if ($scaleMax <= $scaleMin) throw new \Exception('Skala maksimum harus lebih besar dari minimum');
+                    $questionData['short_answers'] = json_encode([
+                        'min'       => $scaleMin,
+                        'max'       => $scaleMax,
+                        'min_label' => trim($request->scale_min_label ?? ''),
+                        'max_label' => trim($request->scale_max_label ?? ''),
+                        'correct'   => $request->scale_correct !== null ? (int) $request->scale_correct : null,
+                    ]);
+                    $question = ExamQuestion::create($questionData);
+                    break;
+
+                case 'MJ':
+                    $pairs = $request->pairs ?? [];
+                    if (count($pairs) < 2) throw new \Exception('Minimal 2 pasangan untuk soal Menjodohkan');
+                    foreach ($pairs as $pair) {
+                        if (empty($pair['left']) || empty($pair['right'])) {
+                            throw new \Exception('Semua pasangan harus terisi');
+                        }
+                    }
+                    $questionData['short_answers'] = json_encode($pairs);
+                    $question = ExamQuestion::create($questionData);
+                    break;
+
+                default:
+                    throw new \Exception('Tipe soal tidak dikenali');
             }
 
             DB::commit();
 
+            $question->load(['choices' => fn($q) => $q->orderBy('order')]);
+
             return response()->json([
-                'success' => true,
-                'message' => 'Soal berhasil ditambahkan',
-                'question' => $question->load('choices')
+                'success'  => true,
+                'message'  => 'Soal berhasil ditambahkan',
+                'question' => $this->formatQuestionExam($question),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 
@@ -1026,71 +1040,188 @@ class ExamController extends Controller
     public function updateQuestion(Request $request, $examId, $questionId)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ')
             ->findOrFail($examId);
 
-        $question = ExamQuestion::where('exam_id', $exam->id)
-            ->findOrFail($questionId);
+        $question = ExamQuestion::where('exam_id', $exam->id)->findOrFail($questionId);
 
-        $request->validate([
-            'question' => 'required|string',
-            'type' => 'required|in:PG,IS',
-            'score' => 'required|integer|min:1|max:100',
-            'options' => 'required_if:type,PG|array|min:2',
-            'options.*' => 'required_if:type,PG|string',
-            'correct_answer' => 'required_if:type,PG|integer',
-            'short_answer' => 'required_if:type,IS|string',
+        $validator = validator($request->all(), [
+            'question' => 'required|string|min:3',
+            'type'     => 'required|in:' . implode(',', self::VALID_QUESTION_TYPES),
+            'score'    => 'required|integer|min:0|max:100',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();
 
-            $questionData = [
-                'type' => $request->type,
-                'question' => $request->question,
-                'score' => $request->score,
-            ];
+            $type = $request->type;
 
-            // Untuk soal ISIAN SINGKAT
-            if ($request->type === 'IS') {
-                $answers = array_map('trim', explode(',', $request->short_answer));
-                $questionData['short_answers'] = json_encode($answers);
-            }
+            $question->update([
+                'type'        => $type,
+                'question'    => trim($request->question),
+                'score'       => (int) $request->score,
+                'explanation' => trim($request->explanation ?? ''),
+            ]);
 
-            $question->update($questionData);
+            // Hapus choices & short_answers lama
+            $question->choices()->delete();
+            $question->short_answers = null;
+            $question->save();
 
-            // Hapus pilihan lama jika ada
-            if ($question->choices->isNotEmpty()) {
-                $question->choices()->delete();
-            }
+            switch ($type) {
+                case 'PG':
+                case 'DD':
+                    $this->validateChoicesExam($request);
+                    $this->saveChoicesExam($question->id, $request->options, [$request->correct_answer]);
+                    break;
 
-            // Untuk soal PILIHAN GANDA
-            if ($request->type === 'PG') {
-                foreach ($request->options as $index => $option) {
-                    ExamChoice::create([
-                        'question_id' => $question->id,
-                        'label' => chr(65 + $index), // A, B, C, D
-                        'text' => $option,
-                        'is_correct' => $index == $request->correct_answer,
-                        'order' => $index,
+                case 'PGK':
+                    $this->validateChoicesExam($request, true);
+                    $this->saveChoicesExam($question->id, $request->options, $request->correct_answers ?? []);
+                    break;
+
+                case 'BS':
+                    if (!in_array($request->short_answer, ['benar', 'salah'])) {
+                        throw new \Exception('Jawaban harus "benar" atau "salah"');
+                    }
+                    $question->short_answers = json_encode([$request->short_answer]);
+                    $question->save();
+                    break;
+
+                case 'IS':
+                    $answers = array_values(array_filter(array_map('trim', explode(',', $request->short_answer ?? ''))));
+                    if (empty($answers)) throw new \Exception('Jawaban tidak boleh kosong');
+                    $question->short_answers = json_encode([
+                        'answers'        => $answers,
+                        'case_sensitive' => (bool) ($request->case_sensitive ?? false),
                     ]);
-                }
+                    $question->save();
+                    break;
+
+                case 'ES':
+                    $question->short_answers = json_encode(['rubric' => trim($request->rubric ?? '')]);
+                    $question->save();
+                    break;
+
+                case 'SK':
+                    $scaleMin = (int) ($request->scale_min ?? 1);
+                    $scaleMax = (int) ($request->scale_max ?? 5);
+                    if ($scaleMax <= $scaleMin) throw new \Exception('Skala maksimum harus lebih besar dari minimum');
+                    $question->short_answers = json_encode([
+                        'min'       => $scaleMin,
+                        'max'       => $scaleMax,
+                        'min_label' => trim($request->scale_min_label ?? ''),
+                        'max_label' => trim($request->scale_max_label ?? ''),
+                        'correct'   => $request->scale_correct !== null ? (int) $request->scale_correct : null,
+                    ]);
+                    $question->save();
+                    break;
+
+                case 'MJ':
+                    $pairs = $request->pairs ?? [];
+                    if (count($pairs) < 2) throw new \Exception('Minimal 2 pasangan');
+                    foreach ($pairs as $pair) {
+                        if (empty($pair['left']) || empty($pair['right'])) {
+                            throw new \Exception('Semua pasangan harus terisi');
+                        }
+                    }
+                    $question->short_answers = json_encode($pairs);
+                    $question->save();
+                    break;
             }
 
             DB::commit();
 
+            $question->load(['choices' => fn($q) => $q->orderBy('order')]);
+
             return response()->json([
-                'success' => true,
-                'message' => 'Soal berhasil diperbarui',
-                'question' => $question->load('choices')
+                'success'  => true,
+                'message'  => 'Soal berhasil diperbarui',
+                'question' => $this->formatQuestionExam($question),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
+                'message' => $e->getMessage(),
+            ], 422);
         }
+    }
+
+    /* ===================== PRIVATE HELPERS QUESTION ===================== */
+
+    private function validateChoicesExam(Request $request, bool $multiCorrect = false): void
+    {
+        $options = $request->options ?? [];
+        $filled  = array_filter(array_map('trim', $options));
+
+        if (count($filled) < 2) {
+            throw new \Exception('Minimal 2 opsi jawaban harus diisi');
+        }
+
+        if ($multiCorrect) {
+            $correct = $request->correct_answers ?? [];
+            if (empty($correct)) throw new \Exception('Pilih minimal 1 jawaban yang benar');
+        } else {
+            if ($request->correct_answer === null || $request->correct_answer === '') {
+                throw new \Exception('Pilih jawaban yang benar');
+            }
+        }
+    }
+
+    private function saveChoicesExam(int $questionId, array $options, array $correctIndexes): void
+    {
+        $correctIndexes = array_map('intval', $correctIndexes);
+
+        foreach ($options as $index => $text) {
+            $trimmed = trim($text ?? '');
+            if ($trimmed === '') continue;
+
+            ExamChoice::create([
+                'question_id' => $questionId,
+                'label'       => chr(65 + $index),
+                'text'        => $trimmed,
+                'is_correct'  => in_array($index, $correctIndexes),
+                'order'       => $index,
+            ]);
+        }
+    }
+
+    private function formatQuestionExam(ExamQuestion $q): array
+    {
+        $data = [
+            'id'            => $q->id,
+            'type'          => $q->type,
+            'question'      => $q->question,
+            'score'         => $q->score,
+            'explanation'   => $q->explanation,
+            'short_answers' => null,
+            'choices'       => [],
+        ];
+
+        if ($q->short_answers) {
+            $raw = is_array($q->short_answers) ? $q->short_answers : json_decode($q->short_answers, true);
+            $data['short_answers'] = $raw;
+        }
+
+        if (in_array($q->type, ['PG', 'PGK', 'DD'])) {
+            $data['choices'] = $q->choices->map(fn($c) => [
+                'id'         => $c->id,
+                'label'      => $c->label,
+                'text'       => $c->text,
+                'is_correct' => (bool) $c->is_correct,
+                'order'      => $c->order,
+            ])->values()->toArray();
+        }
+
+        return $data;
     }
 
     /**

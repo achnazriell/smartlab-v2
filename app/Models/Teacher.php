@@ -17,6 +17,39 @@ class Teacher extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function exams()
+    {
+        // BENAR: hasMany dengan foreign key 'teacher_id'
+        return $this->hasMany(Exam::class, 'teacher_id');
+    }
+
+    public function teacherClasses()
+    {
+        return $this->hasMany(TeacherClass::class);
+    }
+
+    // 🔹 RELASI KELAS (teacher_classes)
+    public function classes()
+    {
+        return $this->belongsToMany(
+            Classes::class,
+            'teacher_classes',
+            'teacher_id',
+            relatedPivotKey: 'classes_id'
+        );
+    }
+
+    // app/Models/Teacher.php
+    public function subjects()
+    {
+        return $this->belongsToMany(
+            \App\Models\Subject::class,
+            'teacher_subjects',
+            'teacher_id',
+            'subject_id'
+        );
+    }
+
     // Relasi ke teacher_subject_assignments (mengajar)
     public function assignments()
     {
@@ -57,7 +90,7 @@ class Teacher extends Model
         return $query;
     }
 
-    
+
     // (Opsional) hapus relasi lama jika masih ada
     // public function teacherClasses() { ... } // sebaiknya dihapus/diadaptasi
     // public function subjects() { ... }       // digantikan subjectsTaught...
