@@ -1,7 +1,7 @@
 {{-- resources/views/guru/exams/results/detail.blade.php --}}
 @extends('layouts.appTeacher')
 
-@section('title', 'Detail Hasil: ' . ($attempt->student->user->name ?? 'Siswa'))
+@section('title', 'Detail Hasil: ' . ($attempt->student_data->name ?? 'Siswa'))
 
 @section('content')
 <div class="min-h-screen bg-[#f4f6fb] py-8">
@@ -17,12 +17,12 @@
                 </a>
                 <div class="flex items-center gap-3">
                     <div class="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <span class="text-indigo-700 font-bold text-lg">{{ strtoupper(substr($attempt->student->user->name ?? 'S', 0, 1)) }}</span>
+                        <span class="text-indigo-700 font-bold text-lg">{{ strtoupper(substr($attempt->student_data->name ?? 'S', 0, 1)) }}</span>
                     </div>
                     <div>
-                        <h1 class="text-xl font-extrabold text-slate-900">{{ $attempt->student->user->name ?? 'Siswa' }}</h1>
+                        <h1 class="text-xl font-extrabold text-slate-900">{{ $attempt->student_data->name ?? 'Siswa' }}</h1>
                         <p class="text-sm text-slate-400">
-                            {{ $attempt->student->nis ?? '-' }} &bull;
+                            {{ $attempt->student_data->nis ?? '-' }} &bull;
                             <span class="text-slate-600 font-medium">{{ $exam->title }}</span>
                         </p>
                     </div>

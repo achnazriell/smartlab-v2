@@ -53,7 +53,7 @@
             box-shadow: 0 20px 48px rgba(59,130,246,.25);
         }
         .quiz-header {
-            background-image: url('{{ asset('image/cardquiz.webp') }}');
+            background-image: url('{{ asset('image/cardmapel.webp') }}');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -196,7 +196,11 @@
                             $status = $quiz->display_status ?? 'available';
                             $statusClass = 'status-available'; $statusText = 'Tersedia';
                             $buttonClass = 'bg-blue-600 hover:bg-blue-700';
-                            $buttonText = 'Lihat Quiz'; $buttonLink = route('quiz.room', $quiz->id);
+                            $buttonText = 'Lihat Quiz';
+                            // Mandiri/homework mode: tampilkan halaman detail terlebih dahulu
+                            $buttonLink = ($quiz->quiz_mode !== 'live')
+                                ? route('quiz.detail', $quiz->id)
+                                : route('quiz.room', $quiz->id);
                             $disabled = false; $icon = 'fa-eye';
 
                             if ($status === 'completed') {
@@ -209,11 +213,17 @@
                             } elseif ($quiz->is_room_open && isset($quiz->is_quiz_started) && $quiz->is_quiz_started) {
                                 $statusClass = 'status-ongoing'; $statusText = 'Sedang Berlangsung';
                                 $buttonClass = 'bg-yellow-500 hover:bg-yellow-600'; $buttonText = 'Gabung Quiz';
-                                $buttonLink = route('quiz.room', $quiz->id); $icon = 'fa-play-circle';
+                                $buttonLink = ($quiz->quiz_mode !== 'live')
+                                    ? route('quiz.detail', $quiz->id)
+                                    : route('quiz.room', $quiz->id);
+                                $icon = 'fa-play-circle';
                             } elseif (isset($quiz->is_room_open) && $quiz->is_room_open) {
                                 $statusClass = 'status-waiting'; $statusText = 'Ruangan Terbuka';
                                 $buttonClass = 'bg-blue-600 hover:bg-blue-700'; $buttonText = 'Masuk Ruangan';
-                                $buttonLink = route('quiz.room', $quiz->id); $icon = 'fa-door-open';
+                                $buttonLink = ($quiz->quiz_mode !== 'live')
+                                    ? route('quiz.detail', $quiz->id)
+                                    : route('quiz.room', $quiz->id);
+                                $icon = 'fa-door-open';
                             } elseif ($status === 'upcoming') {
                                 $statusClass = 'status-upcoming'; $statusText = 'Akan Datang';
                                 $buttonClass = 'bg-gray-400 cursor-not-allowed'; $buttonText = 'Belum Dimulai';

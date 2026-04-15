@@ -451,10 +451,7 @@
                     class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
                     <i class="fas fa-list"></i> Kembali ke Daftar Quiz
                 </a>
-                <button onclick="window.print()"
-                    class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
-                    <i class="fas fa-print"></i> Cetak Hasil
-                </button>
+
             </div>
 
         </div>

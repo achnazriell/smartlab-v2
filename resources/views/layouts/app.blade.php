@@ -343,56 +343,6 @@
             </main>
         </div>
     </div>
-
-    <!-- Global SweetAlert notifications -->
-    @if (session('success'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: '{{ session('success') }}',
-                    timer: 3000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end',
-                    background: '#fff',
-                    color: '#1e293b',
-                });
-            });
-        </script>
-    @endif
-
-    @if (session('error'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: '{{ session('error') }}',
-                    confirmButtonColor: '#2563eb',
-                    background: '#fff',
-                    color: '#1e293b',
-                });
-            });
-        </script>
-    @endif
-
-    @if (session('warning'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Perhatian!',
-                    text: '{{ session('warning') }}',
-                    confirmButtonColor: '#2563eb',
-                    background: '#fff',
-                    color: '#1e293b',
-                });
-            });
-        </script>
-    @endif
 </body>
 
 </html>

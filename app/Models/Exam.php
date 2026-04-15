@@ -71,6 +71,11 @@ class Exam extends Model
         'quiz_started_at',
         'quiz_remaining_time',
 
+        // GUIDED MODE — timer per soal
+        'guided_current_index',       // indeks soal aktif saat ini
+        'guided_question_deadline',   // timestamp (detik) kapan soal ini habis waktunya
+        'guided_show_answer',         // apakah fase "tampil jawaban benar" aktif (hanya guru)
+
         // STATUS
         'status',
     ];
@@ -110,6 +115,9 @@ class Exam extends Model
         'limit_attempts' => 'integer',
         'min_pass_grade' => 'decimal:2',
         'quiz_remaining_time' => 'integer',
+        'guided_current_index' => 'integer',
+        'guided_question_deadline' => 'integer',  // Unix timestamp (seconds)
+        'guided_show_answer' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];
@@ -150,11 +158,6 @@ class Exam extends Model
         return $this->hasMany(ExamAttempt::class);
     }
 
-    /**
-     * ✅ CRITICAL FIX: Relationship students untuk quiz assignment
-     * Ini adalah relationship yang SANGAT PENTING untuk sistem quiz
-     * Tanpa ini, quiz tidak akan ter-assign ke siswa
-     */
     public function students()
     {
         return $this->belongsToMany(User::class, 'exam_student', 'exam_id', 'student_id')
@@ -265,17 +268,11 @@ class Exam extends Model
 
     /* ================= METHODS ================= */
 
-    /**
-     * ✅ FIX: Method getTotalScore() untuk kompatibilitas
-     */
     public function getTotalScore()
     {
         return $this->total_score;
     }
 
-    /**
-     * ✅ Get all quiz settings
-     */
     public function getAllSettings()
     {
         return [
@@ -315,36 +312,18 @@ class Exam extends Model
 
     /* ================= ROOM MANAGEMENT METHODS ================= */
 
-    /**
-     * Check if student can access quiz
-     */
     public function canAccessQuiz()
     {
-        if (!$this->is_quiz) {
-            return false;
-        }
-
-        if ($this->status !== 'active') {
-            return false;
-        }
-
-        if (!$this->is_room_open) {
-            return false;
-        }
-
+        if (!$this->is_quiz) return false;
+        if ($this->status !== 'active') return false;
+        if (!$this->is_room_open) return false;
         return true;
     }
 
-    /**
-     * Get room participants
-     */
     public function getRoomParticipants()
     {
         $session = $this->activeSession;
-
-        if (!$session) {
-            return collect();
-        }
+        if (!$session) return collect();
 
         return $session->participants()
             ->with(['student' => function ($query) {
@@ -355,26 +334,14 @@ class Exam extends Model
             ->get();
     }
 
-    /**
-     * Get room statistics
-     */
     public function getRoomStats()
     {
         $session = $this->activeSession;
-
         if (!$session) {
-            return [
-                'total_students' => 0,
-                'joined' => 0,
-                'ready' => 0,
-                'started' => 0,
-                'submitted' => 0
-            ];
+            return ['total_students' => 0, 'joined' => 0, 'ready' => 0, 'started' => 0, 'submitted' => 0];
         }
 
-        $participants = $session->participants()
-            ->where('is_present', true)
-            ->get();
+        $participants = $session->participants()->where('is_present', true)->get();
 
         return [
             'total_students' => $this->students()->count(),
@@ -385,22 +352,11 @@ class Exam extends Model
         ];
     }
 
-    /**
-     * Get participant statistics
-     */
     public function getParticipantStats()
     {
         $session = $this->activeSession;
-
         if (!$session) {
-            return [
-                'total' => 0,
-                'joined' => 0,
-                'waiting' => 0,
-                'ready' => 0,
-                'started' => 0,
-                'submitted' => 0,
-            ];
+            return ['total' => 0, 'joined' => 0, 'waiting' => 0, 'ready' => 0, 'started' => 0, 'submitted' => 0];
         }
 
         $participants = $session->participants;
@@ -415,20 +371,11 @@ class Exam extends Model
         ];
     }
 
-    /**
-     * Student joins room
-     */
     public function joinRoom($studentId, $request = null)
     {
-        if (!$this->is_room_open || $this->is_quiz_started) {
-            return false;
-        }
-
+        if (!$this->is_room_open || $this->is_quiz_started) return false;
         $session = $this->activeSession;
-
-        if (!$session) {
-            return false;
-        }
+        if (!$session) return false;
 
         $participant = QuizParticipant::where([
             'quiz_session_id' => $session->id,
@@ -436,11 +383,7 @@ class Exam extends Model
         ])->first();
 
         if ($participant) {
-            $participant->update([
-                'is_present' => true,
-                'status' => 'waiting',
-                'joined_at' => now()
-            ]);
+            $participant->update(['is_present' => true, 'status' => 'waiting', 'joined_at' => now()]);
         } else {
             $participant = QuizParticipant::create([
                 'quiz_session_id' => $session->id,
@@ -455,25 +398,16 @@ class Exam extends Model
         }
 
         $session->updateStats();
-
         return $participant;
     }
 
-    /**
-     * Open room with session code
-     */
     public function openRoomWithCode()
     {
-        if (!$this->is_quiz) {
-            return null;
-        }
+        if (!$this->is_quiz) return null;
 
         try {
             DB::beginTransaction();
-
             $sessionCode = strtoupper(Str::random(6));
-
-            // Check if code already exists
             while (QuizSession::where('session_code', $sessionCode)->exists()) {
                 $sessionCode = strtoupper(Str::random(6));
             }
@@ -494,7 +428,6 @@ class Exam extends Model
             ]);
 
             DB::commit();
-
             return $session;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -503,22 +436,14 @@ class Exam extends Model
         }
     }
 
-    /**
-     * Start quiz
-     */
     public function startQuiz()
     {
-        if (!$this->is_quiz || !$this->is_room_open || $this->is_quiz_started) {
-            return false;
-        }
-
-        $totalQuestions = $this->questions()->count();
-        $totalSeconds = $this->duration * 60; // Use duration in minutes
+        if (!$this->is_quiz || !$this->is_room_open || $this->is_quiz_started) return false;
 
         $this->update([
             'is_quiz_started' => true,
             'quiz_started_at' => now(),
-            'quiz_remaining_time' => $totalSeconds,
+            'quiz_remaining_time' => $this->duration * 60,
         ]);
 
         $session = $this->activeSession;
@@ -526,21 +451,16 @@ class Exam extends Model
             $session->update([
                 'session_status' => 'active',
                 'session_started_at' => now(),
-                'total_duration' => $totalSeconds,
+                'total_duration' => $this->duration * 60,
             ]);
         }
 
         return true;
     }
 
-    /**
-     * Close room
-     */
     public function closeRoom()
     {
-        if (!$this->is_quiz) {
-            return false;
-        }
+        if (!$this->is_quiz) return false;
 
         $this->update([
             'is_room_open' => false,
@@ -550,31 +470,20 @@ class Exam extends Model
         ]);
 
         if ($session = $this->activeSession) {
-            $session->update([
-                'session_status' => 'finished',
-                'session_ended_at' => now(),
-            ]);
+            $session->update(['session_status' => 'finished', 'session_ended_at' => now()]);
         }
 
         return true;
     }
 
-    /**
-     * Start quiz for all ready students
-     */
     public function startQuizForStudents()
     {
-        if (!$this->is_quiz || !$this->is_room_open || !$this->is_quiz_started) {
-            return false;
-        }
+        if (!$this->is_quiz || !$this->is_room_open || !$this->is_quiz_started) return false;
 
         $session = $this->activeSession;
         if (!$session) return false;
 
-        $participants = $session->participants()
-            ->whereIn('status', ['waiting', 'ready'])
-            ->get();
-
+        $participants = $session->participants()->whereIn('status', ['waiting', 'ready'])->get();
         foreach ($participants as $participant) {
             $participant->update(['status' => 'started', 'started_at' => now()]);
         }
@@ -582,131 +491,193 @@ class Exam extends Model
         return true;
     }
 
-    /**
-     * Check if quiz is currently running
-     */
     public function isQuizRunning()
     {
-        if (!$this->is_quiz || !$this->is_quiz_started || !$this->quiz_started_at) {
-            return false;
-        }
-
+        if (!$this->is_quiz || !$this->is_quiz_started || !$this->quiz_started_at) return false;
         $elapsedSeconds = now()->diffInSeconds($this->quiz_started_at);
-        $totalSeconds = $this->duration * 60;
-
-        return $elapsedSeconds < $totalSeconds;
+        return $elapsedSeconds < ($this->duration * 60);
     }
 
-    /**
-     * Get quiz time remaining in seconds
-     */
     public function getQuizTimeRemaining()
     {
-        if (!$this->is_quiz_started || !$this->quiz_started_at) {
-            return null;
-        }
-
+        if (!$this->is_quiz_started || !$this->quiz_started_at) return null;
         $elapsed = now()->diffInSeconds($this->quiz_started_at);
-        $totalTime = $this->duration * 60;
-        $remaining = max(0, $totalTime - $elapsed);
-
-        return $remaining;
+        return max(0, ($this->duration * 60) - $elapsed);
     }
 
-    /**
-     * Get formatted quiz time remaining
-     */
     public function getFormattedQuizTimeRemaining()
     {
         $seconds = $this->getQuizTimeRemaining();
-
-        if ($seconds === null) {
-            return 'Belum dimulai';
-        }
-
-        if ($seconds <= 0) {
-            return 'Waktu habis';
-        }
-
-        $minutes = floor($seconds / 60);
-        $secs = $seconds % 60;
-
-        return sprintf('%02d:%02d', $minutes, $secs);
+        if ($seconds === null) return 'Belum dimulai';
+        if ($seconds <= 0) return 'Waktu habis';
+        return sprintf('%02d:%02d', floor($seconds / 60), $seconds % 60);
     }
 
-    /**
-     * Get total quiz time in seconds
-     */
     public function getTotalQuizTime()
     {
-        if (!$this->is_quiz) {
-            return null;
-        }
-
+        if (!$this->is_quiz) return null;
         return $this->duration * 60;
     }
 
-    /**
-     * Get room access URL
-     */
     public function getRoomAccessUrl()
     {
-        if (!$this->is_room_open) {
-            return null;
-        }
-
+        if (!$this->is_room_open) return null;
         $session = $this->activeSession;
-        if (!$session) {
-            return null;
-        }
-
+        if (!$session) return null;
         return route('quiz.room', ['quiz' => $this->id]);
     }
 
-    /**
-     * Check if can start quiz
-     */
     public function canStartQuiz()
     {
         $stats = $this->getParticipantStats();
         return $stats['ready'] > 0;
     }
 
-    /**
-     * Check if can start now
-     */
     public function canStartNow()
     {
         if ($this->is_quiz) {
             return $this->canAccessQuiz() && $this->is_quiz_started;
         }
-
         return $this->canAccessRegularExam();
     }
 
-    /**
-     * Check if can access regular exam
-     */
     public function canAccessRegularExam()
     {
-        if ($this->is_quiz) {
+        if ($this->is_quiz) return false;
+        if ($this->status !== 'active') return false;
+        $now = now();
+        if ($this->start_at && $now < $this->start_at) return false;
+        if ($this->end_at && $now > $this->end_at) return false;
+        return true;
+    }
+
+    /**
+     * Periksa apakah durasi quiz sudah habis, lalu tutup room + force-submit semua siswa.
+     * Dipanggil pada setiap polling getQuizRoomStatus().
+     * Returns true jika quiz baru saja ditutup otomatis, false jika tidak perlu.
+     */
+    public function autoCloseIfExpired(): bool
+    {
+        // Hanya proses jika quiz sedang berjalan dan punya durasi
+        if (!$this->is_quiz_started || !$this->quiz_started_at || !$this->duration) {
             return false;
         }
 
-        if ($this->status !== 'active') {
+        $remaining = $this->getQuizTimeRemaining();
+        if ($remaining === null || $remaining > 0) {
             return false;
         }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Force-submit semua ExamAttempt yang masih in_progress / started
+            \App\Models\ExamAttempt::where('exam_id', $this->id)
+                ->whereIn('status', ['in_progress', 'started'])
+                ->whereNull('submitted_at')
+                ->update([
+                    'status'       => 'timeout',
+                    'ended_at'     => now(),
+                    'submitted_at' => now(),
+                ]);
+
+            // 2. Update semua QuizParticipant yang belum submit
+            $session = $this->activeSession;
+            if ($session) {
+                \App\Models\QuizParticipant::where('quiz_session_id', $session->id)
+                    ->whereNotIn('status', ['submitted', 'kicked', 'disqualified'])
+                    ->update([
+                        'status'       => 'submitted',
+                        'submitted_at' => now(),
+                    ]);
+
+                $session->update([
+                    'session_status'   => 'finished',
+                    'session_ended_at' => now(),
+                ]);
+            }
+
+            // 3. Tutup room dan tandai quiz selesai
+            $this->update([
+                'is_quiz_started' => false,
+                'is_room_open'    => false,
+                'status'          => 'finished',
+            ]);
+
+            DB::commit();
+            \Log::info("Quiz #{$this->id} auto-closed (duration expired).");
+            return true;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("autoCloseIfExpired failed for quiz #{$this->id}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /* ================= DISPLAY HELPERS ================= */
+
+    /**
+     * Label tampilan jenis ujian.
+     * Dipanggil dari blade: $exam->getDisplayType()
+     */
+    public function getDisplayType(): string
+    {
+        return match ($this->type) {
+            'UH'      => 'Ulangan Harian',
+            'UTS'     => 'Ujian Tengah Semester',
+            'UAS'     => 'Ujian Akhir Semester',
+            'QUIZ'    => 'Quiz',
+            'LAINNYA' => $this->custom_type ?? 'Lainnya',
+            default   => $this->custom_type ?? ucfirst(strtolower($this->type ?? 'Ujian')),
+        };
+    }
+
+    /**
+     * Label tampilan status ujian.
+     * Dipanggil dari blade: $exam->getDisplayStatus()
+     */
+    public function getDisplayStatus(): string
+    {
+        if ($this->status === 'draft')    return 'Draft';
+        if ($this->status === 'inactive') return 'Tidak Aktif';
+        if ($this->status === 'finished') return 'Selesai';
 
         $now = now();
+        if ($this->start_at && $now < $this->start_at) return 'Terjadwal';
+        if ($this->end_at   && $now > $this->end_at)   return 'Selesai';
 
-        if ($this->start_at && $now < $this->start_at) {
-            return false;
-        }
+        return 'Aktif';
+    }
 
-        if ($this->end_at && $now > $this->end_at) {
-            return false;
-        }
-
+    /**
+     * Apakah ujian sedang berlangsung.
+     */
+    public function isRunning(): bool
+    {
+        if ($this->status !== 'active') return false;
+        $now = now();
+        if ($this->start_at && $now < $this->start_at) return false;
+        if ($this->end_at   && $now > $this->end_at)   return false;
         return true;
+    }
+
+    /**
+     * Apakah ujian sudah berakhir.
+     */
+    public function isExpired(): bool
+    {
+        if ($this->status === 'inactive') return true;
+        return $this->end_at && now() > $this->end_at;
+    }
+
+    /**
+     * Apakah ujian belum dimulai.
+     */
+    public function isUpcoming(): bool
+    {
+        return $this->status === 'active'
+            && $this->start_at
+            && now() < $this->start_at;
     }
 }

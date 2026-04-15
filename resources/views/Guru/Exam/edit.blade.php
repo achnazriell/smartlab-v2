@@ -155,16 +155,16 @@
 
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-slate-700">Mulai</label>
-                            <input type="datetime-local" name="start_date"
-                                value="{{ old('start_date', $exam->start_at ? $exam->start_at->format('Y-m-d\TH:i') : now()->addMinutes(10)->format('Y-m-d\TH:i')) }}"
+                            <input type="datetime-local" name="start_at"
+                                value="{{ old('start_at', $exam->start_at ? $exam->start_at->format('Y-m-d\TH:i') : now()->addMinutes(10)->format('Y-m-d\TH:i')) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                 required>
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-sm font-semibold text-slate-700">Selesai</label>
-                            <input type="datetime-local" name="end_date"
-                                value="{{ old('end_date', $exam->end_at ? $exam->end_at->format('Y-m-d\TH:i') : now()->addHours(2)->format('Y-m-d\TH:i')) }}"
+                            <input type="datetime-local" name="end_at"
+                                value="{{ old('end_at', $exam->end_at ? $exam->end_at->format('Y-m-d\TH:i') : now()->addHours(2)->format('Y-m-d\TH:i')) }}"
                                 class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
                                 required>
                         </div>
@@ -628,8 +628,8 @@
                         return;
                     }
 
-                    const startDate = form.querySelector('[name="start_date"]').value;
-                    const endDate = form.querySelector('[name="end_date"]').value;
+                    const startDate = form.querySelector('[name="start_at"]').value;
+                    const endDate = form.querySelector('[name="end_at"]').value;
 
                     if (startDate && endDate) {
                         const start = new Date(startDate);

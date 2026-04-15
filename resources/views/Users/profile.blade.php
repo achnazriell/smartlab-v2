@@ -200,7 +200,7 @@
                                     </div>
                                 </div>
                             @endif
-                            
+
                             @if (Auth::user()->hasRole('Siswa') || Auth::user()->hasRole('Murid'))
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">NIS</label>
@@ -238,7 +238,7 @@
     </div>
 
     <!-- Modal Upload Foto -->
-    <div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div id="upload-modal" class="fixed inset-0 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slide-up">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">

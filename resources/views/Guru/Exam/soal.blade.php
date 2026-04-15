@@ -593,7 +593,7 @@
         <!-- ============================================================ -->
         <!-- IMPORT MODAL (sederhana) -->
         <!-- ============================================================ -->
-        <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div id="import-modal" class="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 hidden">
             <div class="bg-white rounded-xl max-w-xl w-full mx-4 shadow-2xl overflow-hidden">
                 <div class="p-5 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
                     <h3 class="text-lg font-semibold text-slate-800">Import Soal</h3>

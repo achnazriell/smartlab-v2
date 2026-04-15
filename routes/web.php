@@ -255,6 +255,9 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
         Route::post('/bulk-delete', [GuruQuizController::class, 'bulkDelete'])->name('bulk-delete');
         Route::post('/bulk-publish', [GuruQuizController::class, 'bulkPublish'])->name('bulk-publish');
 
+        Route::get('/get-classes-by-subject/{subjectId}', [GuruQuizController::class, 'getClassesBySubject'])
+            ->name('get-classes-by-subject');
+
         // ========== QUIZ-SPECIFIC ROUTES (With {quiz} Parameter) ==========
         Route::prefix('{quiz}')->group(function () {
 
@@ -282,7 +285,7 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
             Route::post('/unpublish', [GuruQuizController::class, 'unpublishQuiz'])->name('unpublish');
             Route::post('/duplicate', [GuruQuizController::class, 'duplicateQuiz'])->name('duplicate');
 
-            // === ROOM MANAGEMENT (CRITICAL - NEW ROUTES) ===
+            // === ROOM MANAGEMENT ===
             Route::get('/room', [GuruQuizController::class, 'showRoom'])->name('room');
             Route::post('/room/open', [GuruQuizController::class, 'openRoom'])->name('room.open');
             Route::post('/room/close', [GuruQuizController::class, 'closeRoom'])->name('room.close');
@@ -291,11 +294,26 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
             Route::get('/room/status', [GuruQuizController::class, 'getRoomStatus'])->name('room.status');
             Route::get('/room/participants', [GuruQuizController::class, 'getRoomParticipants'])->name('room.participants');
 
+            // === GUIDED MODE CONTROLS (LENGKAP) ===
+            Route::get('/room/guided', [GuruQuizController::class, 'guidedControl'])->name('guided');
+            Route::post('/room/guided/next', [GuruQuizController::class, 'guidedNext'])->name('room.guided.next');
+            Route::post('/room/guided/prev', [GuruQuizController::class, 'guidedPrev'])->name('room.guided.prev');
+            Route::post('/room/guided/goto', [GuruQuizController::class, 'guidedGoto'])->name('room.guided.goto');
+            Route::get('/room/guided/current', [GuruQuizController::class, 'guidedCurrentQuestion'])->name('room.guided.current');
+            Route::get('/room/guided/state', [GuruQuizController::class, 'guidedState'])->name('room.guided.state');
+            Route::post('/room/guided/reveal', [GuruQuizController::class, 'guidedRevealAnswer'])->name('room.guided.reveal');
+            Route::post('/room/guided/set-time', [GuruQuizController::class, 'guidedSetTime'])->name('room.guided.set-time');
+
             // === PARTICIPANT MANAGEMENT ===
             Route::post('/room/kick/{participant}', [GuruQuizController::class, 'kickParticipant'])->name('room.kick');
             Route::post('/room/mark-ready/{participant}', [GuruQuizController::class, 'markParticipantAsReady'])->name('room.mark-ready');
             Route::post('/room/participant/{participant}/rejoin', [GuruQuizController::class, 'rejoinParticipant'])->name('room.participant.rejoin');
             Route::post('/room/participant/{participant}/disqualify', [GuruQuizController::class, 'disqualifyParticipant'])->name('room.participant.disqualify');
+
+            // === WARNING SYSTEM ===
+            // Alias: guru.quiz.room.warn (dipakai room.blade) → sama dengan room.participant.warn
+            Route::post('/room/warn/{participant}', [GuruQuizController::class, 'warnParticipant'])->name('room.warn');
+            Route::post('/room/participant/{participant}/warn', [GuruQuizController::class, 'warnParticipant'])->name('room.participant.warn');
 
             // === VIOLATION MANAGEMENT ===
             Route::get('/room/participant/{participant}/violations', [GuruQuizController::class, 'getViolationDetails'])->name('room.participant.violations');
@@ -308,7 +326,7 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
             Route::get('/attempt/{attempt}/detail', [GuruQuizController::class, 'attemptDetail'])->name('attempt.detail');
             Route::get('/leaderboard', [GuruQuizController::class, 'quizLeaderboard'])->name('leaderboard');
 
-            // === ALTERNATIVE ROUTES (Compatibility) ===
+            // === COMPATIBILITY ALIASES ===
             Route::post('/open-room', [GuruQuizController::class, 'openRoom'])->name('open-room');
             Route::post('/close-room', [GuruQuizController::class, 'closeRoom'])->name('close-room');
             Route::post('/start-quiz', [GuruQuizController::class, 'startQuiz'])->name('start-quiz');
@@ -357,7 +375,7 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
         Route::get('/{exam}/time-remaining', [MuridExamController::class, 'getTimeRemaining'])->name('time-remaining');
     });
 
-    // ==================== MURID QUIZ ROUTES (FIXED & COMPLETE) ====================
+    // ==================== MURID QUIZ ROUTES ====================
     Route::prefix('quiz')->name('quiz.')->group(function () {
 
         // === QUIZ LISTING (No Parameters) ===
@@ -366,14 +384,27 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
         // === QUIZ-SPECIFIC ROUTES (With {quiz} Parameter) ===
         Route::prefix('{quiz}')->group(function () {
 
-            // === ROOM FEATURES (CRITICAL - NEW ROUTES) ===
+            // === DETAIL PAGE (Mandiri: langsung mulai; Live: lihat status ruangan) ===
+            Route::get('/detail', [MuridQuizController::class, 'quizDetail'])->name('detail');
+
+            // === ROOM FEATURES ===
             Route::get('/room', [MuridQuizController::class, 'joinQuizRoomPage'])->name('room');
             Route::post('/room/join', [MuridQuizController::class, 'joinQuizRoom'])->name('join-room');
             Route::get('/room/status', [MuridQuizController::class, 'getQuizRoomStatus'])->name('room.status');
             Route::post('/room/mark-ready', [MuridQuizController::class, 'markAsReady'])->name('room.mark-ready');
 
-            // === PLAY QUIZ (CRITICAL - NEW ROUTES) ===
+            // === WARNING — Siswa cek peringatan baru dari guru ===
+            Route::get('/room/check-warning', [MuridQuizController::class, 'checkWarning'])->name('room.check-warning');
+
+            // === START QUIZ (Live mode: dari halaman detail) ===
+            Route::post('/start', [MuridQuizController::class, 'playQuiz'])->name('start');
+
+            // === GUIDED CURRENT QUESTION (diakses murid saat mode terpadu) ===
+            Route::get('/room/guided/current', [MuridQuizController::class, 'guidedCurrentQuestion'])->name('room.guided.current');
+
+            // === PLAY QUIZ ===
             Route::get('/play', [MuridQuizController::class, 'playQuiz'])->name('play');
+            Route::get('/status', [MuridQuizController::class, 'checkQuizStatus'])->name('status');
             Route::post('/save-progress', [MuridQuizController::class, 'saveQuizProgress'])->name('save-progress');
             Route::post('/submit', [MuridQuizController::class, 'submitQuiz'])->name('submit');
 
@@ -391,11 +422,6 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
         });
     });
 });
-
-// ==================== PUBLIC ROUTES ====================
-Route::get('/pilihkelasmateri', function () {
-    return view('Siswa.pilihkelasmateri');
-})->name('pilihkelasmateri');
 
 // ==================== FALLBACK FOR LEGACY ROUTES ====================
 Route::middleware(['auth'])->group(function () {

@@ -34,6 +34,7 @@ class ClassController extends Controller
             $classId = $assignment->class_id;
             $className = $assignment->class->name_class;
 
+            // Jika kelas belum ada di koleksi, inisialisasi
             if (!$kelasData->has($classId)) {
                 // Hitung jumlah siswa di kelas ini (tahun aktif)
                 $jumlahSiswa = $assignment->class->currentStudents()->count();
@@ -47,10 +48,13 @@ class ClassController extends Controller
                 ]);
             }
 
-            // Tambahkan mapel jika belum ada
+            // Ambil item kelas dari koleksi, tambahkan mapel jika belum ada, lalu simpan kembali
+            $kelasItem = $kelasData->get($classId);
             $mapel = $assignment->subject->name_subject;
-            if (!in_array($mapel, $kelasData[$classId]['mapel'])) {
-                $kelasData[$classId]['mapel'][] = $mapel;
+
+            if (!in_array($mapel, $kelasItem['mapel'])) {
+                $kelasItem['mapel'][] = $mapel;
+                $kelasData->put($classId, $kelasItem);
             }
         }
 

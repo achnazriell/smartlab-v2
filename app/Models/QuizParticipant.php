@@ -21,6 +21,9 @@ class QuizParticipant extends Model
         'ip_address',
         'user_agent',
         'is_present',
+        'violation_count',  // jumlah pelanggaran
+        'violation_log',    // riwayat detail pelanggaran (JSON)
+        'warnings',         // peringatan dari guru (JSON)
     ];
 
     protected $casts = [
@@ -29,6 +32,7 @@ class QuizParticipant extends Model
         'started_at' => 'datetime',
         'submitted_at' => 'datetime',
         'is_present' => 'boolean',
+        'violation_log' => 'array',  // auto cast JSON → array
     ];
 
     // PERBAIKAN RELATIONSHIP - Pastikan nama kolom benar

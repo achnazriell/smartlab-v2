@@ -24,17 +24,53 @@ class ExamController extends Controller
      * ✅ PERBAIKAN: Helper untuk mendapatkan class_id siswa aktif
      * dari relasi classAssignments dengan tahun ajaran aktif
      */
+    /**
+     * ==========================================
+     * HELPER METHOD - GET STUDENT CLASS ID
+     * ==========================================
+     * Ambil class_id siswa — coba dari berbagai sumber agar tidak mudah gagal.
+     */
     private function getStudentClassId($student)
     {
-        if (!$student) {
-            return null;
+        if (!$student) return null;
+
+        // Cara 1: classAssignments dengan tahun ajaran aktif (cara utama)
+        if (method_exists($student, 'classAssignments')) {
+            try {
+                $assignment = $student->classAssignments()
+                    ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                    ->latest()
+                    ->first();
+                if ($assignment && $assignment->class_id) {
+                    return $assignment->class_id;
+                }
+
+                // Fallback: assignment terbaru meski tahun ajaran tidak aktif
+                $latest = $student->classAssignments()->latest()->first();
+                if ($latest && $latest->class_id) {
+                    Log::info('getStudentClassId: using latest assignment (no active academic year)', [
+                        'student_id' => $student->id,
+                        'class_id'   => $latest->class_id,
+                    ]);
+                    return $latest->class_id;
+                }
+            } catch (\Exception $e) {
+                Log::warning('getStudentClassId: classAssignments error — ' . $e->getMessage());
+            }
         }
 
-        $assignment = $student->classAssignments()
-            ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
-            ->first();
+        // Cara 2: kolom class_id langsung di tabel students
+        if (!empty($student->class_id)) {
+            return $student->class_id;
+        }
 
-        return $assignment ? $assignment->class_id : null;
+        // Cara 3: relasi class
+        if (method_exists($student, 'class') && $student->class) {
+            return $student->class->id;
+        }
+
+        Log::warning('getStudentClassId: tidak bisa resolve class_id', ['student_id' => $student->id]);
+        return null;
     }
 
     /**
@@ -71,13 +107,14 @@ class ExamController extends Controller
                 ]);
             }
 
-            // ✅ Query exam dengan filter yang benar
-            $query = Exam::where('class_id', $classId)
-                ->where('type', '!=', 'QUIZ')  // Exclude quiz
-                ->where('status', 'active')    // Hanya yang active
-                ->with(['subject', 'class', 'questions.choices', 'teacher']);
+            // ✅ Query exam — withoutGlobalScopes() mencegah scope menyembunyikan data siswa
+            $query = Exam::withoutGlobalScopes()
+                ->where('class_id', $classId)
+                ->where('type', '!=', 'QUIZ')
+                ->where('status', 'active')
+                ->with(['subject', 'class', 'questions', 'teacher']);
 
-            // Filter waktu - tampilkan yang sedang berlangsung
+            // Filter waktu — tampilkan yang sedang berlangsung atau belum ada batas waktu
             if (!$request->has('show_all') || $request->show_all != 'true') {
                 $query->where(function ($q) {
                     $q->whereNull('start_at')
@@ -197,8 +234,8 @@ class ExamController extends Controller
                     ->with('error', 'Anda belum memiliki kelas.');
             }
 
-            // Load exam dengan semua relasi yang dibutuhkan
-            $exam = Exam::with([
+            // Load exam — withoutGlobalScopes() agar tidak terkena scope yang memfilter berdasarkan user
+            $exam = Exam::withoutGlobalScopes()->with([
                 'questions' => function($q) {
                     $q->orderBy('order')->with(['choices' => function($q) {
                         $q->orderBy('order');
@@ -325,7 +362,7 @@ class ExamController extends Controller
                     ->with('error', 'Anda belum memiliki kelas.');
             }
 
-            $exam = Exam::find($examId);
+            $exam = Exam::withoutGlobalScopes()->find($examId);
 
             if (!$exam) {
                 DB::rollBack();
@@ -476,10 +513,11 @@ class ExamController extends Controller
                     ->with('error', 'Anda belum memiliki kelas.');
             }
 
-            // Load exam dengan soal dan pilihan
-            $exam = Exam::with(['questions.choices'])
+            // Load exam — withoutGlobalScopes() agar tidak terkena scope
+            $exam = Exam::withoutGlobalScopes()
+                ->with(['questions.choices'])
                 ->where('id', $examId)
-                ->where('class_id', $classId)  // ✅ Gunakan $classId
+                ->where('class_id', $classId)
                 ->where('status', 'active')
                 ->first();
 
@@ -1062,7 +1100,8 @@ class ExamController extends Controller
             ]);
         }
 
-        $exams = Exam::where('class_id', $classId)
+        $exams = Exam::withoutGlobalScopes()
+            ->where('class_id', $classId)
             ->where('type', '!=', 'QUIZ')
             ->where('status', 'active')
             ->where(function ($query) {
@@ -1104,7 +1143,8 @@ class ExamController extends Controller
             ]);
         }
 
-        $exams = Exam::where('class_id', $classId)
+        $exams = Exam::withoutGlobalScopes()
+            ->where('class_id', $classId)
             ->where('type', '!=', 'QUIZ')
             ->where('status', 'active')
             ->where('start_at', '>', now())
@@ -1141,7 +1181,8 @@ class ExamController extends Controller
             ]);
         }
 
-        $exams = Exam::where('class_id', $classId)
+        $exams = Exam::withoutGlobalScopes()
+            ->where('class_id', $classId)
             ->where('type', '!=', 'QUIZ')
             ->where(function ($query) {
                 $query->where('status', 'inactive')

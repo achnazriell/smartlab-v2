@@ -52,6 +52,12 @@
         }
     </style>
 
+    @php
+        $endTime    = $exam->end_at ? \Carbon\Carbon::parse($exam->end_at) : null;
+        $isExpired  = $endTime && $endTime->isPast() && $exam->status === 'active';
+        $isFinished = $exam->status === 'finished' || $isExpired;
+    @endphp
+
     <div class="max-w-6xl mx-auto space-y-6">
         <!-- Header -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -70,28 +76,35 @@
                             {{ $exam->class->name_class ?? 'Tidak ada kelas' }}
                         </span>
                         <span class="text-slate-600">•</span>
-                        <span class="px-3 py-1 {{ $exam->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }} text-sm font-medium rounded-full">
-                            {{ $exam->status === 'active' ? 'Aktif' : ($exam->status === 'draft' ? 'Draft' : ucfirst($exam->status)) }}
+                        <span class="px-3 py-1 text-sm font-medium rounded-full
+                            {{ $isFinished                   ? 'bg-slate-200 text-slate-600'  :
+                               ($exam->status === 'active'   ? 'bg-green-100 text-green-700'  :
+                               'bg-yellow-100 text-yellow-700') }}">
+                            {{ $isFinished                   ? 'Selesai' :
+                               ($exam->status === 'active'   ? 'Aktif'   :
+                               ($exam->status === 'draft'    ? 'Draft'   :
+                               ucfirst($exam->status))) }}
                         </span>
                     </div>
                 </div>
                 <div class="flex space-x-3">
-                    <a href="{{ route('guru.exams.edit', $exam->id) }}"
-                        class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                            </path>
-                        </svg>
-                        Edit
-                    </a>
-                    <a href="{{ route('guru.exams.soal', $exam->id) }}"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        Kelola Soal
-                    </a>
+                    @if(!$isFinished)
+                        <a href="{{ route('guru.exams.edit', $exam->id) }}"
+                            class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit
+                        </a>
+                        <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Kelola Soal
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -254,10 +267,16 @@
                             </svg>
                             Preview Soal ({{ $totalQuestions }} soal)
                         </span>
-                        <a href="{{ route('guru.exams.soal', $exam->id) }}"
-                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                            Lihat semua →
-                        </a>
+                        @if(!$isFinished)
+                            <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                                class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                Lihat semua →
+                            </a>
+                        @else
+                            <span class="text-sm text-slate-400">
+                                Lihat semua →
+                            </span>
+                        @endif
                     </h3>
 
                     @if ($exam->questions->count() > 0)
@@ -370,14 +389,16 @@
                                 </path>
                             </svg>
                             <p class="text-slate-500 mb-4">Belum ada soal</p>
-                            <a href="{{ route('guru.exams.soal', $exam->id) }}"
-                                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4v16m8-8H4"></path>
-                                </svg>
-                                Tambah Soal
-                            </a>
+                            @if($exam->status !== 'finished')
+                                <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Tambah Soal
+                                </a>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -391,89 +412,94 @@
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-slate-600">Status:</span>
-                            <span
-                                class="px-3 py-1 {{ $exam->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }} text-sm font-medium rounded-full">
-                                {{ $exam->status === 'active' ? 'Aktif' : ($exam->status === 'draft' ? 'Draft' : ucfirst($exam->status)) }}
+                            <span class="px-3 py-1 text-sm font-medium rounded-full
+                                {{ $isFinished                   ? 'bg-slate-200 text-slate-600'  :
+                                   ($exam->status === 'active'   ? 'bg-green-100 text-green-700'  :
+                                   'bg-yellow-100 text-yellow-700') }}">
+                                {{ $isFinished                   ? 'Selesai' :
+                                   ($exam->status === 'active'   ? 'Aktif'   :
+                                   ($exam->status === 'draft'    ? 'Draft'   :
+                                   ucfirst($exam->status))) }}
                             </span>
                         </div>
 
-                        <!-- Informasi Finalisasi -->
-                        @if ($exam->status === 'draft')
-                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
-                                <div class="flex items-start">
-                                    <svg class="w-5 h-5 text-amber-600 mr-2 mt-0.5" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.995-.833-2.732 0L4.12 16.5c-.77.833.192 2.5 1.732 2.5z">
-                                        </path>
+                        @if($isFinished)
+                            {{-- Ujian selesai: semua aksi terkunci --}}
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                <div class="flex items-start gap-2">
+                                    <svg class="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
                                     <div>
-                                        <p class="text-amber-800 font-medium mb-1">Ujian masih dalam status Draft</p>
-                                        <p class="text-amber-700 text-sm">Ujian ini belum tersedia untuk siswa.
-                                            Publikasikan untuk membuatnya tersedia.</p>
+                                        <p class="text-slate-700 font-medium text-sm">Ujian Telah Selesai</p>
+                                        <p class="text-slate-500 text-xs mt-0.5">Ujian ini sudah berakhir. Status dan pengaturan tidak dapat diubah.</p>
                                     </div>
                                 </div>
                             </div>
-                        @endif
-
-                        <div class="pt-3 border-t border-slate-100">
-                            <!-- Tombol Finalisasi/Publikasi -->
+                            <a href="{{ route('guru.exams.results.index', $exam->id) }}"
+                                class="block w-full text-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
+                                Lihat Hasil
+                            </a>
+                        @else
                             @if ($exam->status === 'draft')
-                                <div class="mb-4">
-                                    <form action="{{ route('guru.exams.finalize', $exam->id) }}" method="POST"
-                                        id="finalizeForm">
-                                        @csrf
-                                        <button type="submit"
-                                            class="w-full text-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center">
-                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                            Publikasikan Ujian
-                                        </button>
-                                        <p class="text-xs text-slate-500 mt-2 text-center">
-                                            Setelah dipublikasikan, ujian akan tersedia untuk siswa
-                                        </p>
-                                    </form>
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-3">
+                                    <div class="flex items-start">
+                                        <svg class="w-5 h-5 text-amber-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.995-.833-2.732 0L4.12 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                        <div>
+                                            <p class="text-amber-800 font-medium mb-1">Ujian masih dalam status Draft</p>
+                                            <p class="text-amber-700 text-sm">Ujian ini belum tersedia untuk siswa. Publikasikan untuk membuatnya tersedia.</p>
+                                        </div>
+                                    </div>
                                 </div>
                             @endif
 
-                            <form action="{{ route('guru.exams.update-status', $exam->id) }}" method="POST"
-                                class="mb-3">
-                                @csrf
-                                @method('PUT')
-                                <select name="status"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm mb-3"
-                                    onchange="this.form.submit()">
-                                    <option value="draft" {{ $exam->status === 'draft' ? 'selected' : '' }}>Draft
-                                    </option>
-                                    <option value="active" {{ $exam->status === 'active' ? 'selected' : '' }}>Aktif
-                                    </option>
-                                    <option value="inactive" {{ $exam->status === 'inactive' ? 'selected' : '' }}>Nonaktif
-                                    </option>
-                                </select>
-                            </form>
-
-                            <div class="space-y-2">
-                                @if ($exam->status === 'active')
-                                    <a href="{{ route('guru.exams.results.index', $exam->id) }}"
-                                        class="block w-full text-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
-                                        Lihat Hasil
-                                    </a>
+                            <div class="pt-3 border-t border-slate-100">
+                                @if ($exam->status === 'draft')
+                                    <div class="mb-4">
+                                        <button type="button" id="btnPublish" onclick="publishExam()"
+                                            class="w-full text-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            <span id="btnPublishText">Publikasikan Ujian</span>
+                                        </button>
+                                        <p class="text-xs text-slate-500 mt-2 text-center">Setelah dipublikasikan, ujian akan tersedia untuk siswa</p>
+                                    </div>
                                 @endif
 
-                                <form action="{{ route('guru.exams.destroy', $exam->id) }}" method="POST"
-                                    id="deleteExamForm">
+                                <form action="{{ route('guru.exams.update-status', $exam->id) }}" method="POST" class="mb-3">
                                     @csrf
-                                    @method('DELETE')
-                                    <button type="button" onclick="openDeleteModal()"
-                                        class="block w-full text-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
-                                        Hapus Ujian
-                                    </button>
+                                    @method('PUT')
+                                    <select name="status"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm mb-3"
+                                        onchange="this.form.submit()">
+                                        <option value="draft"    {{ $exam->status === 'draft'    ? 'selected' : '' }}>Draft</option>
+                                        <option value="active"   {{ $exam->status === 'active'   ? 'selected' : '' }}>Aktif</option>
+                                        <option value="inactive" {{ $exam->status === 'inactive' ? 'selected' : '' }}>Nonaktif</option>
+                                    </select>
                                 </form>
+
+                                <div class="space-y-2">
+                                    @if ($exam->status === 'active')
+                                        <a href="{{ route('guru.exams.results.index', $exam->id) }}"
+                                            class="block w-full text-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
+                                            Lihat Hasil
+                                        </a>
+                                    @endif
+                                    <form action="{{ route('guru.exams.destroy', $exam->id) }}" method="POST" id="deleteExamForm">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" onclick="openDeleteModal()"
+                                            class="block w-full text-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                                            Hapus Ujian
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -481,47 +507,61 @@
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="text-lg font-bold text-slate-800 mb-4">Aksi Cepat</h3>
                     <div class="space-y-3">
-                        <a href="{{ route('guru.exams.soal', $exam->id) }}"
-                            class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                            <svg class="w-5 h-5 mr-3 text-blue-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-                                </path>
-                            </svg>
-                            <div>
-                                <p class="font-medium text-slate-800">Kelola Soal</p>
-                                <p class="text-xs text-slate-500">Tambah, edit, atau hapus soal</p>
-                            </div>
-                        </a>
-
-                        <a href="{{ route('guru.exams.edit', $exam->id) }}"
-                            class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                            <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                </path>
-                            </svg>
-                            <div>
-                                <p class="font-medium text-slate-800">Edit Pengaturan</p>
-                                <p class="text-xs text-slate-500">Ubah detail ujian</p>
-                            </div>
-                        </a>
-
-                        @if ($exam->status === 'active')
-                            <a href="{{ route('guru.exams.results.index', $exam->id) }}"
+                        @if($isFinished)
+                            <a href="{{ route('guru.exams.soal', $exam->id) }}"
                                 class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                                <svg class="w-5 h-5 mr-3 text-emerald-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                                    </path>
+                                <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                 </svg>
                                 <div>
-                                    <p class="font-medium text-slate-800">Lihat Hasil</p>
-                                    <p class="text-xs text-slate-500">Lihat nilai siswa</p>
+                                    <p class="font-medium text-slate-800">Lihat Soal</p>
+                                    <p class="text-xs text-slate-500">Pratinjau soal ujian (read-only)</p>
                                 </div>
                             </a>
+                            <a href="{{ route('guru.exams.results.index', $exam->id) }}"
+                                class="flex items-center p-3 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+                                <svg class="w-5 h-5 mr-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-medium text-emerald-800">Lihat Hasil</p>
+                                    <p class="text-xs text-emerald-600">Lihat nilai & rekap siswa</p>
+                                </div>
+                            </a>
+                        @else
+                            <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                                class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                <svg class="w-5 h-5 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                <div>
+                                    <p class="font-medium text-slate-800">Kelola Soal</p>
+                                    <p class="text-xs text-slate-500">Tambah, edit, atau hapus soal</p>
+                                </div>
+                            </a>
+                            <a href="{{ route('guru.exams.edit', $exam->id) }}"
+                                class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                <div>
+                                    <p class="font-medium text-slate-800">Edit Pengaturan</p>
+                                    <p class="text-xs text-slate-500">Ubah detail ujian</p>
+                                </div>
+                            </a>
+                            @if ($exam->status === 'active')
+                                <a href="{{ route('guru.exams.results.index', $exam->id) }}"
+                                    class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                    <svg class="w-5 h-5 mr-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-medium text-slate-800">Lihat Hasil</p>
+                                        <p class="text-xs text-slate-500">Lihat nilai siswa</p>
+                                    </div>
+                                </a>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -562,18 +602,19 @@
                     class="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
-                        </path>
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                     </svg>
                     Cetak
                 </button>
-                <a href="{{ route('guru.exams.soal', $exam->id) }}"
-                    class="inline-flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-sm">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Kelola Soal
-                </a>
+                @if($exam->status !== 'finished')
+                    <a href="{{ route('guru.exams.soal', $exam->id) }}"
+                        class="inline-flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Kelola Soal
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -610,6 +651,21 @@
         </div>
     </div>
 
+    {{-- Alert Modal untuk Publikasi --}}
+    <div id="publishModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:420px">
+            <div class="flex items-start gap-4 mb-4" id="publishModalBody">
+                {{-- diisi via JS --}}
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closePublishModal()"
+                    class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function openDeleteModal() {
             document.getElementById('deleteModal').classList.add('active');
@@ -623,12 +679,86 @@
             document.getElementById('deleteExamForm').submit();
         }
 
+        function closePublishModal() {
+            document.getElementById('publishModal').classList.remove('active');
+        }
+
         // Close modal when clicking outside
         document.getElementById('deleteModal')?.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDeleteModal();
-            }
+            if (e.target === this) { closeDeleteModal(); }
         });
+        document.getElementById('publishModal')?.addEventListener('click', function(e) {
+            if (e.target === this) { closePublishModal(); }
+        });
+
+        async function publishExam() {
+            const btn = document.getElementById('btnPublish');
+            const btnText = document.getElementById('btnPublishText');
+
+            if (!confirm('Publikasikan ujian ini? Ujian akan aktif dan dapat diakses siswa.')) return;
+
+            // Loading state
+            btn.disabled = true;
+            btnText.textContent = 'Memproses...';
+
+            try {
+                const res = await fetch('{{ route("guru.exams.finalize", $exam->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Tampilkan modal sukses
+                    showPublishAlert('success', 'Ujian Berhasil Dipublikasikan!',
+                        'Ujian sekarang aktif dan tersedia untuk siswa.');
+
+                    // Update UI: ganti status badge dan sembunyikan tombol
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showPublishAlert('error', 'Gagal Mempublikasikan', data.message || 'Terjadi kesalahan.');
+                    btn.disabled = false;
+                    btnText.textContent = 'Publikasikan Ujian';
+                }
+            } catch (e) {
+                showPublishAlert('error', 'Terjadi Kesalahan', 'Gagal menghubungi server. Coba lagi.');
+                btn.disabled = false;
+                btnText.textContent = 'Publikasikan Ujian';
+            }
+        }
+
+        function showPublishAlert(type, title, message) {
+            const isSuccess = type === 'success';
+            const iconBg    = isSuccess ? 'bg-green-100' : 'bg-red-100';
+            const iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
+            const iconPath  = isSuccess
+                ? 'M5 13l4 4L19 7'
+                : 'M6 18L18 6M6 6l12 12';
+
+            document.getElementById('publishModalBody').innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 ${iconBg} rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">${title}</h3>
+                    <p class="text-slate-600 mt-1 text-sm">${message}</p>
+                    ${isSuccess ? '<p class="text-xs text-slate-400 mt-2">Halaman akan diperbarui otomatis...</p>' : ''}
+                </div>
+            `;
+            document.getElementById('publishModal').classList.add('active');
+        }
     </script>
 @endsection
 

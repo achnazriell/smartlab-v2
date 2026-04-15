@@ -14,7 +14,7 @@
             <p class="text-blue-700">Sampaikan saran, kritik, pertanyaan, atau rating untuk pengembangan sistem</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 gap-8">
             <!-- Left Column: Feedback Form -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
@@ -114,84 +114,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
-
-            <!-- Right Column: History & Tips -->
-            <div class="lg:col-span-1">
-                <!-- Tips Box -->
-                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6">
-                    <h3 class="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Tips Feedback yang Baik
-                    </h3>
-                    <ul class="space-y-2 text-sm text-blue-800">
-                        <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 mt-0.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Jelas dan spesifik</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 mt-0.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Gunakan bahasa yang sopan</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 mt-0.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>Sertakan contoh jika ada</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Recent Feedback -->
-                <div class="bg-white rounded-2xl shadow-lg p-6">
-                    <h3 class="font-bold text-blue-900 mb-4">Feedback Terakhir</h3>
-                    <div class="space-y-4">
-                        @forelse($feedbacks->take(3) as $feedback)
-                        <div class="border-l-4 pl-4
-                            @if($feedback->type === 'saran') border-green-500
-                            @elseif($feedback->type === 'kritik') border-red-500
-                            @elseif($feedback->type === 'pertanyaan') border-blue-500
-                            @else border-yellow-500 @endif">
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="text-sm font-medium capitalize">{{ $feedback->type }}</span>
-                                <span class="text-xs text-gray-500">{{ $feedback->created_at->format('d/m/Y') }}</span>
-                            </div>
-                            <p class="text-sm text-gray-700 truncate">{{ Str::limit($feedback->message, 50) }}</p>
-                            <div class="flex justify-between items-center mt-2">
-                                <span class="text-xs px-2 py-1 rounded-full
-                                    @if($feedback->status === 'pending') bg-gray-100 text-gray-800
-                                    @elseif($feedback->status === 'dibaca') bg-blue-100 text-blue-800
-                                    @else bg-green-100 text-green-800 @endif">
-                                    {{ $feedback->status }}
-                                </span>
-                                @if($feedback->rating)
-                                <div class="flex">
-                                    @for($i = 0; $i < $feedback->rating; $i++)
-                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                        </svg>
-                                    @endfor
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-gray-500 text-sm">Belum ada feedback</p>
-                        @endforelse
-
-                        @if($feedbacks->count() > 0)
-                        <a href="{{ route('feedbacks.index') }}" class="block text-center text-blue-600 hover:text-blue-800 text-sm font-medium mt-4">
-                            Lihat Semua Feedback →
-                        </a>
-                        @endif
-                    </div>
                 </div>
             </div>
         </div>

@@ -46,6 +46,7 @@ class ExamController extends Controller
         $query = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ') // Exclude quiz
             ->with(['subject', 'class'])
+            ->withCount('questions')
             ->latest();
 
         // Filter pencarian
@@ -88,16 +89,11 @@ class ExamController extends Controller
             ->where('status', 'draft')
             ->count();
 
-        // Get mapels for filter
-        $teacherId = $teacher->id;
-        $teacherClassIds = TeacherClass::where('teacher_id', $teacherId)->pluck('id');
-        $subjectIds = TeacherClassSubject::whereIn('teacher_class_id', $teacherClassIds)
-            ->pluck('subject_id')
-            ->unique();
-        $mapels = Subject::whereIn('id', $subjectIds)->get();
-
-        // Get classes for filter
-        $classes = $teacher->classes;
+        // Get mapels & classes untuk filter dropdown — sama persis dengan QuizController
+        $activeYear = AcademicYear::active()->first();
+        $yearId     = $activeYear?->id;
+        $mapels     = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
+        $classes    = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
         return view('Guru.Exam.index', compact(
             'exams',
@@ -146,8 +142,8 @@ class ExamController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
             'duration' => 'required|integer|min:1|max:300',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'start_at' => 'required|date',
+            'end_at' => 'required|date|after:start_date',
             'limit_attempts' => 'nullable|integer|min:1|max:10',
             'violation_limit' => 'nullable|integer|min:1|max:50',
             'min_pass_grade' => 'nullable|numeric|min:0|max:100',
@@ -228,8 +224,8 @@ class ExamController extends Controller
                 'type' => $type,
                 'custom_type' => $customType,
                 'duration' => $request->duration,
-                'start_at' => $request->start_date,
-                'end_at' => $request->end_date,
+                'start_at' => $request->start_at,
+                'end_at'   => $request->end_at,
 
                 // PENGATURAN DASAR
                 'shuffle_question' => $request->has('shuffle_question') ? 1 : 0,
@@ -306,7 +302,9 @@ class ExamController extends Controller
             }])
             ->findOrFail($id);
 
-        return view('Guru.Exam.soal', compact('exam'));
+        $isFinished = $exam->status === 'finished';
+
+        return view('Guru.Exam.soal', compact('exam', 'isFinished'));
     }
 
     /**
@@ -335,6 +333,12 @@ class ExamController extends Controller
     public function edit($id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())->findOrFail($id);
+
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return redirect()->route('guru.exams.show', $id)
+                ->with('error', 'Ujian yang sudah selesai tidak dapat diedit.');
+        }
+
         $teacher = auth()->user()->teacher;
 
         $activeYear = AcademicYear::active()->first();
@@ -358,9 +362,9 @@ class ExamController extends Controller
             ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
             ->findOrFail($id);
 
-        // Cek status draft
-        if ($exam->status !== 'draft') {
-            return back()->with('error', 'Hanya ujian dalam status draft yang bisa diedit');
+        // Hanya blokir jika sudah finished atau waktu ujian sudah lewat
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return back()->with('error', 'Ujian yang sudah selesai tidak dapat diedit.');
         }
 
         // TOLAK JIKA TYPE QUIZ
@@ -374,8 +378,8 @@ class ExamController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
             'duration' => 'required|integer|min:1|max:300',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'start_at' => 'required|date',
+            'end_at' => 'required|date|after:start_at',
             'violation_limit' => 'nullable|integer|min:0|max:50',
             'limit_attempts' => 'nullable|integer|min:1|max:10',
             'min_pass_grade' => 'nullable|numeric|min:0|max:100',
@@ -423,8 +427,8 @@ class ExamController extends Controller
                 'subject_id' => $request->subject_id,
                 'class_id' => $request->class_id,
                 'duration' => $request->duration,
-                'start_at' => $request->start_date,
-                'end_at' => $request->end_date,
+                'start_at' => $request->start_at,
+                'end_at' => $request->end_at,
 
                 // PENGATURAN DASAR
                 'shuffle_question' => $request->boolean('shuffle_question'),
@@ -552,10 +556,14 @@ class ExamController extends Controller
 
         // Validasi minimal 1 soal
         if ($exam->questions->count() == 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ujian harus memiliki minimal 1 soal'
-            ], 422);
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ujian harus memiliki minimal 1 soal'
+                ], 422);
+            }
+            return redirect()->route('guru.exams.show', $exam->id)
+                ->with('error', 'Ujian harus memiliki minimal 1 soal sebelum dipublikasikan.');
         }
 
         try {
@@ -569,19 +577,29 @@ class ExamController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Ujian berhasil dipublikasikan!',
-                'redirect' => route('guru.exams.show', $exam->id)
-            ]);
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Ujian berhasil dipublikasikan!',
+                    'redirect' => route('guru.exams.show', $exam->id)
+                ]);
+            }
+
+            return redirect()->route('guru.exams.show', $exam->id)
+                ->with('success', 'Ujian berhasil dipublikasikan! Ujian sekarang aktif dan tersedia untuk siswa.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->route('guru.exams.show', $exam->id)
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
+
 
     /**
      * POST /guru/exams/{id}/toggle-status
@@ -595,6 +613,13 @@ class ExamController extends Controller
 
         $validStatuses = ['draft', 'active', 'inactive'];
         $newStatus = $request->input('status');
+
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status ujian yang sudah selesai tidak dapat diubah.'
+            ], 422);
+        }
 
         if (!in_array($newStatus, $validStatuses)) {
             return response()->json([
@@ -626,8 +651,18 @@ class ExamController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
+            ->where('type', '!=', 'QUIZ')
             ->findOrFail($id);
+
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return redirect()->back()
+                ->with('error', 'Status ujian yang sudah selesai tidak dapat diubah.');
+        }
+
+        if ($request->status === 'finished') {
+            return redirect()->back()
+                ->with('error', 'Tidak dapat mengubah status ujian menjadi selesai secara manual.');
+        }
 
         try {
             $exam->update(['status' => $request->status]);
@@ -765,18 +800,205 @@ class ExamController extends Controller
 
     /**
      * GET /guru/exams/{id}/results/export
-     * Export results
+     * Export hasil ujian ke Excel (.xlsx) atau CSV fallback.
+     * Query param: ?format=excel (default) | ?format=pdf
      */
     public function exportResults($id)
     {
-        $exam = Exam::where('teacher_id', $this->teacherId())
-            ->where('type', '!=', 'QUIZ') // Pastikan bukan quiz
+        $exam = Exam::with(['subject', 'class', 'questions'])
+            ->where('teacher_id', $this->teacherId())
+            ->where('type', '!=', 'QUIZ')
             ->findOrFail($id);
 
-        // Implement export logic here
-        return response()->json([
-            'success' => true,
-            'message' => 'Export feature coming soon'
+        // Ambil semua attempt yang sudah submit, JOIN ke students & users
+        $attempts = \App\Models\ExamAttempt::select(
+                'exam_attempts.*',
+                'students.nis',
+                'users.name as student_name'
+            )
+            ->leftJoin('students', 'exam_attempts.student_id', '=', 'students.id')
+            ->leftJoin('users', 'students.user_id', '=', 'users.id')
+            ->where('exam_attempts.exam_id', $id)
+            ->whereIn('exam_attempts.status', ['submitted', 'timeout'])
+            ->orderByDesc('exam_attempts.final_score')
+            ->get();
+
+        $format = request('format', 'excel');
+
+        if ($format === 'excel') {
+            return $this->doExportXlsx($exam, $attempts);
+        }
+
+        // PDF — fallback jika ada package PDF
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $data = [
+                'exam'       => $exam,
+                'attempts'   => $attempts,
+                'avgScore'   => $attempts->avg('final_score') ?? 0,
+                'exportDate' => now()->format('d F Y H:i:s'),
+            ];
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('guru.exams.results.export-pdf', $data);
+            return $pdf->download('hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.pdf');
+        }
+
+        // Default ke Excel jika PDF tidak tersedia
+        return $this->doExportXlsx($exam, $attempts);
+    }
+
+    /**
+     * Generate file .xlsx menggunakan PhpSpreadsheet.
+     * Fallback ke CSV jika PhpSpreadsheet tidak terinstall.
+     *
+     * Install: composer require phpoffice/phpspreadsheet
+     */
+    private function doExportXlsx($exam, $attempts)
+    {
+        if (!class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class)) {
+            return $this->doExportCsv($exam, $attempts);
+        }
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Hasil Ujian');
+
+        // ── Judul ──
+        $sheet->setCellValue('A1', 'HASIL UJIAN — ' . strtoupper($exam->title));
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // ── Info ujian ──
+        $info = [
+            ['Mata Pelajaran', ($exam->subject->name_subject ?? $exam->subject->name ?? '-'), 'Kelas', ($exam->class->name_class ?? $exam->class->name ?? '-')],
+            ['Jenis Ujian',    $exam->getDisplayType(),                                        'Tanggal Export', now()->format('d/m/Y H:i')],
+            ['Total Peserta',  $attempts->count(),                                             'Rata-rata Nilai', number_format($attempts->avg('final_score') ?? 0, 2)],
+        ];
+        $r = 2;
+        foreach ($info as $row) {
+            $sheet->setCellValue('A' . $r, $row[0]);
+            $sheet->setCellValue('B' . $r, ': ' . $row[1]);
+            $sheet->setCellValue('D' . $r, $row[2]);
+            $sheet->setCellValue('E' . $r, ': ' . $row[3]);
+            $r++;
+        }
+
+        // ── Header kolom (baris 6) ──
+        $headers = ['No', 'NIS', 'Nama Siswa', 'Nilai Akhir', 'Grade', 'Status', 'Waktu Submit'];
+        $cols    = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+        foreach ($headers as $i => $h) {
+            $cell = $cols[$i] . '6';
+            $sheet->setCellValue($cell, $h);
+            $sheet->getStyle($cell)->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FF4F46E5');
+            $sheet->getStyle($cell)->getAlignment()
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        }
+
+        // ── Data siswa ──
+        $no  = 1;
+        $row = 7;
+        foreach ($attempts as $attempt) {
+            $fs    = $attempt->final_score ?? 0;
+            $grade = $fs >= 85 ? 'A' : ($fs >= 75 ? 'B' : ($fs >= 65 ? 'C' : ($fs >= 55 ? 'D' : 'E')));
+
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, $attempt->nis ?? '-');
+            $sheet->setCellValue('C' . $row, $attempt->student_name ?? 'Siswa');
+            $sheet->setCellValue('D' . $row, round($fs, 2));
+            $sheet->setCellValue('E' . $row, $grade);
+            $sheet->setCellValue('F' . $row, ucfirst($attempt->status ?? '-'));
+            $sheet->setCellValue('G' . $row, $attempt->ended_at
+                ? \Carbon\Carbon::parse($attempt->ended_at)->format('d/m/Y H:i')
+                : '-');
+
+            // Warna grade
+            $gradeColor = match ($grade) {
+                'A'     => 'FFD1FAE5',
+                'B'     => 'FFDBEAFE',
+                'C'     => 'FFFEF9C3',
+                'D'     => 'FFFFEDD5',
+                default => 'FFFEE2E2',
+            };
+            $sheet->getStyle('E' . $row)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB($gradeColor);
+
+            // Zebra stripe
+            if ($no % 2 === 0) {
+                foreach (['A', 'B', 'C', 'D', 'F', 'G'] as $c) {
+                    $sheet->getStyle($c . $row)->getFill()
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                        ->getStartColor()->setARGB('FFF8FAFC');
+                }
+            }
+
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+            $no++;
+            $row++;
+        }
+
+        // ── Border & auto-width ──
+        $sheet->getStyle('A6:G' . ($row - 1))->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        foreach ($cols as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.xlsx';
+        $writer   = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Fallback CSV — bisa dibuka langsung di Excel.
+     */
+    private function doExportCsv($exam, $attempts)
+    {
+        $filename = 'hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->stream(function () use ($exam, $attempts) {
+            $f = fopen('php://output', 'w');
+            fputs($f, "\xEF\xBB\xBF"); // UTF-8 BOM agar Excel baca dengan benar
+
+            fputcsv($f, ['Judul Ujian', $exam->title]);
+            fputcsv($f, ['Mata Pelajaran', $exam->subject->name_subject ?? $exam->subject->name ?? '-']);
+            fputcsv($f, ['Kelas', $exam->class->name_class ?? $exam->class->name ?? '-']);
+            fputcsv($f, ['Tanggal Export', now()->format('d/m/Y H:i')]);
+            fputcsv($f, ['Rata-rata Nilai', number_format($attempts->avg('final_score') ?? 0, 2)]);
+            fputcsv($f, []);
+            fputcsv($f, ['No', 'NIS', 'Nama Siswa', 'Nilai Akhir', 'Grade', 'Status', 'Waktu Submit']);
+
+            $no = 1;
+            foreach ($attempts as $attempt) {
+                $fs    = $attempt->final_score ?? 0;
+                $grade = $fs >= 85 ? 'A' : ($fs >= 75 ? 'B' : ($fs >= 65 ? 'C' : ($fs >= 55 ? 'D' : 'E')));
+                fputcsv($f, [
+                    $no++,
+                    $attempt->nis ?? '-',
+                    $attempt->student_name ?? 'Siswa',
+                    round($fs, 2),
+                    $grade,
+                    ucfirst($attempt->status ?? '-'),
+                    $attempt->ended_at ? \Carbon\Carbon::parse($attempt->ended_at)->format('d/m/Y H:i') : '-',
+                ]);
+            }
+
+            fclose($f);
+        }, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
@@ -881,6 +1103,13 @@ class ExamController extends Controller
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->findOrFail($id);
+
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Soal tidak dapat ditambah karena ujian sudah selesai.'
+            ], 422);
+        }
 
         $validator = validator($request->all(), [
             'question' => 'required|string|min:3',
@@ -1041,6 +1270,13 @@ class ExamController extends Controller
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->findOrFail($examId);
+
+        if ($exam->status === 'finished' || ($exam->end_at && \Carbon\Carbon::parse($exam->end_at)->isPast() && $exam->status === 'active')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Soal tidak dapat diubah karena ujian sudah selesai.'
+            ], 422);
+        }
 
         $question = ExamQuestion::where('exam_id', $exam->id)->findOrFail($questionId);
 
@@ -1233,6 +1469,13 @@ class ExamController extends Controller
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ')
             ->findOrFail($examId);
+
+        if ($exam->status === 'finished') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Soal tidak dapat dihapus karena ujian sudah selesai.'
+            ], 422);
+        }
 
         $question = ExamQuestion::where('exam_id', $exam->id)
             ->findOrFail($questionId);

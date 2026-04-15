@@ -26,12 +26,8 @@ class ExamResultController extends Controller
             ->where('teacher_id', $teacher->id)
             ->firstOrFail();
 
-        // Total siswa terdaftar di kelas ujian
-        // Coba beberapa kemungkinan nama kolom FK
-        // Total siswa terdaftar di kelas ujian — pakai currentStudents() sesuai pola ClassController
         $totalStudents = $exam->class->currentStudents()->count();
 
-        // Ambil semua attempts (submitted/timeout) dengan data student
         $attempts = ExamAttempt::select(
             'exam_attempts.*',
             'students.nis',
@@ -55,23 +51,17 @@ class ExamResultController extends Controller
                 return $attempt;
             });
 
-        // Jumlah attempt (bisa > totalStudents jika ada yang reset & ulang)
-        $totalAttempts = $attempts->count();
-
-        // Siswa unik yang sudah mengerjakan
+        $totalAttempts      = $attempts->count();
         $uniqueParticipants = $attempts->unique('student_id')->count();
+        $belumIkut          = max(0, $totalStudents - $uniqueParticipants);
 
-        // Siswa yang belum ikut sama sekali
-        $belumIkut = max(0, $totalStudents - $uniqueParticipants);
-
-        // Statistik nilai
-        $averageScore = $attempts->avg('final_score') ?? 0;
-        $avgScore     = $averageScore;
-        $maxScore     = $attempts->max('final_score') ?? 0;
+        $averageScore      = $attempts->avg('final_score') ?? 0;
+        $avgScore          = $averageScore;
+        $maxScore          = $attempts->max('final_score') ?? 0;
         $completedAttempts = $totalAttempts;
 
-        // Distribusi nilai (berdasarkan attempt terbaik per siswa jika ada lebih dari 1)
-        $bestAttempts = $attempts->groupBy('student_id')->map(fn($g) => $g->sortByDesc('final_score')->first());
+        $bestAttempts = $attempts->groupBy('student_id')
+            ->map(fn($g) => $g->sortByDesc('final_score')->first());
 
         $scoreDistribution = [
             'A' => $bestAttempts->where('final_score', '>=', 85)->count(),
@@ -81,7 +71,6 @@ class ExamResultController extends Controller
             'E' => $bestAttempts->where('final_score', '<', 55)->count(),
         ];
 
-        // Analisis per soal
         $questions = ExamQuestion::where('exam_id', $examId)
             ->withCount(['answers as correct_answers_count' => function ($query) {
                 $query->where('is_correct', true);
@@ -112,6 +101,11 @@ class ExamResultController extends Controller
         ));
     }
 
+    /**
+     * FIX: Tidak eager-load 'student.user' karena menyebabkan RelationNotFoundException
+     * (User model tidak punya relasi bernama 'user').
+     * Gunakan JOIN manual untuk ambil nama & NIS siswa.
+     */
     public function show($examId, $attemptId)
     {
         $teacher = Auth::user()->teacher;
@@ -121,22 +115,38 @@ class ExamResultController extends Controller
             ->where('teacher_id', $teacher->id)
             ->firstOrFail();
 
-        $attempt = ExamAttempt::with(['student.user', 'answers.question.choices'])
+        // Ambil attempt + jawaban – TANPA 'student.user' (penyebab error)
+        $attempt = ExamAttempt::with(['answers.question.choices'])
             ->where('exam_id', $examId)
             ->where('id', $attemptId)
             ->firstOrFail();
 
-        $totalQuestions   = $exam->questions()->count();
-        $answeredQuestions = $attempt->answers()->count();
-        $correctAnswers   = $attempt->answers()->where('is_correct', true)->count();
-        $incorrectAnswers = $answeredQuestions - $correctAnswers;
+        // Ambil data student + nama user via JOIN manual
+        $studentRow = DB::table('students')
+            ->join('users', 'students.user_id', '=', 'users.id')
+            ->where('students.id', $attempt->student_id)
+            ->select('students.*', 'users.name as user_name', 'users.email as user_email')
+            ->first();
 
-        $timeElapsed  = $attempt->getTimeElapsed();
-        $minutes      = floor($timeElapsed / 60);
-        $seconds      = $timeElapsed % 60;
+        // Pasang ke attempt agar blade bisa akses $attempt->student_data->name, dst.
+        $attempt->student_data = (object) [
+            'id'    => $attempt->student_id,
+            'nis'   => $studentRow->nis        ?? '-',
+            'name'  => $studentRow->user_name  ?? 'Siswa',
+            'email' => $studentRow->user_email ?? '-',
+        ];
+
+        $totalQuestions    = $exam->questions()->count();
+        $answeredQuestions = $attempt->answers()->count();
+        $correctAnswers    = $attempt->answers()->where('is_correct', true)->count();
+        $incorrectAnswers  = $answeredQuestions - $correctAnswers;
+
+        $timeElapsed   = $attempt->getTimeElapsed();
+        $minutes       = floor($timeElapsed / 60);
+        $seconds       = $timeElapsed % 60;
         $timeFormatted = sprintf('%02d:%02d', $minutes, $seconds);
 
-        return view('guru.exams.results.detail', compact(
+        return view('guru.exam.results.detail', compact(
             'exam',
             'attempt',
             'totalQuestions',
@@ -201,8 +211,7 @@ class ExamResultController extends Controller
 
             $answer->save();
 
-            // Hitung ulang total score
-            $totalScore = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
+            $totalScore  = ExamAnswer::where('attempt_id', $attempt->id)->sum('score');
             $maxPossible = $exam->questions()->sum('score');
             $finalScore  = $maxPossible > 0 ? ($totalScore / $maxPossible) * 100 : 0;
 
@@ -323,6 +332,11 @@ class ExamResultController extends Controller
         }
     }
 
+    /**
+     * Export hasil ujian.
+     * URL contoh: GET /guru/exams/{exam}/results/export/excel
+     *             GET /guru/exams/{exam}/results/export/pdf
+     */
     public function export($examId, $format = 'pdf')
     {
         $teacher = Auth::user()->teacher;
@@ -332,12 +346,24 @@ class ExamResultController extends Controller
             ->where('teacher_id', $teacher->id)
             ->firstOrFail();
 
-        $attempts = ExamAttempt::where('exam_id', $examId)
-            ->whereIn('status', ['submitted', 'timeout'])
-            ->with('student.user')
-            ->orderBy('final_score', 'desc')
+        // Ambil attempts via JOIN – TIDAK pakai 'student.user' agar tidak error
+        $attempts = ExamAttempt::select(
+            'exam_attempts.*',
+            'students.nis',
+            'users.name as student_name'
+        )
+            ->leftJoin('students', 'exam_attempts.student_id', '=', 'students.id')
+            ->leftJoin('users', 'students.user_id', '=', 'users.id')
+            ->where('exam_attempts.exam_id', $examId)
+            ->whereIn('exam_attempts.status', ['submitted', 'timeout'])
+            ->orderByDesc('exam_attempts.final_score')
             ->get();
 
+        if ($format === 'excel') {
+            return $this->exportExcel($exam, $attempts);
+        }
+
+        // PDF
         $data = [
             'exam'          => $exam,
             'attempts'      => $attempts,
@@ -347,17 +373,185 @@ class ExamResultController extends Controller
             'exportDate'    => now()->format('d F Y H:i:s'),
         ];
 
-        if ($format === 'excel') {
-            return $this->exportExcel($data);
-        }
-
         $pdf = PDF::loadView('guru.exams.results.export-pdf', $data);
-        return $pdf->download('hasil-ujian-' . $exam->title . '-' . now()->format('Y-m-d') . '.pdf');
+        return $pdf->download('hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.pdf');
     }
 
-    private function exportExcel($data)
+    /**
+     * Buat file Excel (.xlsx) menggunakan PhpSpreadsheet.
+     * Jika tidak tersedia, otomatis fallback ke CSV (tetap bisa dibuka di Excel).
+     *
+     * Install PhpSpreadsheet:
+     *   composer require phpoffice/phpspreadsheet
+     */
+    private function exportExcel($exam, $attempts)
     {
-        return view('guru.exams.results.export-excel', $data);
+        if (class_exists(\PhpOffice\PhpSpreadsheet\Spreadsheet::class)) {
+            return $this->exportXlsx($exam, $attempts);
+        }
+
+        // Fallback CSV
+        return $this->exportCsv($exam, $attempts);
+    }
+
+    private function exportXlsx($exam, $attempts)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Hasil Ujian');
+
+        // ── Judul ──
+        $sheet->setCellValue('A1', 'HASIL UJIAN — ' . strtoupper($exam->title));
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()
+            ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // ── Info ujian ──
+        $sheet->setCellValue('A2', 'Mata Pelajaran');
+        $sheet->setCellValue('B2', ': ' . ($exam->subject->name ?? '-'));
+        $sheet->setCellValue('D2', 'Kelas');
+        $sheet->setCellValue('E2', ': ' . ($exam->class->name ?? '-'));
+
+        $sheet->setCellValue('A3', 'Jenis Ujian');
+        $sheet->setCellValue('B3', ': ' . ($exam->getDisplayType()));
+        $sheet->setCellValue('D3', 'Tanggal Export');
+        $sheet->setCellValue('E3', ': ' . now()->format('d/m/Y H:i'));
+
+        $sheet->setCellValue('A4', 'Total Peserta');
+        $sheet->setCellValue('B4', ': ' . $attempts->count());
+        $sheet->setCellValue('D4', 'Rata-rata Nilai');
+        $sheet->setCellValue('E4', ': ' . number_format($attempts->avg('final_score') ?? 0, 2));
+
+        // ── Header kolom (baris 6) ──
+        $headers = ['No', 'NIS', 'Nama Siswa', 'Nilai Akhir', 'Grade', 'Status', 'Waktu Submit'];
+        $cols    = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+        foreach ($headers as $i => $header) {
+            $cell = $cols[$i] . '6';
+            $sheet->setCellValue($cell, $header);
+            $sheet->getStyle($cell)->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FF4F46E5'); // indigo-600
+            $sheet->getStyle($cell)->getAlignment()
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        }
+
+        // ── Data siswa ──
+        $no  = 1;
+        $row = 7;
+        foreach ($attempts as $attempt) {
+            $fs    = $attempt->final_score ?? 0;
+            $grade = $fs >= 85 ? 'A' : ($fs >= 75 ? 'B' : ($fs >= 65 ? 'C' : ($fs >= 55 ? 'D' : 'E')));
+
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, $attempt->nis ?? '-');
+            $sheet->setCellValue('C' . $row, $attempt->student_name ?? 'Siswa');
+            $sheet->setCellValue('D' . $row, round($fs, 2));
+            $sheet->setCellValue('E' . $row, $grade);
+            $sheet->setCellValue('F' . $row, ucfirst($attempt->status ?? '-'));
+            $sheet->setCellValue('G' . $row, $attempt->ended_at
+                ? Carbon::parse($attempt->ended_at)->format('d/m/Y H:i')
+                : '-');
+
+            // Warna grade
+            $gradeColor = match ($grade) {
+                'A'     => 'FFD1FAE5', // emerald-100
+                'B'     => 'FFDBEAFE', // blue-100
+                'C'     => 'FFFEF9C3', // yellow-100
+                'D'     => 'FFFFEDD5', // orange-100
+                default => 'FFFEE2E2', // red-100
+            };
+            $sheet->getStyle('E' . $row)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB($gradeColor);
+
+            // Zebra stripe
+            if ($no % 2 === 0) {
+                foreach (['A', 'B', 'C', 'D', 'F', 'G'] as $c) {
+                    $sheet->getStyle($c . $row)->getFill()
+                        ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                        ->getStartColor()->setARGB('FFF8FAFC');
+                }
+            }
+
+            $sheet->getStyle('A' . $row)->getAlignment()
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('D' . $row)->getAlignment()
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('E' . $row)->getAlignment()
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+            $no++;
+            $row++;
+        }
+
+        // ── Border ──
+        $tableRange = 'A6:G' . ($row - 1);
+        $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
+            ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // ── Auto-width ──
+        foreach ($cols as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ── Download ──
+        $filename = 'hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.xlsx';
+        $writer   = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Fallback CSV – dapat dibuka langsung di Microsoft Excel.
+     */
+    private function exportCsv($exam, $attempts)
+    {
+        $filename = 'hasil-ujian-' . \Illuminate\Support\Str::slug($exam->title) . '-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->stream(function () use ($exam, $attempts) {
+            $f = fopen('php://output', 'w');
+            fputs($f, "\xEF\xBB\xBF"); // UTF-8 BOM
+
+            fputcsv($f, ['Judul Ujian', $exam->title]);
+            fputcsv($f, ['Mata Pelajaran', $exam->subject->name ?? '-']);
+            fputcsv($f, ['Kelas', $exam->class->name ?? '-']);
+            fputcsv($f, ['Tanggal Export', now()->format('d/m/Y H:i')]);
+            fputcsv($f, ['Rata-rata Nilai', number_format($attempts->avg('final_score') ?? 0, 2)]);
+            fputcsv($f, []);
+
+            fputcsv($f, ['No', 'NIS', 'Nama Siswa', 'Nilai Akhir', 'Grade', 'Status', 'Waktu Submit']);
+
+            $no = 1;
+            foreach ($attempts as $attempt) {
+                $fs    = $attempt->final_score ?? 0;
+                $grade = $fs >= 85 ? 'A' : ($fs >= 75 ? 'B' : ($fs >= 65 ? 'C' : ($fs >= 55 ? 'D' : 'E')));
+
+                fputcsv($f, [
+                    $no++,
+                    $attempt->nis ?? '-',
+                    $attempt->student_name ?? 'Siswa',
+                    round($fs, 2),
+                    $grade,
+                    ucfirst($attempt->status ?? '-'),
+                    $attempt->ended_at
+                        ? Carbon::parse($attempt->ended_at)->format('d/m/Y H:i')
+                        : '-',
+                ]);
+            }
+
+            fclose($f);
+        }, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function questionAnalysis($examId)

@@ -12,8 +12,8 @@
 
     <style>
         :root {
-            --primary: #6C3DE5;
-            --primary-light: #8B5CF6;
+            --primary: #2563EB;
+            --primary-light: #3B82F6;
             --success: #10B981;
             --danger: #EF4444;
             --warning: #F59E0B;
@@ -62,11 +62,11 @@
         #security-overlay p { color: #94A3B8; font-size: 0.9rem; max-width: 380px; }
 
         #security-overlay .resume-btn {
-            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            background: linear-gradient(135deg, #2563EB, #3B82F6);
             color: white; border: none; border-radius: 14px;
             padding: 0.9rem 2.5rem; font-size: 1rem;
             font-weight: 800; cursor: pointer;
-            box-shadow: 0 8px 24px rgba(108,61,229,0.4);
+            box-shadow: 0 8px 24px rgba(37,99,235,0.4);
             transition: transform 0.2s;
         }
 
@@ -96,6 +96,11 @@
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
         #fullscreen-prompt {
             display: none;
             position: fixed; inset: 0;
@@ -117,7 +122,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
-            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            background: linear-gradient(135deg, #2563EB, #3B82F6);
             color: white;
             border: none;
             padding: 1.1rem 2.5rem;
@@ -125,7 +130,7 @@
             font-size: 1.1rem;
             font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(108,61,229,0.4);
+            box-shadow: 0 8px 24px rgba(37,99,235,0.4);
             transition: transform 0.2s;
         }
 
@@ -133,7 +138,7 @@
 
         /* ===== TOPBAR ===== */
         .quiz-topbar {
-            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            background: linear-gradient(135deg, #2563EB, #3B82F6);
             padding: 0.875rem 1.5rem;
             display: flex;
             align-items: center;
@@ -143,7 +148,7 @@
             position: sticky;
             top: 0;
             z-index: 40;
-            box-shadow: 0 4px 20px rgba(108,61,229,0.3);
+            box-shadow: 0 4px 20px rgba(37,99,235,0.3);
         }
 
         .quiz-topbar-title {
@@ -213,8 +218,8 @@
             background: white;
             border-radius: 24px;
             padding: 2rem;
-            box-shadow: 0 8px 32px rgba(108,61,229,0.1);
-            border: 2px solid #EDE9FE;
+            box-shadow: 0 8px 32px rgba(37,99,235,0.1);
+            border: 2px solid #DBEAFE;
         }
 
         body.dark .question-card {
@@ -226,7 +231,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            background: linear-gradient(135deg, #6C3DE5, #8B5CF6);
+            background: linear-gradient(135deg, #2563EB, #3B82F6);
             color: white;
             padding: 0.3rem 0.9rem;
             border-radius: 999px;
@@ -283,16 +288,16 @@
 
         .answer-btn:hover:not(.revealed):not(.disabled) {
             transform: scale(1.02) translateY(-2px);
-            box-shadow: 0 8px 24px rgba(108,61,229,0.2);
-            border-color: #8B5CF6;
+            box-shadow: 0 8px 24px rgba(37,99,235,0.2);
+            border-color: #3B82F6;
         }
 
         .answer-btn .choice-label {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: #EDE9FE;
-            color: #6C3DE5;
+            background: #DBEAFE;
+            color: #2563EB;
             font-weight: 900;
             font-size: 0.9rem;
             display: flex;
@@ -302,16 +307,14 @@
             transition: all 0.25s;
         }
 
-        /* Selected */
         .answer-btn.selected {
-            border-color: #6C3DE5;
-            background: #EDE9FE;
-            box-shadow: 0 6px 20px rgba(108,61,229,0.25);
+            border-color: #2563EB;
+            background: #DBEAFE;
+            box-shadow: 0 6px 20px rgba(37,99,235,0.25);
         }
 
-        .answer-btn.selected .choice-label { background: #6C3DE5; color: white; }
+        .answer-btn.selected .choice-label { background: #2563EB; color: white; }
 
-        /* Correct */
         .answer-btn.correct {
             border-color: #10B981;
             background: #ECFDF5;
@@ -326,7 +329,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Incorrect */
         .answer-btn.incorrect {
             border-color: #EF4444;
             background: #FEF2F2;
@@ -378,7 +380,7 @@
             font-weight: 800;
         }
 
-        .score-chip.score { background: #EDE9FE; color: #6C3DE5; }
+        .score-chip.score { background: #DBEAFE; color: #2563EB; }
         .score-chip.streak { background: #FEF3C7; color: #B45309; }
         .score-chip.question { background: #ECFDF5; color: #065F46; }
 
@@ -391,13 +393,82 @@
             padding: 0.875rem;
             background: white;
             border-radius: 16px;
-            border: 1.5px solid #EDE9FE;
+            border: 1.5px solid #DBEAFE;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         body.dark .powerups-bar {
             background: #1E293B;
             border-color: #334155;
+        }
+
+        .powerup-slot {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .powerup-detail-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6366F1;
+            color: white;
+            border: none;
+            font-size: 0.55rem;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            transition: transform 0.15s;
+        }
+        .powerup-detail-btn:hover { transform: scale(1.2); background: #4F46E5; }
+
+        .powerup-duration-badge {
+            font-size: 0.6rem;
+            font-weight: 900;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.12);
+            color: inherit;
+            white-space: nowrap;
+        }
+
+        /* Powerup detail modal */
+        .pu-modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99995;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .pu-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+        }
+        body.dark .pu-modal { background: #1E293B; color: #F1F5F9; }
+        .pu-modal-icon {
+            width: 60px; height: 60px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.75rem;
+            margin: 0 auto 1rem;
         }
 
         .powerup-btn {
@@ -413,13 +484,48 @@
             font-weight: 800;
             min-width: 72px;
             transition: all 0.2s;
-            background: #F5F3FF;
-            color: #6C3DE5;
+            background: #EFF6FF;
+            color: #2563EB;
         }
 
-        .powerup-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(108,61,229,0.25); }
-        .powerup-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .powerup-btn.active { background: #6C3DE5; color: white; }
+        .powerup-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+        .powerup-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; filter: grayscale(0.6); }
+        .powerup-btn.used-up  { opacity: 0.2; cursor: not-allowed; transform: none; filter: grayscale(1); }
+
+        @keyframes powerupRotateIn {
+            0%   { transform: rotateY(90deg) scale(0.5); opacity: 0; }
+            60%  { transform: rotateY(-10deg) scale(1.05); }
+            100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+        }
+        .powerup-btn.rotating-in { animation: powerupRotateIn 0.45s ease forwards; }
+
+        /* Powerup warna per tipe — bg & border */
+        .powerup-btn[data-type="supersonic"]      { background:#FEF3C7; border-color:#F59E0B; color:#92400E; }
+        .powerup-btn[data-type="streak_booster"]  { background:#D1FAE5; border-color:#10B981; color:#065F46; }
+        .powerup-btn[data-type="gift"]            { background:#FCE7F3; border-color:#EC4899; color:#831843; }
+        .powerup-btn[data-type="double_jeopardy"] { background:#FEE2E2; border-color:#EF4444; color:#991B1B; }
+        .powerup-btn[data-type="2x"]              { background:#EDE9FE; border-color:#8B5CF6; color:#4C1D95; }
+        .powerup-btn[data-type="fifty_fifty"]     { background:#CFFAFE; border-color:#06B6D4; color:#164E63; }
+        .powerup-btn[data-type="eraser"]          { background:#E0E7FF; border-color:#6366F1; color:#312E81; }
+        .powerup-btn[data-type="immunity"]        { background:#CCFBF1; border-color:#14B8A6; color:#134E4A; }
+        .powerup-btn[data-type="time_freeze"]     { background:#DBEAFE; border-color:#3B82F6; color:#1E3A8A; }
+        .powerup-btn[data-type="power_play"]      { background:#FFEDD5; border-color:#F97316; color:#7C2D12; }
+        .powerup-btn[data-type="streak_saver"]    { background:#DCFCE7; border-color:#22C55E; color:#14532D; }
+        .powerup-btn[data-type="glitch"]          { background:#F3E8FF; border-color:#A855F7; color:#4A1D96; }
+
+        /* Active state: lebih tebal border */
+        .powerup-btn[data-type="supersonic"].pu-active      { background:#F59E0B; color:white; }
+        .powerup-btn[data-type="streak_booster"].pu-active  { background:#10B981; color:white; }
+        .powerup-btn[data-type="gift"].pu-active            { background:#EC4899; color:white; }
+        .powerup-btn[data-type="double_jeopardy"].pu-active { background:#EF4444; color:white; }
+        .powerup-btn[data-type="2x"].pu-active              { background:#8B5CF6; color:white; }
+        .powerup-btn[data-type="fifty_fifty"].pu-active     { background:#06B6D4; color:white; }
+        .powerup-btn[data-type="eraser"].pu-active          { background:#6366F1; color:white; }
+        .powerup-btn[data-type="immunity"].pu-active        { background:#14B8A6; color:white; }
+        .powerup-btn[data-type="time_freeze"].pu-active     { background:#3B82F6; color:white; }
+        .powerup-btn[data-type="power_play"].pu-active      { background:#F97316; color:white; }
+        .powerup-btn[data-type="streak_saver"].pu-active    { background:#22C55E; color:white; }
+        .powerup-btn[data-type="glitch"].pu-active          { background:#A855F7; color:white; }
 
         /* ===== BONUS POPUP ===== */
         @keyframes bonusFloat {
@@ -495,62 +601,20 @@
         .settings-panel.open { right: 0; }
         body.dark .settings-panel { background: #1E293B; color: white; }
 
-        /* ===== NOTIFICATIONS ===== */
-        #notif-container {
-            position: fixed;
-            top: 1rem; right: 1rem;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            width: 280px;
+        /* Glitch Effect */
+        @keyframes glitch {
+            0%,100% { transform: translate(0); filter: none; }
+            20%      { transform: translate(-3px, 2px); filter: hue-rotate(90deg); }
+            40%      { transform: translate(3px, -2px); filter: invert(0.1); }
+            60%      { transform: translate(-2px, -1px); filter: hue-rotate(-90deg); }
+            80%      { transform: translate(2px, 1px); filter: brightness(1.2); }
         }
-
-        .notif-toast {
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            animation: notifIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-        }
-
-        @keyframes notifIn {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .notif-toast.success { background: #10B981; }
-        .notif-toast.error { background: #EF4444; }
-        .notif-toast.warning { background: #F59E0B; }
-        .notif-toast.info { background: #6C3DE5; }
-
-        /* ===== QUIZ FINISHED ===== */
-        .quiz-finished-screen {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(108,61,229,0.12);
-        }
-
-        body.dark .quiz-finished-screen { background: #1E293B; }
-
-        .finish-icon { font-size: 4rem; margin-bottom: 1rem; animation: bounce 0.6s ease; }
-
-        @keyframes bounce {
-            0% { transform: scale(0.8); }
-            60% { transform: scale(1.15); }
-            100% { transform: scale(1); }
+        body.glitch-effect {
+            animation: glitch 0.3s infinite;
         }
 
         [x-cloak] { display: none !important; }
 
-        /* Toggle switch */
         .toggle-switch {
             position: relative;
             width: 44px;
@@ -577,7 +641,6 @@
 </head>
 
 <body>
-{{-- ===== SECURITY OVERLAY ===== --}}
 <div id="security-overlay">
     <div class="big-icon"><i class="fas fa-exclamation-triangle"></i></div>
     <h2 id="security-title">Pelanggaran Terdeteksi!</h2>
@@ -589,7 +652,22 @@
 
 <div id="violation-toast"></div>
 
-{{-- FULLSCREEN PROMPT --}}
+{{-- ===== PERINGATAN GURU ===== --}}
+<div id="teacher-warning-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99996;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;text-align:center;padding:2rem;animation:fadeIn 0.3s ease">
+    <div style="font-size:3.5rem;animation:shake 0.5s ease"><i class="fas fa-exclamation-circle" style="color:#F59E0B"></i></div>
+    <h2 style="color:white;font-size:1.5rem;font-weight:900;margin:0">⚠️ Peringatan dari Guru</h2>
+    <div id="teacher-warning-msg"
+        style="color:#FDE68A;font-size:1rem;font-weight:700;max-width:420px;line-height:1.6;background:rgba(245,158,11,0.15);border:2px solid rgba(245,158,11,0.4);border-radius:16px;padding:1rem 1.5rem">
+    </div>
+    <p style="color:#94A3B8;font-size:0.85rem;max-width:360px">Pesan ini dikirim oleh guru yang memantau quiz kamu. Pastikan kamu mengerjakan quiz dengan jujur.</p>
+    <button onclick="document.getElementById('teacher-warning-overlay').style.display='none'; window.quizPlayerInstance && window.quizPlayerInstance.startPerQuestionTimer()"
+        style="background:linear-gradient(135deg,#F59E0B,#D97706);color:white;border:none;border-radius:14px;padding:0.9rem 2.5rem;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(245,158,11,0.4);transition:transform 0.2s"
+        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <i class="fas fa-check mr-2"></i> Mengerti, Lanjutkan Quiz
+    </button>
+</div>
+
 @if($quiz->fullscreen_mode)
 <div id="fullscreen-prompt">
     <div style="font-size:3rem"><i class="fas fa-lock" style="color:white"></i></div>
@@ -601,7 +679,6 @@
 </div>
 @endif
 
-{{-- ===== TOPBAR ===== --}}
 <div class="quiz-topbar">
     <div>
         <div class="quiz-topbar-title">{{ Str::limit($quiz->title, 40) }}</div>
@@ -613,6 +690,20 @@
     </div>
 
     <div style="display:flex;align-items:center;gap:0.75rem;flex-shrink:0">
+        @if($quiz->duration > 0)
+        <div x-show="!quizFinished"
+            :style="timeRemaining > 0
+                ? (timeRemaining <= 60
+                    ? 'background:rgba(239,68,68,0.4);color:white;padding:0.4rem 0.85rem;border-radius:10px;font-weight:800;font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;animation:timerPulse 0.5s infinite;'
+                    : (timeRemaining <= 300
+                        ? 'background:rgba(245,158,11,0.4);color:white;padding:0.4rem 0.85rem;border-radius:10px;font-weight:800;font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;'
+                        : 'background:rgba(255,255,255,0.15);color:white;padding:0.4rem 0.85rem;border-radius:10px;font-weight:800;font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;'))
+                : 'background:rgba(239,68,68,0.6);color:white;padding:0.4rem 0.85rem;border-radius:10px;font-weight:800;font-size:0.85rem;display:flex;align-items:center;gap:0.4rem;'">
+            <i class="fas fa-hourglass-half"></i>
+            <span x-text="timeRemaining > 0 ? (String(Math.floor(timeRemaining/60)).padStart(2,'0') + ':' + String(Math.floor(timeRemaining%60)).padStart(2,'0')) : '00:00'"></span>
+        </div>
+        @endif
+
         @if($quiz->show_score)
         <div class="score-chip score" style="background:rgba(255,255,255,0.15);color:white">
             <i class="fas fa-star text-yellow-300"></i>
@@ -638,18 +729,16 @@
     </div>
 </div>
 
-{{-- ===== MAIN CONTENT ===== --}}
 <div style="max-width: 820px; margin: 0 auto; padding: 1.5rem 1rem">
 
-    {{-- QUIZ FINISHED --}}
     <div x-show="quizFinished" x-cloak class="quiz-finished-screen">
         <div class="finish-icon"><i class="fas fa-check-circle" style="color:#10B981"></i></div>
         <h2 style="font-size:1.75rem;font-weight:900;margin-bottom:0.5rem">Quiz Selesai!</h2>
         <p style="color:#6B7280;margin-bottom:1.5rem">Jawabanmu telah dikirim. Hasil akan segera tersedia.</p>
         @if($quiz->show_score)
-        <div style="background:#EDE9FE;border-radius:16px;padding:1.25rem;display:inline-block;margin-bottom:1.5rem">
-            <div style="font-size:2.5rem;font-weight:900;color:#6C3DE5" x-text="Math.floor(totalScore) + ' pts'"></div>
-            <div style="font-size:0.85rem;color:#7C3AED;font-weight:700">Total Skor</div>
+        <div style="background:#DBEAFE;border-radius:16px;padding:1.25rem;display:inline-block;margin-bottom:1.5rem">
+            <div style="font-size:2.5rem;font-weight:900;color:#2563EB" x-text="Math.floor(totalScore) + ' pts'"></div>
+            <div style="font-size:0.85rem;color:#2563EB;font-weight:700">Total Skor</div>
         </div>
         @endif
         <div>
@@ -660,7 +749,6 @@
         </div>
     </div>
 
-    {{-- SCORE + PROGRESS BAR --}}
     <div class="score-streak-bar" x-show="!quizFinished">
         <div class="score-chip question">
             <i class="fas fa-list-ol"></i>
@@ -676,23 +764,20 @@
         </div>
     </div>
 
-    {{-- QUESTION CARD --}}
     <div class="question-card mb-4" x-show="!quizFinished"
         :class="{ 'opacity-0 -translate-y-2': animatingOut, 'opacity-100': !animatingOut }"
         style="transition: opacity 0.25s, transform 0.25s">
 
         <template x-if="questions[currentQuestion]">
             <div>
-                {{-- Question header --}}
                 <div class="flex items-start justify-between gap-3 mb-4">
                     <span class="question-number">
                         <i class="fas fa-question-circle" style="font-size:0.9rem"></i>
                         Soal <span x-text="currentQuestion + 1"></span>
                     </span>
 
-                    {{-- Timer ring --}}
                     @if($quiz->time_per_question > 0)
-                    <div class="timer-ring-container" x-show="!isAnswerRevealed">
+                    <div class="timer-ring-container" x-show="!isAnswerRevealed && !timeFreezeActive">
                         <svg width="72" height="72" viewBox="0 0 72 72">
                             <circle class="timer-ring-bg" cx="36" cy="36" r="30"/>
                             <circle class="timer-ring-fg"
@@ -708,10 +793,8 @@
                     @endif
                 </div>
 
-                {{-- Question text --}}
                 <p class="question-text" x-text="questions[currentQuestion].question"></p>
 
-                {{-- MULTIPLE CHOICE --}}
                 <template x-if="questions[currentQuestion].type === 'PG'">
                     <div class="answers-grid">
                         <template x-for="(choice, idx) in questions[currentQuestion].choices" :key="idx">
@@ -733,7 +816,6 @@
                     </div>
                 </template>
 
-                {{-- SHORT ANSWER --}}
                 <template x-if="questions[currentQuestion].type === 'IS'">
                     <div>
                         <input type="text"
@@ -741,25 +823,22 @@
                             :disabled="isAnswerRevealed"
                             @keyup.enter="!isAnswerRevealed && questions[currentQuestion].textAnswer?.trim() ? submitTextAnswer() : null"
                             style="width:100%;padding:1rem;border:2.5px solid #E5E7EB;border-radius:14px;font-size:1rem;font-family:'Nunito',sans-serif;font-weight:600;outline:none;transition:border-color 0.2s"
-                            :style="isAnswerRevealed ? '' : ''"
                             placeholder="Ketik jawaban Anda dan tekan Enter..."
-                            @focus="$el.style.borderColor='#6C3DE5';"
+                            @focus="$el.style.borderColor='#2563EB';"
                             @blur="$el.style.borderColor='#E5E7EB';">
 
                         <button x-show="!isAnswerRevealed"
                             @click="submitTextAnswer()"
                             :disabled="!questions[currentQuestion].textAnswer?.trim()"
-                            style="margin-top:0.875rem;width:100%;padding:0.875rem;background:linear-gradient(135deg,#6C3DE5,#8B5CF6);color:white;border:none;border-radius:14px;font-weight:800;font-size:0.95rem;cursor:pointer;transition:opacity 0.2s"
+                            style="margin-top:0.875rem;width:100%;padding:0.875rem;background:linear-gradient(135deg,#2563EB,#3B82F6);color:white;border:none;border-radius:14px;font-weight:800;font-size:0.95rem;cursor:pointer;transition:opacity 0.2s"
                             :style="!questions[currentQuestion].textAnswer?.trim() ? 'opacity:0.5;cursor:not-allowed' : ''">
                             <i class="fas fa-paper-plane mr-2"></i> Kirim Jawaban
                         </button>
                     </div>
                 </template>
 
-                {{-- FEEDBACK --}}
                 <div x-show="feedbackMessage" class="feedback-bar" :class="feedbackType" x-text="feedbackMessage"></div>
 
-                {{-- EXPLANATION (if shown after answer) --}}
                 <div x-show="isAnswerRevealed && questions[currentQuestion].explanation"
                     style="margin-top:1rem;padding:1rem;background:#F0FDF4;border-left:4px solid #10B981;border-radius:0 12px 12px 0"
                     x-cloak>
@@ -772,26 +851,82 @@
         </template>
     </div>
 
-    {{-- POWER-UPS --}}
     @if($quiz->enable_powerups)
-    <div class="powerups-bar mb-4" x-show="!quizFinished">
-        <div style="font-size:0.75rem;font-weight:800;color:#6C3DE5;width:100%;text-align:center;margin-bottom:0.25rem">
+    {{-- Powerup Detail Modal --}}
+    <div x-show="showPowerupDetail" class="pu-modal-backdrop" @click.self="showPowerupDetail = false" x-cloak>
+        <div class="pu-modal">
+            <div class="pu-modal-icon"
+                :style="'background:' + (activePowerupDetail?.bgColor || '#EFF6FF')">
+                <i :class="activePowerupDetail?.icon" :style="'color:' + (activePowerupDetail?.accentColor || '#2563EB')"></i>
+            </div>
+            <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:0.5rem" x-text="activePowerupDetail?.name"></h3>
+            <p style="font-size:0.875rem;text-align:center;color:#6B7280;margin-bottom:0.5rem" x-text="activePowerupDetail?.description"></p>
+            <template x-if="activePowerupDetail?.duration">
+                <p style="font-size:0.8rem;text-align:center;font-weight:700;color:#F97316">
+                    <i class="fas fa-clock mr-1"></i> Aktif selama <span x-text="activePowerupDetail?.duration"></span> detik
+                </p>
+            </template>
+            <template x-if="activePowerupDetail?.scope === 'question'">
+                <p style="font-size:0.8rem;text-align:center;font-weight:700;color:#3B82F6">
+                    <i class="fas fa-question-circle mr-1"></i> Berlaku untuk soal ini saja
+                </p>
+            </template>
+            <button @click="showPowerupDetail = false"
+                style="margin-top:1.1rem;width:100%;padding:0.75rem;background:#2563EB;color:white;border:none;border-radius:12px;font-weight:800;cursor:pointer;font-size:0.9rem">
+                Mengerti
+            </button>
+        </div>
+    </div>
+
+    <div class="powerups-bar mb-4" x-show="!quizFinished && powerupsRandom && Object.keys(powerupsRandom).length > 0">
+        <div style="font-size:0.75rem;font-weight:800;color:#2563EB;width:100%;text-align:center;margin-bottom:0.4rem;display:flex;align-items:center;justify-content:center;gap:0.5rem">
             <i class="fas fa-bolt"></i> Power-ups
+            <span style="font-weight:600;color:#6B7280;font-size:0.68rem">
+                (<span x-text="Object.values(powerupsRandom).filter(p => !p.used).length"></span>/<span x-text="Object.keys(powerupsRandom).length"></span> tersisa)
+            </span>
+            <template x-if="_lastPowerupUseQuestion === currentQuestion">
+                <span style="font-size:0.65rem;background:#FEF3C7;color:#B45309;padding:2px 7px;border-radius:999px;font-weight:700">
+                    <i class="fas fa-lock"></i> 1 per soal
+                </span>
+            </template>
         </div>
         <template x-for="(pu, key) in powerupsRandom" :key="key">
-            <button class="powerup-btn" @click="activatePowerup(key)"
-                :disabled="pu.cooldown > 0 || isAnswerRevealed"
-                :class="{ 'active': pu.cooldown === 0 && !isAnswerRevealed }">
-                <i :class="pu.icon" style="font-size:1.2rem"></i>
-                <span x-text="pu.cooldown > 0 ? pu.cooldown + 's' : pu.name"></span>
-            </button>
+            <div class="powerup-slot">
+                {{-- Detail button --}}
+                <button class="powerup-detail-btn"
+                    @click.stop="openPowerupDetail(key)"
+                    title="Info powerup">
+                    <i class="fas fa-info"></i>
+                </button>
+
+                <button class="powerup-btn"
+                    :data-type="key"
+                    @click="activatePowerup(key)"
+                    :disabled="isAnswerRevealed || (_lastPowerupUseQuestion === currentQuestion && !pu.used)"
+                    :class="{
+                        'pu-active': !pu.used && _lastPowerupUseQuestion !== currentQuestion && !isAnswerRevealed,
+                        'used-up': pu.used,
+                        'rotating-in': pu.rotatingIn
+                    }"
+                    :title="pu.description">
+                    <i :class="pu.icon" style="font-size:1.2rem"></i>
+                    <span x-text="pu.name" style="font-size:0.65rem;text-align:center;max-width:70px;line-height:1.2"></span>
+                    {{-- Durasi badge untuk powerup yang punya waktu aktif --}}
+                    <template x-if="pu.duration && !pu.used">
+                        <span class="powerup-duration-badge" x-text="pu.duration + 's'"></span>
+                    </template>
+                    {{-- Sudah dipakai --}}
+                    <template x-if="pu.used">
+                        <span class="powerup-duration-badge" style="background:rgba(0,0,0,0.15)">✓ dipakai</span>
+                    </template>
+                </button>
+            </div>
         </template>
     </div>
     @endif
 
 </div>
 
-{{-- ===== LEADERBOARD MODAL ===== --}}
 @if($quiz->show_leaderboard)
 <div x-show="showLeaderboardModal" class="lb-modal-backdrop" @click.self="showLeaderboardModal = false" x-cloak>
     <div class="lb-modal">
@@ -820,20 +955,20 @@
                         <span x-show="entry.rank === 3"><i class="fas fa-medal" style="color:#B45309"></i></span>
                         <span x-show="entry.rank > 3" x-text="'#' + entry.rank" style="color:#6B7280;font-size:1rem"></span>
                     </div>
-                    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6C3DE5,#8B5CF6);color:white;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0"
+                    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#3B82F6);color:white;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0"
                         x-text="(entry.student_name || entry.name || 'U').charAt(0).toUpperCase()"></div>
                     <div style="flex:1;min-width:0">
                         <div style="font-weight:800;font-size:0.875rem" x-text="entry.student_name || entry.name || 'Peserta'"></div>
                         <div style="font-size:0.72rem;color:#6B7280" x-text="'Waktu: ' + formatTime(entry.time_taken || 0)"></div>
                     </div>
-                    <div style="font-weight:900;color:#6C3DE5;font-size:1rem" x-text="(entry.score || 0) + ' pts'"></div>
+                    <div style="font-weight:900;color:#2563EB;font-size:1rem" x-text="(entry.score || 0) + ' pts'"></div>
                 </div>
             </template>
 
             @if($quiz->show_score)
             <div style="border-top:2px solid #F3F4F6;margin-top:0.75rem;padding-top:0.75rem;display:flex;justify-content:space-between;align-items:center">
                 <span style="font-weight:700;font-size:0.875rem">Skor Kamu:</span>
-                <span style="font-weight:900;color:#6C3DE5;font-size:1.1rem" x-text="Math.floor(totalScore) + ' pts'"></span>
+                <span style="font-weight:900;color:#2563EB;font-size:1.1rem" x-text="Math.floor(totalScore) + ' pts'"></span>
             </div>
             @endif
         </div>
@@ -841,7 +976,6 @@
 </div>
 @endif
 
-{{-- ===== SETTINGS PANEL ===== --}}
 <div x-show="settingsPanelOpen" class="settings-backdrop" @click="settingsPanelOpen = false" x-cloak></div>
 <div class="settings-panel" :class="{ 'open': settingsPanelOpen }">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
@@ -850,60 +984,109 @@
     </div>
 
     <div style="display:flex;flex-direction:column;gap:1.25rem">
-        {{-- Dark Mode --}}
         <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
                 <div style="font-weight:700;font-size:0.875rem">Mode Gelap</div>
                 <div style="font-size:0.75rem;color:#6B7280">Hemat mata di malam hari</div>
             </div>
-            <div class="toggle-switch" style="background: settings.darkMode ? '#6C3DE5' : '#E5E7EB'"
-                :style="'background:' + (settings.darkMode ? '#6C3DE5' : '#E5E7EB')"
+            <div class="toggle-switch" style="background: settings.darkMode ? '#2563EB' : '#E5E7EB'"
+                :style="'background:' + (settings.darkMode ? '#2563EB' : '#E5E7EB')"
                 @click="settings.darkMode = !settings.darkMode; toggleDarkMode()">
                 <div class="toggle-knob" :style="settings.darkMode ? 'transform:translateX(20px)' : ''"></div>
             </div>
         </div>
 
-        {{-- Sound --}}
         <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
                 <div style="font-weight:700;font-size:0.875rem">Efek Suara</div>
                 <div style="font-size:0.75rem;color:#6B7280">Suara saat menjawab</div>
             </div>
             <div class="toggle-switch"
-                :style="'background:' + (settings.soundEnabled ? '#6C3DE5' : '#E5E7EB')"
+                :style="'background:' + (settings.soundEnabled ? '#2563EB' : '#E5E7EB')"
                 @click="toggleSound()">
                 <div class="toggle-knob" :style="settings.soundEnabled ? 'transform:translateX(20px)' : ''"></div>
             </div>
         </div>
 
-        {{-- Text Size --}}
         <div>
             <div style="font-weight:700;font-size:0.875rem;margin-bottom:0.5rem">Ukuran Teks</div>
             <div style="display:flex;gap:0.5rem">
                 <button @click="settings.textSize='small';localStorage.setItem('quiz_textSize','small')"
-                    :style="settings.textSize==='small' ? 'background:#6C3DE5;color:white' : 'background:#F3F4F6;color:#374151'"
+                    :style="settings.textSize==='small' ? 'background:#2563EB;color:white' : 'background:#F3F4F6;color:#374151'"
                     style="flex:1;padding:0.5rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.8rem">Kecil</button>
                 <button @click="settings.textSize='normal';localStorage.setItem('quiz_textSize','normal')"
-                    :style="settings.textSize==='normal' ? 'background:#6C3DE5;color:white' : 'background:#F3F4F6;color:#374151'"
+                    :style="settings.textSize==='normal' ? 'background:#2563EB;color:white' : 'background:#F3F4F6;color:#374151'"
                     style="flex:1;padding:0.5rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.8rem">Normal</button>
                 <button @click="settings.textSize='large';localStorage.setItem('quiz_textSize','large')"
-                    :style="settings.textSize==='large' ? 'background:#6C3DE5;color:white' : 'background:#F3F4F6;color:#374151'"
+                    :style="settings.textSize==='large' ? 'background:#2563EB;color:white' : 'background:#F3F4F6;color:#374151'"
                     style="flex:1;padding:0.5rem;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.8rem">Besar</button>
             </div>
         </div>
     </div>
 </div>
 
-{{-- NOTIFICATION CONTAINER --}}
-<div id="notif-container"></div>
-
-{{-- ===== ALPINE JS ===== --}}
 <script>
     window.quizData = {
         totalQuestions: {{ $quiz->questions->count() }},
         quizDuration: {{ $quiz->duration }},
         timePerQuestion: {{ $quiz->time_per_question }},
-        timeRemaining: {{ $quiz->duration * 60 ?? ($quiz->duration) }},
+        @php
+            $quizStartedAt = $quiz->quiz_started_at;
+            if ($quizStartedAt && $quiz->duration > 0 && $quiz->is_quiz_started) {
+                $elapsed = now()->diffInSeconds($quizStartedAt);
+                $computed = max(0, ($quiz->duration * 60) - $elapsed);
+            } else {
+                $computed = $quizTimeRemaining ?? ($quiz->duration * 60);
+            }
+
+            // Shuffle soal jika diaktifkan (dilakukan di server agar konsisten per attempt)
+            // Seed dari attempt_id agar urutan sama walau refresh
+            $questionsCollection = $quiz->questions->load('choices');
+            if ($quiz->shuffle_question) {
+                // Gunakan seed dari user_id + quiz_id agar per-siswa unik tapi konsisten saat refresh
+                $seed = crc32(auth()->id() . '-' . $quiz->id);
+                mt_srand($seed);
+                $questionsArr = $questionsCollection->all();
+                for ($i = count($questionsArr) - 1; $i > 0; $i--) {
+                    $j = mt_rand(0, $i);
+                    [$questionsArr[$i], $questionsArr[$j]] = [$questionsArr[$j], $questionsArr[$i]];
+                }
+                $questionsCollection = collect($questionsArr);
+            }
+
+            $questionsJson = $questionsCollection->map(function ($q) use ($quiz) {
+                $choices = $q->type === 'PG'
+                    ? $q->choices->map(function ($c) {
+                        return [
+                            'id'          => $c->id,
+                            'choice_text' => $c->text,
+                            'is_correct'  => $c->is_correct,
+                            'disabled'    => false,
+                        ];
+                    })->values()->all()
+                    : [];
+
+                // Shuffle pilihan jawaban jika diaktifkan
+                if ($quiz->shuffle_answer && count($choices) > 0) {
+                    // Shuffle tapi pertahankan is_correct melekat pada teks
+                    shuffle($choices);
+                }
+
+                return [
+                    'id'             => $q->id,
+                    'question'       => $q->question,
+                    'type'           => $q->type,
+                    'score'          => $q->score,
+                    'explanation'    => ($quiz->show_correct_answer ?? false) ? ($q->explanation ?? '') : '',
+                    'choices'        => $choices,
+                    'selectedAnswer' => null,
+                    'textAnswer'     => '',
+                ];
+            })->values()->all();
+        @endphp
+        timeRemaining: parseInt({{ $computed }}) || 0,
+        serverStartedAt: {{ $quiz->is_quiz_started && $quiz->quiz_started_at ? $quiz->quiz_started_at->timestamp : 'null' }},
+        serverDurationSec: {{ $quiz->duration * 60 }},
         instantFeedback: {{ $quiz->instant_feedback ? 'true' : 'false' }},
         showCorrectAnswer: {{ $quiz->show_correct_answer ? 'true' : 'false' }},
         enablePowerups: {{ $quiz->enable_powerups ? 'true' : 'false' }},
@@ -920,34 +1103,14 @@
         leaderboardTop5Url: '{{ route('quiz.leaderboard-top5', $quiz->id) }}',
         violationUrl: '{{ route('quiz.report-violation', $quiz->id) }}',
         powerupUrl: '{{ route('quiz.powerups', $quiz->id) }}',
-        questions: {!! json_encode(
-            $quiz->questions->map(function ($q) {
-                return [
-                    'id' => $q->id,
-                    'question' => $q->question,
-                    'type' => $q->type,
-                    'score' => $q->score,
-                    'explanation' => $q->show_correct_answer ?? false ? ($q->explanation ?? '') : '',
-                    'choices' => $q->type === 'PG'
-                        ? $q->choices->map(function ($c) {
-                            return [
-                                'id' => $c->id,
-                                'choice_text' => $c->text,
-                                'is_correct' => $c->is_correct,
-                                'disabled' => false,
-                            ];
-                        })->toArray()
-                        : [],
-                    'selectedAnswer' => null,
-                    'textAnswer' => '',
-                ];
-            })
-        ) !!}
+        quizStatusUrl: '{{ route('quiz.status', $quiz->id) }}',
+        checkWarningUrl: '{{ route('quiz.check-warning', $quiz->id) }}',
+        quizMode: '{{ $quiz->quiz_mode }}',
+        questions: {!! json_encode($questionsJson) !!}
     };
 
     function quizPlayer() {
         return {
-            // ===== STATE =====
             currentQuestion: 0,
             totalQuestions: window.quizData.totalQuestions,
             timeRemaining: window.quizData.timeRemaining,
@@ -967,15 +1130,27 @@
             settingsPanelOpen: false,
             violationCount: 0,
             _securityBlocked: false,
-            powerupsRandom: {},
             nextQuestionMultiplier: 1,
             activeMultiplier: 1,
             multiplierExpiresAt: null,
             immunityActive: false,
             streakSaverActive: false,
             supersonicActive: false,
+            supersonicMultiplier: 1.5,
+            doubleJeopardyActive: false,
+            timeFreezeActive: false,
+            powerPlayActive: false,
+            powerPlayExpiresAt: null,
             bgMusicAudio: null,
             bgMusicPlaying: false,
+            _durationTimer: null,
+            _syncTimer: null,
+            _warnedFiveMin: false,
+            _warnedOneMin: false,
+            _lastPowerupUseQuestion: -1,
+            showPowerupDetail: false,
+            activePowerupDetail: null,
+            _warningPollTimer: null,
 
             settings: {
                 soundEnabled: localStorage.getItem('quiz_sound') !== 'false',
@@ -984,26 +1159,35 @@
             },
 
             powerups: {
-                double_up: { name: 'Double Up', icon: 'fas fa-times-circle', cooldown: 0, multiplier: 2 },
-                triple_up: { name: 'Triple Up', icon: 'fas fa-cubes', cooldown: 0, multiplier: 3 },
-                immunity: { name: 'Immunity', icon: 'fas fa-shield-alt', cooldown: 0 },
-                eraser: { name: 'Eraser', icon: 'fas fa-eraser', cooldown: 0 },
-                freeze: { name: 'Freeze', icon: 'fas fa-snowflake', cooldown: 0 },
+                supersonic:      { name: 'Supersonic',   icon: 'fas fa-rocket',              description: '1.5× skor selama 20 detik',               duration: 20, scope: 'timed',    bgColor: '#FEF3C7', accentColor: '#D97706' },
+                streak_booster:  { name: 'Streak +1',    icon: 'fas fa-fire',                description: 'Tambah streak +1 sekarang juga',           duration: null, scope: 'instant', bgColor: '#D1FAE5', accentColor: '#059669' },
+                gift:            { name: 'Gift',          icon: 'fas fa-gift',                description: 'Kirim 800 poin ke pemain acak',            duration: null, scope: 'instant', bgColor: '#FCE7F3', accentColor: '#DB2777' },
+                double_jeopardy: { name: 'Dbl Jeopardy', icon: 'fas fa-exclamation-triangle', description: 'Benar = 2× poin, Salah = 0 poin',          duration: null, scope: 'question', bgColor: '#FEE2E2', accentColor: '#DC2626' },
+                '2x':            { name: '2X',            icon: 'fas fa-times',               description: '2× poin untuk soal berikutnya',           duration: null, scope: 'question', bgColor: '#EDE9FE', accentColor: '#7C3AED' },
+                fifty_fifty:     { name: '50-50',         icon: 'fas fa-cut',                 description: 'Hapus setengah pilihan yang salah',        duration: null, scope: 'question', bgColor: '#CFFAFE', accentColor: '#0891B2' },
+                eraser:          { name: 'Eraser',        icon: 'fas fa-eraser',              description: 'Hapus 1 pilihan yang pasti salah',         duration: null, scope: 'question', bgColor: '#E0E7FF', accentColor: '#4F46E5' },
+                immunity:        { name: 'Immunity',      icon: 'fas fa-shield-alt',          description: 'Jawaban salah pertama diabaikan',         duration: null, scope: 'question', bgColor: '#CCFBF1', accentColor: '#0D9488' },
+                time_freeze:     { name: 'Time Freeze',   icon: 'fas fa-snowflake',           description: 'Hentikan timer soal ini sepenuhnya',      duration: null, scope: 'question', bgColor: '#DBEAFE', accentColor: '#2563EB' },
+                power_play:      { name: 'Power Play',    icon: 'fas fa-users',               description: 'Semua pemain mendapat +50% skor selama 20 detik', duration: 20, scope: 'timed', bgColor: '#FFEDD5', accentColor: '#EA580C' },
+                streak_saver:    { name: 'Streak Save',   icon: 'fas fa-life-ring',           description: 'Streak tidak hilang jika menjawab salah', duration: null, scope: 'question', bgColor: '#DCFCE7', accentColor: '#16A34A' },
+                glitch:          { name: 'Glitch',        icon: 'fas fa-bug',                 description: 'Layar lawan glitch selama 10 detik',       duration: 10, scope: 'timed',    bgColor: '#F3E8FF', accentColor: '#9333EA' },
             },
+            powerupsRandom: {},
 
             get answeredCount() {
                 return this.questions.filter(q => q.selectedAnswer !== null || q.textAnswer?.trim()).length;
             },
 
-            // ===== INIT =====
-            init() {
+            async init() {
                 window.quizPlayerInstance = this;
                 document.documentElement.classList.toggle('dark', this.settings.darkMode);
                 document.body.classList.toggle('dark', this.settings.darkMode);
 
-                this.selectRandomPowerups();
-                this.startPerQuestionTimer();
-                this.loadProgress();
+                if (window.quizData.enablePowerups) {
+                    this.selectRandomPowerups();
+                    // No cooldown countdown needed
+                }
+
                 this.preloadSounds();
                 this.initSecurityListeners();
 
@@ -1017,16 +1201,106 @@
 
                 if (window.quizData.enableMusic) this.initBgMusic();
 
-                // Powerup cooldown interval
-                setInterval(() => {
-                    for (let k in this.powerupsRandom) {
-                        if (this.powerupsRandom[k].cooldown > 0) this.powerupsRandom[k].cooldown--;
-                    }
-                }, 1000);
+                // Hitung waktu langsung dari serverStartedAt (unix timestamp dari server)
+                // agar timer akurat sejak pertama kali dibuka, tidak bergantung nilai PHP render
+                if (window.quizData.serverStartedAt && window.quizData.serverDurationSec > 0) {
+                    const nowSec     = Math.floor(Date.now() / 1000);
+                    const elapsed    = nowSec - window.quizData.serverStartedAt;
+                    const remaining  = Math.max(0, window.quizData.serverDurationSec - elapsed);
+                    this.timeRemaining = remaining;
+                }
+
+                await this.loadProgress();
+                this.startPerQuestionTimer();
+                this.startDurationTimer();
+                this.startWarningPolling();
+
+                // Deteksi tutup tab / navigasi paksa — kirim lewat sendBeacon (tidak butuh response)
+                const sendLeaveBeacon = () => {
+                    if (this.quizFinished) return;
+                    const payload = JSON.stringify({ type: 'page_leave', details: 'Tab ditutup atau navigasi paksa' });
+                    const blob    = new Blob([payload], { type: 'application/json' });
+                    navigator.sendBeacon(
+                        window.quizData.violationUrl + '?_token=' + window.quizData.csrfToken,
+                        blob
+                    );
+                };
+                window.addEventListener('beforeunload', sendLeaveBeacon);
+                window.addEventListener('pagehide',     sendLeaveBeacon);
             },
 
-            // ===== FULLSCREEN =====
-            enterFullscreen() {
+            selectRandomPowerups() {
+                const keys = Object.keys(this.powerups);
+                const shuffled = keys.sort(() => 0.5 - Math.random()).slice(0, 3);
+                this.powerupsRandom = {};
+                shuffled.forEach(k => {
+                    this.powerupsRandom[k] = { ...this.powerups[k], used: false, rotatingIn: false };
+                });
+            },
+
+            resetPowerupsForNewQuestion() {
+                if (!window.quizData.enablePowerups) return;
+                // Each new question: replace ONE used powerup with a new random one
+                const usedKeys = Object.keys(this.powerupsRandom).filter(k => this.powerupsRandom[k].used);
+                if (usedKeys.length > 0) {
+                    // Pick one used slot to refresh
+                    const toReplace = usedKeys[Math.floor(Math.random() * usedKeys.length)];
+                    // Pick a new powerup not currently in the bar
+                    const currentKeys = Object.keys(this.powerupsRandom);
+                    const available = Object.keys(this.powerups).filter(k => !currentKeys.includes(k) || k === toReplace);
+                    if (available.length > 0) {
+                        const newKey = available[Math.floor(Math.random() * available.length)];
+                        // Remove old, add new
+                        delete this.powerupsRandom[toReplace];
+                        this.powerupsRandom[newKey] = { ...this.powerups[newKey], used: false, rotatingIn: true };
+                        setTimeout(() => {
+                            if (this.powerupsRandom[newKey]) this.powerupsRandom[newKey].rotatingIn = false;
+                        }, 500);
+                    } else {
+                        // Fallback: just reset the used powerup
+                        this.powerupsRandom[toReplace].used = false;
+                    }
+                }
+                this._lastPowerupUseQuestion = -1;
+            },
+
+            openPowerupDetail(key) {
+                this.activePowerupDetail = this.powerupsRandom[key] || null;
+                this.showPowerupDetail = true;
+            },
+
+            startWarningPolling() {
+                if (!window.quizData.checkWarningUrl) return;
+                // Poll setiap 6 detik — tidak terlalu sering agar tidak boros
+                this._warningPollTimer = setInterval(() => this.checkTeacherWarning(), 6000);
+            },
+
+            async checkTeacherWarning() {
+                if (this.quizFinished) {
+                    clearInterval(this._warningPollTimer);
+                    return;
+                }
+                try {
+                    const r = await fetch(window.quizData.checkWarningUrl, {
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.quizData.csrfToken }
+                    });
+                    const data = await r.json();
+                    if (data.warning && data.warning.message) {
+                        this.showTeacherWarning(data.warning.message);
+                    }
+                } catch(e) {}
+            },
+
+            showTeacherWarning(message) {
+                this.playSound('countdown');
+                const overlay = document.getElementById('teacher-warning-overlay');
+                const msgEl   = document.getElementById('teacher-warning-msg');
+                if (!overlay || !msgEl) return;
+                msgEl.textContent = message;
+                overlay.style.display = 'flex';
+                // Jeda timer per soal selama overlay tampil (jika ada)
+                clearInterval(this.perQuestionTimer);
+            },
                 const el = document.documentElement;
                 const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
                 if (fn) fn.call(el).then(() => {
@@ -1034,40 +1308,121 @@
                 }).catch(() => {});
             },
 
-            // ===== SECURITY =====
             initSecurityListeners() {
-                if (window.quizData.blockNewTab) {
-                    document.addEventListener('visibilitychange', () => {
-                        if (document.hidden && !this.quizFinished) this.handleViolation('tab_switch', 'Keluar dari tab quiz');
-                    });
-                    window.addEventListener('blur', () => {
-                        if (!this.quizFinished) this.handleViolation('window_blur', 'Window kehilangan fokus');
-                    });
-                }
+                // ============================================================
+                // DETEKSI SELALU AKTIF — tidak bergantung setting quiz apapun
+                // ============================================================
 
-                if (window.quizData.preventCopyPaste) {
-                    document.addEventListener('copy', (e) => { e.preventDefault(); this.handleViolation('copy', 'Mencoba copy'); });
-                    document.addEventListener('paste', (e) => { e.preventDefault(); this.handleViolation('paste', 'Mencoba paste'); });
-                    document.addEventListener('contextmenu', (e) => { e.preventDefault(); this.handleViolation('right_click', 'Right click'); });
-                }
+                // 1. Keluar tab / minimize / pindah window (paling andal)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && !this.quizFinished) {
+                        this.handleViolation('tab_switch', 'Keluar dari tab / minimize');
+                    }
+                });
 
-                if (window.quizData.fullscreenMode) {
-                    document.addEventListener('fullscreenchange', () => {
-                        if (!document.fullscreenElement && !this.quizFinished) {
-                            const overlay = document.getElementById('fullscreen-prompt');
-                            if (overlay) overlay.classList.add('active');
-                            this.handleViolation('fullscreen_exit', 'Keluar dari fullscreen');
+                // 2. Window kehilangan fokus (klik di luar browser, alt-tab, dll)
+                window.addEventListener('blur', () => {
+                    if (!this.quizFinished) {
+                        this.handleViolation('window_blur', 'Pindah ke aplikasi lain');
+                    }
+                });
+
+                // 3. Cegah + catat copy/paste/right-click
+                document.addEventListener('copy', (e) => {
+                    e.preventDefault();
+                    if (!this.quizFinished) this.handleViolation('copy', 'Mencoba menyalin teks');
+                });
+                document.addEventListener('cut', (e) => {
+                    e.preventDefault();
+                    if (!this.quizFinished) this.handleViolation('cut', 'Mencoba cut teks');
+                });
+                document.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    if (!this.quizFinished) this.handleViolation('paste', 'Mencoba paste');
+                });
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if (!this.quizFinished) this.handleViolation('right_click', 'Klik kanan');
+                });
+
+                // 4. Shortcut keyboard berbahaya (F12, Ctrl+U, Ctrl+S, PrintScreen, dll)
+                document.addEventListener('keydown', (e) => {
+                    if (this.quizFinished) return;
+                    const ctrl = e.ctrlKey || e.metaKey;
+                    // PrintScreen
+                    if (e.key === 'PrintScreen') {
+                        e.preventDefault();
+                        this.handleViolation('screenshot', 'Mencoba screenshot (PrintScreen)');
+                        return;
+                    }
+                    // F12 DevTools
+                    if (e.key === 'F12') {
+                        e.preventDefault();
+                        this.handleViolation('devtools', 'Membuka DevTools (F12)');
+                        return;
+                    }
+                    if (ctrl) {
+                        // Ctrl+U view source
+                        if (e.key === 'u' || e.key === 'U') {
+                            e.preventDefault();
+                            this.handleViolation('view_source', 'Mencoba melihat kode sumber');
+                            return;
                         }
-                    });
-                }
+                        // Ctrl+Shift+I / Ctrl+Shift+J DevTools
+                        if (e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) {
+                            e.preventDefault();
+                            this.handleViolation('devtools', 'Membuka DevTools');
+                            return;
+                        }
+                        // Ctrl+C/X/V sudah ditangani event copy/cut/paste di atas
+                        // Ctrl+A (select all) — blokir saja, tidak catat sebagai pelanggaran besar
+                        if (e.key === 'a' || e.key === 'A') {
+                            e.preventDefault();
+                            return;
+                        }
+                        // Ctrl+S save
+                        if (e.key === 's' || e.key === 'S') {
+                            e.preventDefault();
+                            this.handleViolation('save_page', 'Mencoba menyimpan halaman');
+                            return;
+                        }
+                        // Ctrl+P print
+                        if (e.key === 'p' || e.key === 'P') {
+                            e.preventDefault();
+                            this.handleViolation('print', 'Mencoba mencetak halaman');
+                            return;
+                        }
+                    }
+                });
+
+                // 5. Deteksi DevTools terbuka lewat ukuran window (threshold 160px)
+                this._devtoolsCheckInterval = setInterval(() => {
+                    if (this.quizFinished) { clearInterval(this._devtoolsCheckInterval); return; }
+                    const threshold = 160;
+                    const widthDiff  = window.outerWidth  - window.innerWidth;
+                    const heightDiff = window.outerHeight - window.innerHeight;
+                    if (widthDiff > threshold || heightDiff > threshold) {
+                        this.handleViolation('devtools_open', 'DevTools terdeteksi terbuka');
+                    }
+                }, 3000);
+
+                // 6. Fullscreen exit — selalu pantau, bukan hanya jika fullscreenMode aktif
+                document.addEventListener('fullscreenchange', () => {
+                    if (!this.quizFinished && window.quizData.fullscreenMode && !document.fullscreenElement) {
+                        const overlay = document.getElementById('fullscreen-prompt');
+                        if (overlay) overlay.classList.add('active');
+                        this.handleViolation('fullscreen_exit', 'Keluar dari mode layar penuh');
+                    }
+                });
             },
 
             showViolationToast(msg) {
                 const t = document.getElementById('violation-toast');
                 if (!t) return;
-                t.textContent = msg;
+                t.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>${msg}`;
                 t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 4000);
+                clearTimeout(this._toastTimer);
+                this._toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
             },
 
             resumeFromViolation() {
@@ -1078,29 +1433,150 @@
 
             async handleViolation(type, details = null) {
                 if (this.quizFinished) return;
+
+                // Debounce: abaikan event sejenis dalam 2 detik terakhir
+                const now = Date.now();
+                const lastKey = `_vLast_${type}`;
+                if (this[lastKey] && (now - this[lastKey]) < 2000) return;
+                this[lastKey] = now;
+
                 this.violationCount++;
-                this.showViolationToast(`Pelanggaran #${this.violationCount}: ${details || type}`);
+                this.showViolationToast(`⚠️ Pelanggaran #${this.violationCount}: ${details || type}`);
+
+                const payload = JSON.stringify({ type, details });
+                const url     = window.quizData.violationUrl;
+                const headers = { 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' };
+
+                // Gunakan sendBeacon sebagai fallback saat tab ditutup / pindah paksa
+                // sendBeacon tidak butuh response, tapi tetap sampai ke server
+                const beaconPayload = new Blob([payload], { type: 'application/json' });
+
                 try {
-                    const r = await fetch(window.quizData.violationUrl, {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ type, details })
-                    });
+                    const r = await fetch(url, { method: 'POST', headers, body: payload });
                     const data = await r.json().catch(() => ({}));
                     if (data.violation_count) this.violationCount = data.violation_count;
                     if (data.auto_submit) {
-                        this.showNotification('Batas pelanggaran tercapai! Disubmit otomatis.', 'error');
                         setTimeout(() => this.submitQuiz(), 1500);
+                    }
+                } catch(e) {
+                    // fetch gagal (mis. tab pindah cepat) — coba sendBeacon
+                    try { navigator.sendBeacon(url + '?_token=' + window.quizData.csrfToken, beaconPayload); } catch(_) {}
+                }
+            },
+
+            startDurationTimer() {
+                const dur = window.quizData.quizDuration;
+                if (!dur || dur <= 0) return;
+
+                // Jika server menyediakan quiz_started_at, hitung langsung dari situ
+                // agar timer selalu akurat meski halaman di-refresh berkali-kali
+                if (window.quizData.serverStartedAt) {
+                    const nowSec      = Math.floor(Date.now() / 1000);
+                    const elapsedSec  = nowSec - window.quizData.serverStartedAt;
+                    const remaining   = Math.max(0, window.quizData.serverDurationSec - elapsedSec);
+                    this.timeRemaining = remaining;
+                }
+
+                if (this.timeRemaining <= 0) {
+                    if (!this.quizFinished) {
+                        setTimeout(() => this.submitQuiz(), 1200);
+                    }
+                    return;
+                }
+
+                if (this._durationTimer) clearInterval(this._durationTimer);
+                this._warnedFiveMin = this.timeRemaining <= 300;
+                this._warnedOneMin  = this.timeRemaining <= 60;
+
+                // Anchor ke wall-clock agar tidak drift
+                this._timerStartedAt    = Date.now();
+                this._timerStartSeconds = this.timeRemaining;
+
+                this._durationTimer = setInterval(() => {
+                    if (this.quizFinished) { clearInterval(this._durationTimer); return; }
+
+                    // Hitung ulang dari serverStartedAt jika tersedia (paling akurat)
+                    if (window.quizData.serverStartedAt) {
+                        const nowSec     = Math.floor(Date.now() / 1000);
+                        const elapsed    = nowSec - window.quizData.serverStartedAt;
+                        this.timeRemaining = Math.max(0, window.quizData.serverDurationSec - elapsed);
+                    } else {
+                        const elapsed = Math.floor((Date.now() - this._timerStartedAt) / 1000);
+                        this.timeRemaining = Math.max(0, this._timerStartSeconds - elapsed);
+                    }
+
+                    if (!this._warnedFiveMin && this.timeRemaining <= 300) {
+                        this._warnedFiveMin = true;
+                        this.playSound('countdown');
+                    }
+                    if (!this._warnedOneMin && this.timeRemaining <= 60) {
+                        this._warnedOneMin = true;
+                        this.playSound('countdown');
+                    }
+
+                    if (this.timeRemaining <= 0) {
+                        clearInterval(this._durationTimer);
+                        if (!this.quizFinished) {
+                            setTimeout(() => this.submitQuiz(), 1200);
+                        }
+                    }
+                }, 1000);
+
+                // Sync dengan server setiap 5 detik (lebih sering dari 20 detik sebelumnya)
+                if (this._syncTimer) clearInterval(this._syncTimer);
+                this._syncTimer = setInterval(() => this.syncTimeWithServer(), 5000);
+            },
+
+            async syncTimeWithServer() {
+                if (this.quizFinished || !window.quizData.quizStatusUrl) return;
+                try {
+                    const r = await fetch(window.quizData.quizStatusUrl, {
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.quizData.csrfToken }
+                    });
+                    const d = await r.json();
+                    if (!d.success) return;
+
+                    if (d.quiz_expired || (!d.is_quiz_started && window.quizData.quizMode !== 'homework')) {
+                        if (!this.quizFinished) {
+                            clearInterval(this._durationTimer);
+                            this.timeRemaining = 0;
+                            setTimeout(() => this.submitQuiz(), 1200);
+                        }
+                        return;
+                    }
+
+                    // Update serverStartedAt dari response jika ada — ini sumber paling akurat
+                    if (d.quiz_started_at) {
+                        window.quizData.serverStartedAt = Math.floor(new Date(d.quiz_started_at).getTime() / 1000);
+                    }
+
+                    if (d.time_remaining !== null && d.time_remaining !== undefined) {
+                        const srv = parseInt(d.time_remaining);
+                        if (srv <= 0 && !this.quizFinished) {
+                            clearInterval(this._durationTimer);
+                            this.timeRemaining = 0;
+                            setTimeout(() => this.submitQuiz(), 1200);
+                        } else {
+                            // Koreksi ke server jika selisih lebih dari 3 detik
+                            const diff = Math.abs(srv - this.timeRemaining);
+                            if (diff > 3) {
+                                this.timeRemaining      = srv;
+                                this._timerStartedAt    = Date.now();
+                                this._timerStartSeconds = srv;
+                            }
+                        }
                     }
                 } catch(e) {}
             },
 
-            // ===== TIMER =====
             startPerQuestionTimer() {
                 if (this.perQuestionTimer) clearInterval(this.perQuestionTimer);
+                if (this.timeFreezeActive) return;
                 this.questionTimeRemaining = window.quizData.timePerQuestion;
+                if (this.questionTimeRemaining <= 0) return;
                 this.perQuestionTimer = setInterval(() => {
                     if (this.quizFinished || this._securityBlocked) return;
+                    if (this.timeFreezeActive) return;
                     if (!this.isAnswerRevealed && this.questionTimeRemaining > 0) {
                         this.questionTimeRemaining--;
                         if (this.questionTimeRemaining === 10) this.playSound('countdown');
@@ -1116,7 +1592,6 @@
                 }, 1000);
             },
 
-            // ===== ANSWER SELECT =====
             async selectAnswer(choiceIndex) {
                 if (this._securityBlocked) return;
                 const q = this.questions[this.currentQuestion];
@@ -1131,9 +1606,21 @@
 
                 if (isCorrect) {
                     earned = q.score || 1;
+
                     if (this.activeMultiplier > 1) earned *= this.activeMultiplier;
-                    if (this.nextQuestionMultiplier > 1) { earned *= this.nextQuestionMultiplier; this.nextQuestionMultiplier = 1; }
-                    if (this.supersonicActive) { earned *= 2; this.supersonicActive = false; }
+
+                    if (this.doubleJeopardyActive) {
+                        earned *= 2;
+                        this.doubleJeopardyActive = false;
+                    } else if (this.nextQuestionMultiplier > 1) {
+                        earned *= this.nextQuestionMultiplier;
+                        this.nextQuestionMultiplier = 1;
+                    }
+
+                    if (this.supersonicActive) {
+                        earned *= (this.supersonicMultiplier || 1.5);
+                    }
+
                     this.totalScore += earned;
                     this.streakCount++;
 
@@ -1150,26 +1637,34 @@
                     }
 
                     if (earned > 0) this.showBonusPopup('+' + Math.floor(earned) + ' pts');
+
                 } else {
+                    if (this.doubleJeopardyActive) {
+                        this.doubleJeopardyActive = false;
+                        earned = 0;
+                    }
+
                     if (this.immunityActive) {
                         this.immunityActive = false;
-                        this.showNotification('Immunity aktif! Jawaban salah diabaikan.', 'success');
+                        this.isAnswerRevealed = false;
+                        q.selectedAnswer = null;
+                        return;
                     } else if (this.streakSaverActive) {
                         this.streakSaverActive = false;
-                        this.streakCount = Math.max(0, this.streakCount - 1);
                     } else {
                         this.streakCount = 0;
                     }
                 }
 
-                await this.saveProgress();
-
-                this.feedbackType = isCorrect ? 'correct' : 'incorrect';
+                // Suara & feedback langsung — tidak tunggu saveProgress
+                this.feedbackType    = isCorrect ? 'correct' : 'incorrect';
                 this.feedbackMessage = isCorrect ? 'Benar!' : 'Salah!';
                 this.playSound(isCorrect ? 'correct' : 'incorrect');
                 this.isAnswerRevealed = true;
-
                 clearInterval(this.perQuestionTimer);
+
+                // Simpan progress ke server di background (tidak blokir UI/suara)
+                this.saveProgress().catch(() => {});
 
                 if (this.currentQuestion < this.totalQuestions - 1) {
                     setTimeout(() => this.nextQuestion(), isCorrect ? 700 : 1000);
@@ -1202,59 +1697,104 @@
                     this.currentQuestion++;
                     this.isAnswerRevealed = false;
                     this.feedbackMessage = '';
+                    this.timeFreezeActive = false;
                     this.animatingOut = false;
                     this.startPerQuestionTimer();
+                    this.resetPowerupsForNewQuestion();
                 }, 250);
-            },
-
-            // ===== POWER-UPS =====
-            selectRandomPowerups() {
-                const keys = Object.keys(this.powerups);
-                const shuffled = keys.sort(() => 0.5 - Math.random()).slice(0, 3);
-                this.powerupsRandom = {};
-                shuffled.forEach(k => { this.powerupsRandom[k] = { ...this.powerups[k] }; });
             },
 
             async activatePowerup(type) {
                 if (!window.quizData.enablePowerups) return;
                 const pu = this.powerupsRandom[type];
-                if (!pu || pu.cooldown > 0 || this.isAnswerRevealed) return;
+                if (!pu || this.isAnswerRevealed || pu.used) return;
 
-                pu.cooldown = 30;
+                // Maks 1 powerup per soal
+                if (this._lastPowerupUseQuestion === this.currentQuestion) return;
+
+                pu.used = true; // Hilang setelah dipakai, tidak bisa dipakai lagi
+                this._lastPowerupUseQuestion = this.currentQuestion;
                 this.playSound('powerup');
 
+                const q = this.questions[this.currentQuestion];
+
                 switch(type) {
-                    case 'double_up':
+                    case 'supersonic':
+                        this.supersonicActive = true;
+                        this.supersonicMultiplier = 1.5;
+                        setTimeout(() => {
+                            this.supersonicActive = false;
+                            this.supersonicMultiplier = 1;
+                        }, 20000);
+                        break;
+
+                    case 'streak_booster':
+                        this.streakCount++;
+                        this.showBonusPopup('Streak +1!');
+                        break;
+
+                    case 'gift':
+                        break;
+
+                    case 'double_jeopardy':
+                        this.doubleJeopardyActive = true;
+                        break;
+
+                    case '2x':
                         this.nextQuestionMultiplier = 2;
-                        this.showNotification('2x poin soal berikutnya!', 'success'); break;
-                    case 'triple_up':
-                        this.nextQuestionMultiplier = 3;
-                        this.showNotification('3x poin soal berikutnya!', 'success'); break;
+                        break;
+
+                    case 'fifty_fifty': {
+                        const wrong50 = q.choices.filter(c => !c.is_correct && !c.disabled);
+                        const half = Math.ceil(wrong50.length / 2);
+                        wrong50.sort(() => Math.random() - 0.5).slice(0, half).forEach(c => c.disabled = true);
+                        break;
+                    }
+
+                    case 'eraser': {
+                        const wrongE = q.choices.filter(c => !c.is_correct && !c.disabled);
+                        if (wrongE.length > 0) {
+                            wrongE[Math.floor(Math.random() * wrongE.length)].disabled = true;
+                        }
+                        break;
+                    }
+
                     case 'immunity':
                         this.immunityActive = true;
-                        this.showNotification('Immunity aktif!', 'success'); break;
-                    case 'eraser': {
-                        const q = this.questions[this.currentQuestion];
-                        const wrong = q.choices.filter(c => !c.is_correct);
-                        const toHide = wrong.sort(() => Math.random() - 0.5).slice(0, Math.floor(wrong.length/2));
-                        toHide.forEach(c => c.disabled = true);
-                        this.showNotification('2 pilihan salah disembunyikan!', 'info'); break;
-                    }
-                    case 'freeze':
-                        this.questionTimeRemaining = Math.min(this.questionTimeRemaining + 15, window.quizData.timePerQuestion);
-                        this.showNotification('+15 detik tambahan!', 'info'); break;
+                        break;
+
+                    case 'time_freeze':
+                        this.timeFreezeActive = true;
+                        clearInterval(this.perQuestionTimer);
+                        break;
+
+                    case 'power_play':
+                        this.powerPlayActive = true;
+                        this.activeMultiplier = Math.max(this.activeMultiplier, 1.5);
+                        this.powerPlayExpiresAt = Date.now() + 20000;
+                        setTimeout(() => {
+                            this.powerPlayActive = false;
+                            if (this.activeMultiplier === 1.5) this.activeMultiplier = 1;
+                        }, 20000);
+                        break;
+
+                    case 'streak_saver':
+                        this.streakSaverActive = true;
+                        break;
+
+                    case 'glitch':
+                        break;
                 }
 
                 try {
                     await fetch(window.quizData.powerupUrl, {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ type, question_id: this.questions[this.currentQuestion].id })
+                        body: JSON.stringify({ type, question_id: q.id })
                     });
                 } catch(e) {}
             },
 
-            // ===== SUBMIT =====
             async submitQuiz() {
                 if (this.quizFinished) return;
                 this.quizFinished = true;
@@ -1287,15 +1827,12 @@
                         setTimeout(() => { window.location.href = data.redirect; }, 2000);
                     } else {
                         this.quizFinished = false;
-                        this.showNotification('Gagal submit: ' + (data.message || 'Error'), 'error');
                     }
                 } catch(e) {
                     this.quizFinished = false;
-                    this.showNotification('Terjadi kesalahan. Coba lagi.', 'error');
                 }
             },
 
-            // ===== SAVE/LOAD PROGRESS =====
             async saveProgress() {
                 try {
                     const answers = this.questions.map(q => ({
@@ -1318,25 +1855,54 @@
                     const data = await r.json();
                     if (data.success && data.progress) {
                         const p = data.progress;
-                        this.currentQuestion = p.current_question || 0;
-                        this.timeRemaining = p.time_remaining || this.timeRemaining;
-                        this.totalScore = p.total_score || 0;
+                        this.totalScore  = p.total_score  || 0;
                         this.streakCount = p.streak_count || 0;
-                        if (p.answers) {
+
+                        // Restore jawaban yang sudah tersimpan di DB
+                        let lastAnsweredIndex = -1;
+                        if (p.answers && p.answers.length > 0) {
                             p.answers.forEach(saved => {
                                 const q = this.questions.find(q => q.id == saved.question_id);
-                                if (q && saved.choice_id) {
+                                if (!q) return;
+                                if (saved.choice_id) {
                                     const idx = q.choices?.findIndex(c => c.id == saved.choice_id);
-                                    if (idx !== -1) q.selectedAnswer = idx;
+                                    if (idx !== -1 && idx !== undefined) {
+                                        q.selectedAnswer = idx;
+                                        // Temukan index soal ini dalam array
+                                        const qIdx = this.questions.indexOf(q);
+                                        if (qIdx > lastAnsweredIndex) lastAnsweredIndex = qIdx;
+                                    }
                                 }
-                                if (q && saved.text_answer) q.textAnswer = saved.text_answer;
+                                if (saved.text_answer) {
+                                    q.textAnswer = saved.text_answer;
+                                    const qIdx = this.questions.indexOf(q);
+                                    if (qIdx > lastAnsweredIndex) lastAnsweredIndex = qIdx;
+                                }
                             });
                         }
+
+                        // Tentukan posisi soal: gunakan current_question dari server
+                        // jika valid, atau cari soal pertama yang belum dijawab
+                        const serverQ = typeof p.current_question === 'number' ? p.current_question : -1;
+                        if (serverQ >= 0 && serverQ < this.totalQuestions) {
+                            this.currentQuestion = serverQ;
+                        } else {
+                            // Fallback: soal pertama yang belum dijawab
+                            const firstUnanswered = this.questions.findIndex(q =>
+                                q.selectedAnswer === null && !q.textAnswer?.trim()
+                            );
+                            this.currentQuestion = firstUnanswered !== -1
+                                ? firstUnanswered
+                                : (lastAnsweredIndex >= 0 ? lastAnsweredIndex : 0);
+                        }
+
+                        this.isAnswerRevealed = false;
+                        this.feedbackMessage  = '';
                     }
                 } catch(e) {}
+                this.questionTimeRemaining = window.quizData.timePerQuestion;
             },
 
-            // ===== LEADERBOARD =====
             async loadLeaderboard() {
                 if (!window.quizData.showLeaderboard) return;
                 try {
@@ -1346,7 +1912,6 @@
                 } catch(e) { this.leaderboard = []; }
             },
 
-            // ===== MUSIC =====
             initBgMusic() {
                 const tracks = ['/sounds/bg_music_1.mp3', '/sounds/bg_music_2.mp3'];
                 this.bgMusicAudio = new Audio(tracks[Math.floor(Math.random() * tracks.length)]);
@@ -1354,7 +1919,6 @@
                 this.bgMusicAudio.volume = 0.2;
             },
 
-            // ===== SOUNDS =====
             preloadSounds() {
                 if (!this.settings.soundEnabled) return;
                 ['click','correct','incorrect','powerup','victory','countdown','timeout'].forEach(t => new Audio(`/sounds/${t}.mp3`).load());
@@ -1377,7 +1941,6 @@
                 document.body.classList.toggle('dark', this.settings.darkMode);
             },
 
-            // ===== BONUS POPUP =====
             showBonusPopup(msg) {
                 const div = document.createElement('div');
                 div.textContent = msg;
@@ -1396,27 +1959,6 @@
                 `;
                 document.body.appendChild(div);
                 setTimeout(() => div.remove(), 1500);
-            },
-
-            // ===== NOTIFICATIONS =====
-            showNotification(msg, type = 'info') {
-                const icons = {
-                    success: '<i class="fas fa-check-circle"></i>',
-                    error: '<i class="fas fa-times-circle"></i>',
-                    warning: '<i class="fas fa-exclamation-triangle"></i>',
-                    info: '<i class="fas fa-info-circle"></i>'
-                };
-                const el = document.createElement('div');
-                el.className = `notif-toast ${type}`;
-                el.innerHTML = `<span style="flex-shrink:0">${icons[type]||icons['info']}</span><span style="flex:1">${msg}</span>`;
-                const c = document.getElementById('notif-container');
-                c.appendChild(el);
-                setTimeout(() => {
-                    el.style.opacity = '0';
-                    el.style.transform = 'translateX(50px)';
-                    el.style.transition = 'all 0.3s';
-                    setTimeout(() => el.remove(), 300);
-                }, 3500);
             },
 
             formatTime(s) {

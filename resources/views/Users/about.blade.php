@@ -278,11 +278,10 @@
 
                         <!-- Profile Info -->
                         <div class="lg:col-span-2">
-                            <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Achmad Nazriell Zulfi</h3>
+                            <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">Achmad Nazriel Pradita</h3>
                             <p class="text-xl text-blue-600 font-semibold mb-2">Full-Stack Developer</p>
                             <div class="flex flex-wrap gap-2 mb-6">
                                 <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Laravel Expert</span>
-                                <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">React Specialist</span>
                                 <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">UI/UX Designer</span>
                             </div>
 
@@ -297,10 +296,6 @@
                                     <div class="skill-badge bg-gradient-to-br from-red-50 to-red-100 border border-red-200 px-4 py-3 rounded-xl text-center">
                                         <div class="text-2xl mb-1"></div>
                                         <span class="text-red-700 font-semibold text-sm">Laravel</span>
-                                    </div>
-                                    <div class="skill-badge bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 rounded-xl text-center">
-                                        <div class="text-2xl mb-1"></div>
-                                        <span class="text-blue-700 font-semibold text-sm">React</span>
                                     </div>
                                     <div class="skill-badge bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 px-4 py-3 rounded-xl text-center">
                                         <div class="text-2xl mb-1"></div>

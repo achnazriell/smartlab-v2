@@ -3,9 +3,9 @@
 @section('content')
 <style>
     :root {
-        --primary: #6C3DE5;
-        --primary-light: #8B5CF6;
-        --primary-dark: #5B21B6;
+        --primary: #2563EB;
+        --primary-light: #3B82F6;
+        --primary-dark: #1D4ED8;
         --success: #10B981;
         --danger: #EF4444;
         --warning: #F59E0B;
@@ -29,7 +29,7 @@
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
-        box-shadow: 0 2px 16px rgba(108,61,229,0.08);
+        box-shadow: 0 2px 16px rgba(37,99,235,0.08);
     }
 
     .quiz-header-left h1 {
@@ -63,7 +63,7 @@
 
     .stat-pill.blue { background: #EFF6FF; color: #1D4ED8; }
     .stat-pill.green { background: #ECFDF5; color: #059669; }
-    .stat-pill.purple { background: #F5F3FF; color: #7C3AED; }
+    .stat-pill.blue { background: #EFF6FF; color: #2563EB; }
 
     /* ===== MAIN LAYOUT ===== */
     .main-layout {
@@ -125,7 +125,7 @@
 
     .form-input:focus, .form-textarea:focus, .form-select:focus {
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(108,61,229,0.1);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
     }
 
     .form-textarea { resize: vertical; min-height: 80px; }
@@ -152,8 +152,8 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: #EEF2FF;
-        color: #4338CA;
+        background: #EFF6FF;
+        color: #1E40AF;
         font-weight: 700;
         font-size: 0.8rem;
         display: flex;
@@ -184,7 +184,7 @@
         cursor: pointer;
     }
 
-    .q-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 16px rgba(108,61,229,0.1); }
+    .q-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 16px rgba(37,99,235,0.1); }
 
     .q-card-header {
         display: flex;
@@ -212,8 +212,8 @@
         padding: 0.2rem 0.6rem;
         border-radius: 999px;
         font-weight: 600;
-        background: #EDE9FE;
-        color: #6D28D9;
+        background: #DBEAFE;
+        color: #1D4ED8;
     }
 
     .q-score-badge {
@@ -275,7 +275,7 @@
         transition: all 0.2s;
     }
 
-    .btn-icon.edit { background: #EEF2FF; color: #4338CA; }
+    .btn-icon.edit { background: #EFF6FF; color: #1E40AF; }
     .btn-icon.edit:hover { background: #C7D2FE; }
     .btn-icon.delete { background: #FEF2F2; color: #DC2626; }
     .btn-icon.delete:hover { background: #FECACA; }
@@ -303,14 +303,14 @@
 
     .btn-primary:hover:not(:disabled) {
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(108,61,229,0.35);
+        box-shadow: 0 6px 20px rgba(37,99,235,0.35);
     }
 
     .btn-success { background: linear-gradient(135deg, #10B981, #059669); color: white; }
     .btn-success:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(16,185,129,0.35); transform: translateY(-1px); }
 
-    .btn-purple { background: linear-gradient(135deg, #7C3AED, #A78BFA); color: white; }
-    .btn-purple:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(124,58,237,0.35); transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #2563EB, #93C5FD); color: white; }
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(37,99,235,0.35); transform: translateY(-1px); }
 
     .btn-outline {
         background: white;
@@ -433,7 +433,7 @@
 
     .drop-zone:hover, .drop-zone.dragover {
         border-color: var(--primary);
-        background: #F5F3FF;
+        background: #EFF6FF;
     }
 
     .drop-zone input[type="file"] { display: none; }
@@ -451,7 +451,7 @@
     }
 
     .import-item:hover { background: #F9FAFB; }
-    .import-item.selected { background: #EDE9FE; border-left: 3px solid var(--primary); }
+    .import-item.selected { background: #DBEAFE; border-left: 3px solid var(--primary); }
 
     /* ===== TOAST ===== */
     .toast-container {
@@ -558,7 +558,7 @@
             <div class="card">
                 <div class="card-header">
                     <h2>Tambah Soal Pilihan Ganda</h2>
-                    <span class="stat-pill purple" x-show="questions.length > 0" x-text="questions.length + '/50'"></span>
+                    <span class="stat-pill blue" x-show="questions.length > 0" x-text="questions.length + '/50'"></span>
                 </div>
                 <div class="card-body space-y-4">
 
@@ -595,7 +595,7 @@
                             <template x-for="(choice, i) in form.choices" :key="choice._id">
                                 <div class="choice-item" :class="{ 'correct-choice': choice.is_correct }">
                                     <input type="radio" :name="'correct_new'" :checked="choice.is_correct"
-                                        @change="setCorrect(i)" class="w-4 h-4 text-purple-600 flex-shrink-0" style="accent-color: #6C3DE5">
+                                        @change="setCorrect(i)" class="w-4 h-4 text-blue-600 flex-shrink-0" style="accent-color: #2563EB">
                                     <div class="choice-label" x-text="String.fromCharCode(65+i)"></div>
                                     <input type="text" x-model="choice.text" class="form-input"
                                         :placeholder="'Pilihan ' + String.fromCharCode(65+i)">
@@ -735,7 +735,7 @@
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-gray-600">Total Poin</span>
-                            <span class="font-bold text-purple-600" x-text="totalPoints + ' poin'"></span>
+                            <span class="font-bold text-blue-600" x-text="totalPoints + ' poin'"></span>
                         </div>
                     </div>
                 </div>
@@ -752,7 +752,7 @@
                     </button>
 
                     <button @click="previewQuiz()" :disabled="questions.length === 0"
-                        class="btn btn-purple btn-full">
+                        class="btn btn-primary btn-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         Preview Quiz
                     </button>
@@ -788,7 +788,7 @@
     <div x-show="showImportModal" class="modal-backdrop" @click.self="showImportModal = false" x-cloak>
         <div class="modal">
             <div class="modal-header">
-                <h3>📥 Import Soal Pilihan Ganda</h3>
+                <h3>Import Soal Pilihan Ganda</h3>
                 <button @click="showImportModal = false" class="btn-icon delete">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -837,7 +837,7 @@
                         <div class="import-list border border-gray-200 rounded-xl overflow-hidden">
                             <template x-for="(q, idx) in importPreview" :key="idx">
                                 <div class="import-item" :class="{ 'selected': q.selected }" @click="q.selected = !q.selected">
-                                    <input type="checkbox" x-model="q.selected" @click.stop class="w-4 h-4 flex-shrink-0" style="accent-color: #6C3DE5">
+                                    <input type="checkbox" x-model="q.selected" @click.stop class="w-4 h-4 flex-shrink-0" style="accent-color: #2563EB">
                                     <div class="flex-1 min-w-0">
                                         <div class="flex gap-1.5 mb-1">
                                             <span class="q-type-badge text-xs">PG</span>
@@ -885,7 +885,7 @@
                         <p class="text-xs text-gray-400 mt-1">Format: .xlsx, .xls, .csv (maks. 5MB)</p>
                     </div>
 
-                    <div x-show="isUploadingFile" class="text-center py-4 text-purple-600 text-sm">
+                    <div x-show="isUploadingFile" class="text-center py-4 text-blue-600 text-sm">
                         <svg class="w-6 h-6 animate-spin mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         Memproses file...
                     </div>
@@ -965,7 +965,7 @@
                         <template x-for="(c, i) in editForm.choices" :key="c._id || i">
                             <div class="choice-item" :class="{ 'correct-choice': c.is_correct }">
                                 <input type="radio" name="edit_correct" :checked="c.is_correct"
-                                    @change="setEditCorrect(i)" class="w-4 h-4" style="accent-color: #6C3DE5">
+                                    @change="setEditCorrect(i)" class="w-4 h-4" style="accent-color: #2563EB">
                                 <div class="choice-label" x-text="String.fromCharCode(65+i)"></div>
                                 <input type="text" x-model="c.text" class="form-input">
                                 <button @click="removeEditChoice(i)" :disabled="editForm.choices.length <= 2" class="btn-icon delete flex-shrink-0">
@@ -1300,7 +1300,7 @@ function quizQnA() {
             }
         },
 
-        // ===== IMPORT: FROM FILE =====
+        // ===== IMPORT: FROM FILE — parse di browser pakai SheetJS =====
         handleFileDrop(e) {
             this.isDragging = false;
             if (e.dataTransfer.files.length > 0) this.uploadFile(e.dataTransfer.files[0]);
@@ -1316,31 +1316,98 @@ function quizQnA() {
             if (file.size > 5 * 1024 * 1024) {
                 showToast('error', 'File Terlalu Besar', 'Maksimal 5MB'); return;
             }
+
             this.selectedFileName = file.name;
-            this.isUploadingFile = true;
+            this.isUploadingFile  = true;
             this.fileImportPreview = [];
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('_token', '{{ csrf_token() }}');
-
             try {
-                const res = await fetch('{{ route('guru.quiz.questions.import', $quiz->id) }}', {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' },
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.fileImportPreview = (data.questions || []).filter(q => q.type === 'PG');
-                    showToast('success', 'File Dibaca!', `Ditemukan ${this.fileImportPreview.length} soal PG.`);
-                } else {
-                    showToast('error', 'Gagal', data.message || 'Gagal memproses file');
+                // Pastikan SheetJS sudah dimuat
+                if (typeof XLSX === 'undefined') {
+                    showToast('error', 'Error', 'Library SheetJS belum dimuat. Coba refresh halaman.');
+                    return;
                 }
-            } catch(e) {
-                showToast('error', 'Error', 'Gagal mengupload file');
+
+                // Baca file sebagai ArrayBuffer
+                const buf  = await file.arrayBuffer();
+                const wb   = XLSX.read(buf, { type: 'array' });
+
+                // Ambil sheet pertama
+                const wsName = wb.SheetNames[0];
+                const ws     = wb.Sheets[wsName];
+
+                // Konversi ke array of objects (baris pertama = header)
+                const rows = XLSX.utils.sheet_to_json(ws, {
+                    raw: false,        // semua nilai jadi string
+                    defval: '',        // nilai kosong = string kosong
+                });
+
+                if (!rows || rows.length === 0) {
+                    showToast('error', 'File Kosong', 'File tidak memiliki data atau format salah.');
+                    return;
+                }
+
+                const questions = [];
+
+                for (const row of rows) {
+                    // Normalisasi key → lowercase + ganti spasi/strip dengan underscore
+                    const r = {};
+                    for (const [k, v] of Object.entries(row)) {
+                        const key = k.toLowerCase().trim()
+                            .replace(/\s+/g, '_')
+                            .replace(/-/g, '_');
+                        r[key] = typeof v === 'string' ? v.trim() : (v ?? '');
+                    }
+
+                    // Ambil pertanyaan — support dua format kolom
+                    const question = r['question'] || r['pertanyaan'] || r['soal'] || '';
+                    if (!question) continue;
+
+                    // Pilihan jawaban — support option_x dan opsi_x
+                    const optA = r['option_a'] || r['opsi_a'] || r['a'] || '';
+                    const optB = r['option_b'] || r['opsi_b'] || r['b'] || '';
+                    const optC = r['option_c'] || r['opsi_c'] || r['c'] || '';
+                    const optD = r['option_d'] || r['opsi_d'] || r['d'] || '';
+                    const optE = r['option_e'] || r['opsi_e'] || r['e'] || '';
+
+                    if (!optA || !optB) continue; // minimal 2 pilihan
+
+                    // Jawaban benar
+                    const correctRaw = (r['correct_answer'] || r['jawaban'] || r['answer'] || r['kunci'] || '').toUpperCase();
+                    if (!['A','B','C','D','E'].includes(correctRaw)) continue;
+                    const correctIdx = correctRaw.charCodeAt(0) - 65; // A=0, B=1...
+
+                    // Skor
+                    const score = Math.max(1, Math.min(100, parseInt(r['score'] || r['skor'] || r['nilai'] || '10') || 10));
+
+                    // Pembahasan
+                    const explanation = r['explanation'] || r['pembahasan'] || '';
+
+                    // Bangun pilihan
+                    const optList = [optA, optB, optC, optD, optE].filter(Boolean);
+                    const choices = optList.map((text, idx) => ({
+                        text,
+                        is_correct: idx === correctIdx,
+                    }));
+
+                    questions.push({ type: 'PG', question, score, explanation, choices });
+                }
+
+                if (questions.length === 0) {
+                    showToast('error', 'Tidak Ada Soal', 'Tidak ditemukan soal valid. Pastikan header kolom dan kolom "correct_answer" (A/B/C/D) sudah benar.');
+                    return;
+                }
+
+                this.fileImportPreview = questions;
+                showToast('success', 'File Dibaca!', `Ditemukan ${questions.length} soal valid. Klik Import untuk melanjutkan.`);
+
+            } catch (err) {
+                console.error('uploadFile error:', err);
+                showToast('error', 'Gagal Memproses', 'Terjadi kesalahan saat membaca file: ' + err.message);
             } finally {
                 this.isUploadingFile = false;
+                // Reset file input agar bisa upload file yang sama lagi
+                if (this.$refs.fileInput) this.$refs.fileInput.value = '';
             }
         },
 
@@ -1520,4 +1587,8 @@ function showToast(type, title, msg, duration = 4000) {
     }, duration);
 }
 </script>
+
+{{-- SheetJS: untuk parsing Excel/CSV langsung di browser tanpa server --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 @endsection
