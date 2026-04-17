@@ -1,9 +1,18 @@
 [build]
 builder = "nixpacks"
 buildCommand = "composer install --no-dev && npm install && npm run build"
-startCommand = "php artisan serve --host=0.0.0.0 --port=8000"
+startCommand = "php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
 
 [build.environment]
 NODE_VERSION = "18"
 PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
+
+[deploy]
+preDeployCommand = "php artisan config:clear && php artisan migrate --force && php artisan db:seed --force"
+
+[[services]]
+type = "web"
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+numReplicas = 1

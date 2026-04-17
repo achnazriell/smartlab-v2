@@ -56,7 +56,7 @@ Route::post('/logout', function (Request $request) {
 
 // Health check
 Route::get('/health', function () {
-    return response('OK', 200);
+    return response()->json(['status' => 'ok']);
 });
 
 // ==================== LANDING & PUBLIC ROUTES ====================
