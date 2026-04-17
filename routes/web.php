@@ -42,30 +42,9 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 
 use App\Models\AcademicYear;
 use App\Models\Materi;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 
 // ==================== AUTHENTICATION ROUTES ====================
 Auth::routes(['register' => false]);
-
-Route::get('/gas-migrate', function () {
-    try {
-        // 1. Matikan pengecekan foreign key sementara (khusus PostgreSQL)
-        DB::statement('SET CONSTRAINTS ALL DEFERRED');
-
-        // 2. Jalankan migrasi secara paksa
-        // Kita gunakan migrate:fresh untuk menghapus sisa-sisa tabel yang gagal tadi
-        Artisan::call('migrate', [
-            '--force' => true,
-            '--seed' => true // Langsung panggil seeder di sini
-        ]);
-
-        return "Database Berhasil Dibersihkan dan Diisi Ulang!";
-    } catch (\Exception $e) {
-        // Jika masih error, tampilkan detailnya
-        return "Gagal lagi Ril, Errornya: " . $e->getMessage();
-    }
-});
 
 // Custom logout
 Route::post('/logout', function (Request $request) {

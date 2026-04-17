@@ -17,9 +17,4 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })
-    // Gunakan fungsi ini untuk memindahkan storage ke /tmp
-    ->booting(function ($app) {
-        $app->useStoragePath('/tmp/storage');
-    })
-    ->create();
+    })->create();
