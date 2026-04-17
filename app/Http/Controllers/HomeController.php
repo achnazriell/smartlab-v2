@@ -39,12 +39,12 @@ class HomeController extends Controller
         $totalClasses = Classes::count();
         $totalSubjects = Subject::count();
 
-        $muridPerTahun = User::selectRaw('YEAR(created_at) as year, COUNT(*) as total')
-            ->whereHas('roles', function ($query) {
-                $query->where('name', 'Murid');
-            })
-            ->groupBy('year')
-            ->orderBy('year')
+        $muridPerTahun = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Murid');
+        })
+            ->select(DB::raw('EXTRACT(YEAR FROM created_at) as year'), DB::raw('COUNT(*) as total'))
+            ->groupBy(DB::raw('EXTRACT(YEAR FROM created_at)'))
+            ->orderBy(DB::raw('EXTRACT(YEAR FROM created_at)'))
             ->get();
 
         $totals = $muridPerTahun->pluck('total')->toArray();
