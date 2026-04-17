@@ -7,12 +7,3 @@ startCommand = "php artisan serve --host=0.0.0.0 --port=8000"
 NODE_VERSION = "18"
 PHP_VERSION = "8.2"
 COMPOSER_VERSION = "2"
-
-[deploy]
-preDeployCommand = "php artisan migrate:fresh --force && php artisan db:seed && php artisan config:cache"
-
-[[services]]
-type = "web"
-healthcheckPath = "/health"
-healthcheckTimeout = 60
-numReplicas = 1
