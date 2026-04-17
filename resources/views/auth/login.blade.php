@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Smart-Lab</title>
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
     <link rel="icon" type="image/webp" href="{{ asset(path: 'image/logo.webp') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
