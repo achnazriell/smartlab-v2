@@ -10,7 +10,7 @@ COMPOSER_VERSION = "2"
 
 [deploy]
 # Jalankan cache config, migrasi database, dan seeder
-preDeployCommand = "php artisan config:cache && php artisan migrate:fresh --force && php artisan db:seed"
+preDeployCommand = "php artisan migrate --force && php artisan db:seed --force && php artisan config:cache"
 
 [[services]]
 type = "web"
