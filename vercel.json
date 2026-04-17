@@ -15,7 +15,6 @@
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_ROUTES_CACHE": "/tmp/routes.php",
-        "VIEW_COMPILED_PATH": "/tmp",
-        "CACHE_DIRECTORY": "/tmp"
+        "VIEW_COMPILED_PATH": "/tmp/storage/framework/views"
     }
 }
