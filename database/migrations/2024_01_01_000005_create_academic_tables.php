@@ -6,26 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Materi pelajaran
+        // Materi pelajaran (ditambah class_id, academic_year_id)
         Schema::create('materis', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->foreignId('subject_id')->constrained('subjects');
+            $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
+            $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->onDelete('cascade');
             $table->string('title_materi');
             $table->string('file_materi');
             $table->text('description')->nullable();
             $table->timestamps();
         });
 
-        // Tugas (TANPA class_id - akan menggunakan pivot table)
+        // Tugas (ditambah class_id, academic_year_id)
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subject_id')->constrained('subjects');
+            $table->foreignId('class_id')->nullable()->constrained('classes')->onDelete('cascade');
+            $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->onDelete('cascade');
             $table->foreignId('materi_id')->nullable()->constrained('materis');
             $table->foreignId('user_id')->constrained('users');
             $table->string('title_task');
@@ -54,13 +55,23 @@ return new class extends Migration
             $table->string('mark_task')->nullable();
             $table->timestamps();
         });
+
+        // === TABEL FEEDBACK (dari migration tambahan) ===
+        Schema::create('feedbacks', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->enum('type', ['saran', 'kritik', 'pertanyaan', 'rating']);
+            $table->integer('rating')->nullable()->comment('1-5');
+            $table->text('message');
+            $table->string('category')->nullable()->comment('umum, akademik, fasilitas, dll');
+            $table->enum('status', ['pending', 'dibaca', 'ditindaklanjuti'])->default('pending');
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
+        Schema::dropIfExists('feedbacks');
         Schema::dropIfExists('assessments');
         Schema::dropIfExists('collections');
         Schema::dropIfExists('tasks');
