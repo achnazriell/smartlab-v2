@@ -14,11 +14,12 @@ class RoleUser extends Seeder
             ['email' => 'admin123@gmail.com'],
             [
                 'name' => 'Admin',
-                'password' => Hash::make('123456789')
+                'password' => Hash::make('123456789'),
+                'role' => 'Admin', 
             ]
         );
 
-        // Assign role hanya jika belum ada
+        // Assign role Spatie jika diperlukan
         if (!$user->hasRole('Admin')) {
             $user->assignRole('Admin');
         }

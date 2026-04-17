@@ -4,10 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -18,19 +16,18 @@ return new class extends Migration {
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('plain_password')->nullable();
-            $table->enum('role', ['Admin', 'Guru', 'Murid']);
+            $table->string('role')->default('Murid'); // 'Admin', 'Guru', 'Murid'
             $table->rememberToken();
             $table->timestamps();
         });
 
-        // Password reset tokens
+        // password_reset_tokens, sessions, cache, dll tetap sama...
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
-        // Sessions
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -40,7 +37,6 @@ return new class extends Migration {
             $table->integer('last_activity')->index();
         });
 
-        // Cache tables (dibuat awal karena sistem butuh)
         Schema::create('cache', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->mediumText('value');
@@ -54,9 +50,6 @@ return new class extends Migration {
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('cache_locks');
