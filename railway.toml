@@ -1,7 +1,7 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install && npm run build"
-startCommand = "php artisan serve --host=0.0.0.0 --port=8080"
+buildCommand = "composer install --no-dev && npm install && npm run build"
+startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
 
 [build.environment]
 NODE_VERSION = "18"
@@ -10,7 +10,7 @@ COMPOSER_VERSION = "2"
 
 [deploy]
 # RESET DATABASE + JALANKAN SEEDER
-preDeployCommand = "php artisan migrate --seed --force && php artisan config:cache"
+preDeployCommand = "php artisan migrate --seed --force"
 
 [[services]]
 type = "web"
