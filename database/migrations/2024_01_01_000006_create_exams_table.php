@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -16,41 +15,38 @@ return new class extends Migration
             $table->foreignId('class_id')->constrained('classes');
             $table->foreignId('subject_id')->nullable()->constrained('subjects');
             $table->string('title');
-            $table->enum('type', ['UH', 'UTS', 'UAS', 'QUIZ', 'LAINNYA']);
+
+            // Ubah dari enum ke string
+            $table->string('type'); // nilai: 'UH', 'UTS', 'UAS', 'QUIZ', 'LAINNYA'
             $table->string('custom_type')->nullable();
-            $table->integer('duration'); // menit
+            $table->integer('duration');
+
             $table->datetime('start_at')->nullable();
             $table->datetime('end_at')->nullable();
 
-            // Quiz settings
             $table->integer('time_per_question')->nullable();
-            $table->enum('quiz_mode', ['live', 'homework', 'guided'])->nullable(); // ditambah 'guided'
-            $table->enum('difficulty_level', ['easy', 'medium', 'hard'])->nullable();
+            $table->string('quiz_mode')->nullable(); // 'live', 'homework', 'guided'
+            $table->string('difficulty_level')->nullable(); // 'easy', 'medium', 'hard'
 
-            // Flow settings
             $table->boolean('shuffle_question')->default(false);
             $table->boolean('shuffle_answer')->default(false);
 
-            // Security
             $table->boolean('fullscreen_mode')->default(true);
             $table->boolean('block_new_tab')->default(true);
             $table->boolean('prevent_copy_paste')->default(true);
             $table->boolean('disable_violations')->default(false);
             $table->integer('violation_limit')->default(3);
 
-            // Proctoring
             $table->boolean('enable_proctoring')->default(false);
             $table->boolean('require_camera')->default(false);
             $table->boolean('require_mic')->default(false);
 
-            // Result settings
             $table->boolean('show_score')->default(false);
             $table->boolean('show_correct_answer')->default(false);
-            $table->enum('show_result_after', ['never', 'immediately', 'after_submit', 'after_exam'])->default('never');
+            $table->string('show_result_after')->default('never'); // 'never', 'immediately', 'after_submit', 'after_exam'
             $table->integer('limit_attempts')->default(1);
             $table->decimal('min_pass_grade', 5, 2)->default(0);
 
-            // Quiz features
             $table->boolean('show_leaderboard')->default(false);
             $table->boolean('enable_music')->default(false);
             $table->boolean('enable_memes')->default(false);
@@ -60,20 +56,17 @@ return new class extends Migration
             $table->boolean('time_bonus')->default(false);
             $table->boolean('enable_retake')->default(false);
 
-            // Room settings
             $table->boolean('is_room_open')->default(false);
             $table->timestamp('room_opened_at')->nullable();
             $table->boolean('is_quiz_started')->default(false);
             $table->timestamp('quiz_started_at')->nullable();
             $table->integer('quiz_remaining_time')->nullable();
 
-            // Guided mode specific
-            $table->integer('guided_current_index')->default(0)->comment('Indeks soal aktif untuk Quiz Terpandu');
-            $table->unsignedBigInteger('guided_question_deadline')->nullable()->comment('Unix timestamp deadline soal aktif');
-            $table->boolean('guided_show_answer')->default(false)->comment('Fase tampil jawaban benar (guru)');
+            $table->integer('guided_current_index')->default(0);
+            $table->unsignedBigInteger('guided_question_deadline')->nullable();
+            $table->boolean('guided_show_answer')->default(false);
 
-            // Status
-            $table->enum('status', ['draft', 'active', 'finished', 'inactive'])->default('draft');
+            $table->string('status')->default('draft'); // 'draft', 'active', 'finished', 'inactive'
             $table->timestamps();
             $table->softDeletes();
 
@@ -94,7 +87,7 @@ return new class extends Migration
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
-            $table->string('type', 10);
+            $table->string('type', 10); // misal: 'PG', 'IS', 'ES'
             $table->text('question');
             $table->integer('score')->default(1);
             $table->json('short_answers')->nullable();
@@ -128,7 +121,7 @@ return new class extends Migration
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
             $table->foreignId('teacher_id')->constrained('teachers')->cascadeOnDelete();
             $table->string('session_code', 6)->unique();
-            $table->enum('session_status', ['waiting', 'active', 'finished'])->default('waiting');
+            $table->string('session_status')->default('waiting'); // 'waiting', 'active', 'finished'
             $table->datetime('session_started_at')->nullable();
             $table->datetime('session_ended_at')->nullable();
             $table->integer('total_duration')->nullable();
@@ -147,7 +140,7 @@ return new class extends Migration
             $table->foreignId('quiz_session_id')->constrained('quiz_sessions')->cascadeOnDelete();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('status', ['waiting', 'ready', 'started', 'submitted', 'disconnected'])->default('waiting');
+            $table->string('status')->default('waiting'); // 'waiting', 'ready', 'started', 'submitted', 'disconnected'
             $table->timestamp('joined_at')->nullable();
             $table->timestamp('ready_at')->nullable();
             $table->timestamp('started_at')->nullable();
@@ -157,12 +150,11 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->boolean('is_present')->default(true);
 
-            // Violation & warnings
             $table->boolean('is_violation')->default(false);
             $table->string('violation_type')->nullable();
             $table->unsignedInteger('violation_count')->default(0);
             $table->json('violation_log')->nullable();
-            $table->json('warnings')->nullable()->comment('Array JSON peringatan dari guru');
+            $table->json('warnings')->nullable();
 
             $table->timestamps();
             $table->index(['quiz_session_id', 'student_id']);
@@ -177,11 +169,11 @@ return new class extends Migration
             $table->foreignId('quiz_session_id')->nullable()->constrained('quiz_sessions')->nullOnDelete();
             $table->datetime('started_at')->nullable();
             $table->datetime('ended_at')->nullable();
-            $table->timestamp('submitted_at')->nullable()->after('ended_at'); // dari migration tambahan
+            $table->timestamp('submitted_at')->nullable();
             $table->integer('remaining_time')->default(0);
-            $table->unsignedSmallInteger('current_question')->default(0)->after('remaining_time'); // progress
-            $table->unsignedSmallInteger('streak_count')->default(0)->after('current_question'); // streak
-            $table->enum('status', ['in_progress', 'submitted', 'timeout']);
+            $table->unsignedSmallInteger('current_question')->default(0);
+            $table->unsignedSmallInteger('streak_count')->default(0);
+            $table->string('status'); // 'in_progress', 'submitted', 'timeout'
             $table->json('exam_settings')->nullable();
             $table->string('ip_address')->nullable();
             $table->text('user_agent')->nullable();
