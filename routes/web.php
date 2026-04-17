@@ -42,9 +42,24 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 
 use App\Models\AcademicYear;
 use App\Models\Materi;
+use Illuminate\Support\Facades\Artisan;
 
 // ==================== AUTHENTICATION ROUTES ====================
 Auth::routes(['register' => false]);
+
+Route::get('/gas-migrate', function () {
+    try {
+        // 1. Membersihkan database dan menjalankan migrasi dari awal
+        Artisan::call('migrate', ['--force' => true]);
+
+        // 2. Menjalankan Seeder (mengisi data awal/user admin)
+        Artisan::call('db:seed', ['--force' => true]);
+
+        return "Mantap! Migrasi dan Seeder SmartLab Berhasil.";
+    } catch (\Exception $e) {
+        return "Aduh, error Ril: " . $e->getMessage();
+    }
+});
 
 // Custom logout
 Route::post('/logout', function (Request $request) {

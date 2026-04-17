@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useTailwind();
 
         // Paksa HTTPS di production
-        if (config('app.env') === 'production') {
+        if (config('app.env') !== 'local') {
             URL::forceScheme('https');
         }
     }
