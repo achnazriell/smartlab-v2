@@ -8,17 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ========== TABEL YANG TIDAK MEMILIKI FOREIGN KEY KE DEPARTMENTS ==========
-        // (departments sudah dibuat di migration 000002)
-
-        Schema::create('academic_years', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->date('start_date');
-            $table->date('end_date');
-            $table->boolean('is_active')->default(false);
-            $table->timestamps();
-        });
+        // academic_years sudah dibuat di migration 000005
 
         Schema::create('student_class_assignments', function (Blueprint $table) {
             $table->id();
@@ -99,7 +89,6 @@ return new class extends Migration
         Schema::dropIfExists('student_code_histories');
         Schema::dropIfExists('teacher_subject_assignments');
         Schema::dropIfExists('student_class_assignments');
-        Schema::dropIfExists('academic_years');
-        // departments tidak di-drop di sini karena sudah di-drop di 000002
+        // academic_years di-drop di migration 000005
     }
 };

@@ -55,7 +55,7 @@ Route::get('/gas-migrate', function () {
 
         // 2. Jalankan migrasi secara paksa
         // Kita gunakan migrate:fresh untuk menghapus sisa-sisa tabel yang gagal tadi
-        Artisan::call('migrate:fresh', [
+        Artisan::call('migrate', [
             '--force' => true,
             '--seed' => true // Langsung panggil seeder di sini
         ]);

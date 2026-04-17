@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Buat departments TERLEBIH DAHULU
+        // Buat departments TERLEBIH DAHULU
         Schema::create('departments', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -17,19 +17,14 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Buat classes dengan foreign key ke departments
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
             $table->string('name_class');
             $table->text('description')->nullable();
-            $table->foreignId('department_id')
-                  ->nullable()
-                  ->constrained('departments')
-                  ->onDelete('set null');
+            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
             $table->timestamps();
         });
 
-        // 3. Buat subjects
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
             $table->string('name_subject');
