@@ -43,21 +43,27 @@ use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Models\AcademicYear;
 use App\Models\Materi;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 // ==================== AUTHENTICATION ROUTES ====================
 Auth::routes(['register' => false]);
 
 Route::get('/gas-migrate', function () {
     try {
-        // 1. Membersihkan database dan menjalankan migrasi dari awal
-        Artisan::call('migrate', ['--force' => true]);
+        // 1. Matikan pengecekan foreign key sementara (khusus PostgreSQL)
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
 
-        // 2. Menjalankan Seeder (mengisi data awal/user admin)
-        Artisan::call('db:seed', ['--force' => true]);
+        // 2. Jalankan migrasi secara paksa
+        // Kita gunakan migrate:fresh untuk menghapus sisa-sisa tabel yang gagal tadi
+        Artisan::call('migrate:fresh', [
+            '--force' => true,
+            '--seed' => true // Langsung panggil seeder di sini
+        ]);
 
-        return "Mantap! Migrasi dan Seeder SmartLab Berhasil.";
+        return "Database Berhasil Dibersihkan dan Diisi Ulang!";
     } catch (\Exception $e) {
-        return "Aduh, error Ril: " . $e->getMessage();
+        // Jika masih error, tampilkan detailnya
+        return "Gagal lagi Ril, Errornya: " . $e->getMessage();
     }
 });
 
