@@ -367,7 +367,7 @@
 
     <!-- =================== HERO =================== -->
     <section class="min-h-screen relative flex items-center justify-center overflow-hidden"
-        style="background: url('{{ asset('image/bc atas.webp') }}') no-repeat center center; background-size: cover;">
+        style="background: url('{{ asset('image/bc_atas.webp') }}') no-repeat center center; background-size: cover;">
         <div class="hero-content text-white font-poppins text-center w-full z-10 fade-in-up">
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 animate-on-scroll">Platform LMS
                 gratis yang</h1>
@@ -445,7 +445,7 @@
 
     <!-- =================== FEATURES / CAROUSEL =================== -->
     <section class="min-h-screen bg-cover bg-center relative py-16 md:py-20"
-        style="background-image: url('{{ asset('image/landing 2.webp') }}');">
+        style="background-image: url('{{ asset('image/landing_2.webp') }}');">
         <div class="container mx-auto px-4">
             <div class="text-center mb-8 md:mb-12 animate-on-scroll">
                 <h1 class="text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl font-poppins">KEUNGGULAN
@@ -518,7 +518,7 @@
         </div>
 
         <div class="relative z-10 text-center max-w-4xl animate-on-scroll">
-            <img src="{{ asset('image/Smart-Lab blue.webp') }}"
+            <img src="{{ asset('image/Smart_Lab_blue.webp') }}"
                 class="w-64 md:w-80 lg:w-96 mx-auto mb-6 bounce-hover" alt="logo" />
             <p
                 class="text-blue-800 font-semibold text-sm md:text-base lg:text-lg text-center font-poppins leading-relaxed px-4">
@@ -531,10 +531,10 @@
         </div>
 
         <!-- Decorative elements -->
-        <img src="{{ asset('image/motif mtk.webp') }}"
+        <img src="{{ asset('image/motif_mtk.webp') }}"
             class="absolute top-16 md:top-32 left-4 md:left-12 w-32 md:w-48 lg:w-56 opacity-80 floating"
             alt="Motif MTK" />
-        <img src="{{ asset('image/motif bangun ruang.webp') }}"
+        <img src="{{ asset('image/motif_bangun_ruang.webp') }}"
             class="absolute bottom-16 md:bottom-24 right-4 md:right-12 w-48 md:w-64 lg:w-80 opacity-80 floating-delay"
             alt="Motif Bangun Ruang" />
 
@@ -555,7 +555,7 @@
 
     <!-- =================== CTA =================== -->
     <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-48">
-        <img src="{{ asset('image/motif bawah landing.webp') }}" class="absolute inset-0 w-full h-full object-cover"
+        <img src="{{ asset('image/motif_bawah_landing.webp') }}" class="absolute inset-0 w-full h-full object-cover"
             alt="motif bawah" />
         <div class="relative z-10 text-center text-blue-900 px-4 animate-on-scroll mb-16">
             <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-poppins mb-8 md:mb-12">
@@ -570,7 +570,7 @@
                 <div class="flex flex-row lg:flex-col justify-center items-center gap-8 lg:gap-36">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <img src="{{ asset('image/Smart-LAB white logo.webp') }}"
+                        <img src="{{ asset('image/Smart_LAB_white_logo.webp') }}"
                             class="w-0 md:w-64 lg:w-80 bounce-hover" alt="Logo Smart-LAB" />
                     </div>
 
