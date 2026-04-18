@@ -19,7 +19,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('nis')->nullable();
-            $table->string('student_code')->unique()->nullable()->after('nis');
+            $table->string('student_code')->unique()->nullable();
             $table->enum('status', ['siswa', 'lulus'])->default('siswa');
             $table->date('graduation_date')->nullable();
             $table->timestamps();
