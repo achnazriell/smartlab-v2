@@ -32,8 +32,15 @@ class AppServiceProvider extends ServiceProvider
         // Gunakan Tailwind untuk pagination
         Paginator::useTailwind();
 
-        if (env('APP_ENV') === 'production') {
+        // PENANGANAN HTTPS YANG LEBIH KUAT
+        // Menggunakan environment() bawaan Laravel alih-alih env()
+        if ($this->app->environment('production', 'staging')) {
+            // Memaksa semua URL yang di-generate Laravel (route, asset) pakai HTTPS
             URL::forceScheme('https');
+
+            // Opsional tapi sangat dianjurkan:
+            // Memaksa request agar dikenali sebagai HTTPS (sangat berguna jika pakai Cloudflare/Proxy)
+            request()->server->set('HTTPS', 'on');
         }
     }
 }
