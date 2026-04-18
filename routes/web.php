@@ -53,7 +53,9 @@ Route::post('/logout', function (Request $request) {
     $request->session()->regenerateToken();
     return redirect('/Beranda');
 })->name('logout');
-
+Route::get('/debug', function () {
+    dd(config('app.env'), config('app.debug'));
+});
 // Health check
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
