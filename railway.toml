@@ -11,7 +11,7 @@ COMPOSER_VERSION = "2"
 cmd = "php -S 0.0.0.0:${PORT:-8080} -t public"
 
 [deploy]
-preDeployCommand = "php artisan migrate --force && php artisan db:seed --class=RoleAndPermissionSeeder --force && php artisan db:seed --class=RoleUser --force"
+preDeployCommand = "php artisan migrate && php artisan db:seed --class=RoleAndPermissionSeeder && php artisan db:seed --class=RoleUser"
 
 [[services]]
 type = "web"
