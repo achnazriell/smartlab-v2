@@ -120,7 +120,7 @@ class QuizController extends Controller
         $classes    = $teacher->classesTaughtInAcademicYear($yearId)->get();
         $subjects   = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
 
-        return view('guru.quiz.index', compact('quizzes', 'classes', 'subjects'));
+        return view('Guru.Quiz.index', compact('quizzes', 'classes', 'subjects'));
     }
 
     // ==========================================
