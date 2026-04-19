@@ -145,7 +145,7 @@ class QuizController extends Controller
         $mapels  = $teacher->subjectsTaughtInAcademicYear($yearId)->get();
         $classes = $teacher->classesTaughtInAcademicYear($yearId)->get();
 
-        return view('guru.quiz.create', compact('mapels', 'classes'));
+        return view('Guru.Quiz.create', compact('mapels', 'classes'));
     }
 
     /**
@@ -324,7 +324,7 @@ class QuizController extends Controller
             ->withCount('questions')
             ->get();
 
-        return view('guru.quiz.questions', compact('quiz', 'questions', 'questionCount', 'totalScore', 'questionsData', 'otherQuizzes'));
+        return view('Guru.Quiz.questions', compact('quiz', 'questions', 'questionCount', 'totalScore', 'questionsData', 'otherQuizzes'));
     }
 
     // ==========================================
@@ -376,7 +376,7 @@ class QuizController extends Controller
             $assignedClassIds = [$quiz->class_id];
         }
 
-        return view('guru.quiz.edit', compact('quiz', 'mapels', 'classes', 'assignedClassIds'));
+        return view('Guru.Quiz.edit', compact('quiz', 'mapels', 'classes', 'assignedClassIds'));
     }
 
     /**
@@ -614,7 +614,7 @@ class QuizController extends Controller
             $stats['submitted'] = $session->participants()->where('status', 'submitted')->count();
         }
 
-        return view('guru.quiz.petunjuk-soal', compact(
+        return view('Guru.Quiz.petunjuk-soal', compact(
             'quiz',
             'questions',
             'totalQuestions',
@@ -1715,7 +1715,7 @@ class QuizController extends Controller
                 return response()->json(['success' => true, 'leaderboard' => $leaderboard, 'count' => $leaderboard->count()]);
             }
 
-            return view('guru.quiz.leaderboard', compact('quiz', 'leaderboard'));
+            return view('Guru.Quiz.leaderboard', compact('quiz', 'leaderboard'));
         } catch (\Exception $e) {
             Log::error('Error in quizLeaderboard: ' . $e->getMessage());
             if (request()->expectsJson()) {
@@ -1742,7 +1742,7 @@ class QuizController extends Controller
             ->orderByDesc('final_score')
             ->get();
 
-        return view('guru.quiz.results', compact('quiz', 'attempts'));
+        return view('Guru.Quiz.results', compact('quiz', 'attempts'));
     }
 
     /**
@@ -1765,7 +1765,7 @@ class QuizController extends Controller
             'lowest_score'   => ExamAttempt::where('exam_id', $quiz->id)->min('final_score') ?? 0,
         ];
 
-        return view('guru.quiz.results', compact('quiz', 'attempts', 'stats'));
+        return view('Guru.Quiz.results', compact('quiz', 'attempts', 'stats'));
     }
 
     public function attemptDetail(Exam $quiz, ExamAttempt $attempt)
@@ -1782,7 +1782,7 @@ class QuizController extends Controller
         $correctAnswers = $answers->where('is_correct', true)->count();
         $score          = $attempt->final_score;
 
-        return view('guru.quiz.attempt-detail', compact('attempt', 'quiz', 'answers', 'totalQuestions', 'correctAnswers', 'score'));
+        return view('Guru.Quiz.attempt-detail', compact('attempt', 'quiz', 'answers', 'totalQuestions', 'correctAnswers', 'score'));
     }
 
     public function exportResults(Exam $quiz, $format = 'excel')
@@ -1803,7 +1803,7 @@ class QuizController extends Controller
             ->get();
         $student  = \App\Models\User::findOrFail($studentId);
 
-        return view('guru.quiz.student-results', compact('quiz', 'attempts', 'student'));
+        return view('Guru.Quiz.student-results', compact('quiz', 'attempts', 'student'));
     }
 
     // ==========================================
@@ -2369,7 +2369,7 @@ class QuizController extends Controller
                 $assignedClassIds = [$quiz->class_id];
             }
 
-            return view('guru.quiz.preview', compact(
+            return view('Guru.Quiz.preview', compact(
                 'quiz',
                 'questions',
                 'totalQuestions',
@@ -2504,21 +2504,21 @@ class QuizController extends Controller
     {
         $teacher = Auth::user()->teacher;
         $quizzes = $this->quizQuery()->where('status', 'draft')->with(['subject', 'class'])->orderBy('created_at', 'desc')->paginate(10);
-        return view('guru.quiz.draft', compact('quizzes'));
+        return view('Guru.Quiz.draft', compact('quizzes'));
     }
 
     public function activeQuizzes()
     {
         $teacher = Auth::user()->teacher;
         $quizzes = $this->quizQuery()->where('status', 'active')->with(['subject', 'class'])->orderBy('created_at', 'desc')->paginate(10);
-        return view('guru.quiz.active', compact('quizzes'));
+        return view('Guru.Quiz.active', compact('quizzes'));
     }
 
     public function completedQuizzes()
     {
         $teacher = Auth::user()->teacher;
         $quizzes = $this->quizQuery()->where('status', 'finished')->with(['subject', 'class'])->orderBy('created_at', 'desc')->paginate(10);
-        return view('guru.quiz.completed', compact('quizzes'));
+        return view('Guru.Quiz.completed', compact('quizzes'));
     }
 
     // ==========================================
