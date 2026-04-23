@@ -263,17 +263,20 @@
     {{-- ===== MODALS ===== --}}
     @foreach ($tasks as $task)
         @php
-            if (!function_exists('file_url')) {
-                dd('Fungsi file_url tidak ditemukan, cek autoload composer');
-            }
+            // Helper untuk menghasilkan URL file menggunakan route file.serve
+            // (tanpa bergantung pada fungsi file_url yang bermasalah)
+            $getFileUrl = function ($path) {
+                if (!$path) return null;
+                // Jika path sudah berupa URL penuh, kembalikan langsung
+                if (filter_var($path, FILTER_VALIDATE_URL)) return $path;
+                // Gunakan route file.serve yang sudah ada di web.php
+                return route('file.serve', ['path' => $path]);
+            };
 
             $status = $task->collection_status ?? 'Belum mengumpulkan';
             $filePath = $task->file_task ?? null;
             $fileExt = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
-
-            // ✅ PERBAIKAN RAILWAY: gunakan helper file_url() dari app/Helpers/FileHelper.php
-            // Helper ini selalu pakai route('file.serve') jika tersedia, jadi bekerja di Railway
-            $fileUrl = file_url($filePath);
+            $fileUrl = $getFileUrl($filePath);
 
             $hasMateri = $task->materi !== null;
             $materiId = $hasMateri ? $task->materi->id : null;
@@ -434,7 +437,7 @@
                             $collection = $task->collections->first();
                             $jawabanPath = $collection?->file_collection ?? null;
                             $jawabanExt = $jawabanPath ? strtolower(pathinfo($jawabanPath, PATHINFO_EXTENSION)) : null;
-                            $jawabanUrl = file_url($jawabanPath);
+                            $jawabanUrl = $getFileUrl($jawabanPath);
                         @endphp
                         @if ($jawabanPath)
                             <div>
