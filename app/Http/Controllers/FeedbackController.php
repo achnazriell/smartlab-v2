@@ -16,7 +16,7 @@ class FeedbackController extends Controller
             ->paginate(10);
 
 
-        return view('users.feedback', compact('feedbacks'));
+        return view('Users.feedback', compact('feedbacks'));
     }
 
     public function create()

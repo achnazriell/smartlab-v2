@@ -1,6 +1,20 @@
 @extends('layouts.appSiswa')
 
 @section('content')
+    {{-- ✅ PERBAIKAN: Hitung file URL sekali di awal, gunakan route file.serve jika tersedia --}}
+    @php
+        $fileMateri  = $materi->file_materi ?? null;
+        $fileExt     = $fileMateri ? strtolower(pathinfo($fileMateri, PATHINFO_EXTENSION)) : null;
+        // Gunakan route file.serve (bekerja di Railway), fallback ke Storage::url() jika tidak ada
+        $fileUrl     = $fileMateri
+            ? (Route::has('file.serve')
+                ? route('file.serve', ['path' => $fileMateri])
+                : Storage::url($fileMateri))
+            : null;
+        $isPdf       = $fileExt === 'pdf';
+        $isImage     = in_array($fileExt, ['jpg','jpeg','png','webp']);
+    @endphp
+
     <div class="min-h-screen bg-slate-50">
         <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex justify-center items-center">
             <div class="loader border-t-4 border-blue-600 rounded-full w-12 h-12 animate-spin"></div>
@@ -114,17 +128,17 @@
                         </div>
                     @endif
 
-                    <!-- File Materi — Direct PDF Viewer with Page Pagination -->
+                    <!-- File Materi -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <div class="bg-gradient-to-r from-slate-700 to-slate-600 px-5 sm:px-7 py-4 flex items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-file-pdf text-white text-sm"></i>
+                                    <i class="fas {{ $isPdf ? 'fa-file-pdf' : ($isImage ? 'fa-file-image' : 'fa-file') }} text-white text-sm"></i>
                                 </div>
                                 <h2 class="text-base sm:text-lg font-bold text-white">File Materi</h2>
                             </div>
-                            @if ($materi->file_materi)
-                                <a href="{{ Storage::url($materi->file_materi) }}" download
+                            @if ($fileUrl)
+                                <a href="{{ $fileUrl }}" download
                                     class="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
                                     <i class="fas fa-download text-xs"></i>
                                     <span class="hidden sm:inline">Download</span>
@@ -132,77 +146,106 @@
                             @endif
                         </div>
 
-                        @if ($materi->file_materi)
-                            {{-- PDF Viewer Container --}}
+                        @if ($fileUrl)
                             <div class="bg-slate-100 p-3 sm:p-4">
-                                <!-- Page Controls -->
-                                <div id="pdf-controls"
-                                    class="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 mb-3 shadow-sm border border-slate-200">
-                                    <button id="pdf-prev"
-                                        class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                        disabled>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                                        </svg>
-                                        <span class="hidden sm:inline">Sebelumnya</span>
-                                    </button>
 
-                                    <div class="flex items-center gap-2 text-sm text-slate-700">
-                                        <span class="font-medium">Halaman</span>
-                                        <span id="pdf-page-display"
-                                            class="bg-blue-600 text-white font-bold px-3 py-0.5 rounded-lg min-w-[2.5rem] text-center">1</span>
-                                        <span class="font-medium">dari</span>
-                                        <span id="pdf-total-pages" class="font-bold text-slate-900">—</span>
+                                @if ($isPdf)
+                                    {{-- ===== PDF VIEWER ===== --}}
+                                    <!-- Page Controls -->
+                                    <div id="pdf-controls"
+                                        class="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 mb-3 shadow-sm border border-slate-200">
+                                        <button id="pdf-prev"
+                                            class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            disabled>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                            </svg>
+                                            <span class="hidden sm:inline">Sebelumnya</span>
+                                        </button>
+                                        <div class="flex items-center gap-2 text-sm text-slate-700">
+                                            <span class="font-medium">Halaman</span>
+                                            <span id="pdf-page-display"
+                                                class="bg-blue-600 text-white font-bold px-3 py-0.5 rounded-lg min-w-[2.5rem] text-center">1</span>
+                                            <span class="font-medium">dari</span>
+                                            <span id="pdf-total-pages" class="font-bold text-slate-900">—</span>
+                                        </div>
+                                        <button id="pdf-next"
+                                            class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                                            <span class="hidden sm:inline">Berikutnya</span>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </button>
                                     </div>
 
-                                    <button id="pdf-next"
-                                        class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                                        <span class="hidden sm:inline">Berikutnya</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <!-- Canvas Viewer -->
-                                <div id="pdf-canvas-wrapper"
-                                    class="relative flex items-center justify-center bg-slate-200 rounded-xl overflow-hidden"
-                                    style="min-height: 400px;">
-                                    <canvas id="pdf-canvas" class="max-w-full rounded-xl shadow-md block"></canvas>
-                                    <div id="pdf-loading"
-                                        class="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-xl">
-                                        <div class="text-center">
-                                            <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
-                                            <p class="text-slate-500 text-sm font-medium">Memuat PDF...</p>
+                                    <!-- Canvas Viewer -->
+                                    <div id="pdf-canvas-wrapper"
+                                        class="relative flex items-center justify-center bg-slate-200 rounded-xl overflow-hidden"
+                                        style="min-height: 400px;">
+                                        <canvas id="pdf-canvas" class="max-w-full rounded-xl shadow-md block"></canvas>
+                                        <div id="pdf-loading"
+                                            class="absolute inset-0 flex items-center justify-center bg-slate-100 rounded-xl">
+                                            <div class="text-center">
+                                                <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3"></div>
+                                                <p class="text-slate-500 text-sm font-medium">Memuat PDF...</p>
+                                            </div>
+                                        </div>
+                                        <div id="pdf-error" class="hidden absolute inset-0 flex items-center justify-center bg-slate-100 rounded-xl p-6">
+                                            <div class="text-center">
+                                                <i class="fas fa-exclamation-triangle text-amber-500 text-3xl mb-3"></i>
+                                                <p class="text-slate-700 font-semibold mb-1">Gagal memuat PDF</p>
+                                                <p class="text-slate-500 text-sm mb-4">Coba buka langsung atau download file.</p>
+                                                {{-- ✅ Tombol fallback sudah pakai $fileUrl yang benar --}}
+                                                <a href="{{ $fileUrl }}" target="_blank"
+                                                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                                    Buka PDF
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div id="pdf-error" class="hidden absolute inset-0 flex items-center justify-center bg-slate-100 rounded-xl p-6">
-                                        <div class="text-center">
-                                            <i class="fas fa-exclamation-triangle text-amber-500 text-3xl mb-3"></i>
-                                            <p class="text-slate-700 font-semibold mb-1">Gagal memuat PDF</p>
-                                            <p class="text-slate-500 text-sm mb-4">Coba buka langsung atau download file.</p>
-                                            <a href="{{ Storage::url($materi->file_materi) }}" target="_blank"
-                                                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                                                <i class="fas fa-external-link-alt text-xs"></i>
-                                                Buka PDF
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- Mobile quick action -->
-                                <div class="mt-3 flex gap-2 sm:hidden">
-                                    <a href="{{ Storage::url($materi->file_materi) }}" target="_blank"
-                                        class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-                                        <i class="fas fa-external-link-alt text-xs"></i>
-                                        Buka Fullscreen
-                                    </a>
-                                    <a href="{{ Storage::url($materi->file_materi) }}" download
-                                        class="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-                                        <i class="fas fa-download text-xs"></i>
-                                        Download
-                                    </a>
-                                </div>
+                                    <!-- Mobile quick action -->
+                                    <div class="mt-3 flex gap-2">
+                                        <a href="{{ $fileUrl }}" target="_blank"
+                                            class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                            Buka Fullscreen
+                                        </a>
+                                        <a href="{{ $fileUrl }}" download
+                                            class="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                                            <i class="fas fa-download text-xs"></i>
+                                            Download
+                                        </a>
+                                    </div>
+
+                                @elseif ($isImage)
+                                    {{-- ===== IMAGE VIEWER ===== --}}
+                                    <div class="rounded-xl overflow-hidden bg-white">
+                                        <img src="{{ $fileUrl }}"
+                                             alt="File Materi"
+                                             class="w-full h-auto block"
+                                             onerror="this.parentElement.innerHTML='<div class=\'p-8 text-center\'><i class=\'fas fa-image text-slate-400 text-4xl mb-3\'></i><p class=\'text-slate-500\'>Gambar tidak dapat dimuat</p></div>'">
+                                    </div>
+                                    <div class="mt-3">
+                                        <a href="{{ $fileUrl }}" download
+                                            class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                                            <i class="fas fa-download text-xs"></i>
+                                            Download Gambar
+                                        </a>
+                                    </div>
+
+                                @else
+                                    {{-- ===== FILE LAIN ===== --}}
+                                    <div class="bg-white rounded-xl p-6 text-center">
+                                        <i class="fas fa-file text-slate-400 text-4xl mb-3"></i>
+                                        <p class="text-slate-600 font-medium mb-3">File tersedia untuk diunduh</p>
+                                        <a href="{{ $fileUrl }}" download
+                                            class="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
+                                            <i class="fas fa-download text-xs"></i> Download File
+                                        </a>
+                                    </div>
+                                @endif
                             </div>
                         @else
                             <div class="p-6">
@@ -260,30 +303,31 @@
                                 </div>
                             </div>
 
-                            @if ($materi->file_materi)
+                            @if ($fileUrl)
                             <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
                                 <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-file-pdf text-red-500 text-xs"></i>
+                                    <i class="fas {{ $isPdf ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500' }} text-xs"></i>
                                 </div>
                                 <div>
                                     <p class="text-xs text-slate-500 font-medium">Format File</p>
-                                    <p class="text-sm font-semibold text-slate-800 mt-0.5">PDF Document</p>
+                                    <p class="text-sm font-semibold text-slate-800 mt-0.5">{{ strtoupper($fileExt) }} Document</p>
                                 </div>
                             </div>
                             @endif
 
-                            @if ($materi->file_materi)
-                            <a href="{{ Storage::url($materi->file_materi) }}" download
+                            @if ($fileUrl)
+                            {{-- ✅ Semua href sudah pakai $fileUrl --}}
+                            <a href="{{ $fileUrl }}" download
                                 class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm">
                                 <i class="fas fa-download text-xs"></i>
-                                Download PDF
+                                Download File
                             </a>
                             @endif
 
                             <a href="{{ route('semuamateri') }}"
                                 class="w-full inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm">
                                 <i class="fas fa-arrow-left text-xs"></i>
-                                Kembali ke Daftar Materi
+                                Kembali ke Daftar
                             </a>
                         </div>
                     </div>
@@ -292,26 +336,25 @@
         </div>
     </div>
 
-    {{-- PDF.js from CDN --}}
+    {{-- PDF.js dari CDN --}}
+    @if ($isPdf)
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs" type="module"></script>
+    @endif
 
     <script type="module">
-        // PDF.js setup
-        const { pdfjsLib } = globalThis;
-
-        // Reading timer
+        // ===== Reading Timer =====
         const MATERI_ID     = {{ $materi->id }};
         const TOTAL_SECONDS = 300;
         const STORAGE_KEY   = `materi_read_${MATERI_ID}`;
 
-        const progressBar   = document.getElementById('reading-progress-bar');
-        const timerText     = document.getElementById('reading-timer-text');
-        const inProgressEl  = document.getElementById('reading-in-progress');
-        const doneEl        = document.getElementById('reading-done');
-        const sidebarStatus = document.getElementById('sidebar-reading-status');
-        const sidebarLabel  = document.getElementById('sidebar-reading-label');
+        const progressBar     = document.getElementById('reading-progress-bar');
+        const timerText       = document.getElementById('reading-timer-text');
+        const inProgressEl    = document.getElementById('reading-in-progress');
+        const doneEl          = document.getElementById('reading-done');
+        const sidebarStatus   = document.getElementById('sidebar-reading-status');
+        const sidebarLabel    = document.getElementById('sidebar-reading-label');
         const sidebarIconWrap = document.getElementById('sidebar-status-icon-wrap');
-        const sidebarIcon   = document.getElementById('sidebar-status-icon');
+        const sidebarIcon     = document.getElementById('sidebar-status-icon');
 
         function markAsDone() {
             localStorage.setItem(STORAGE_KEY, 'done');
@@ -322,7 +365,6 @@
             sidebarIconWrap.className = 'w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0';
             sidebarIcon.className = 'fas fa-circle-check text-green-600 text-xs';
         }
-
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60);
             const s = seconds % 60;
@@ -337,8 +379,8 @@
                 elapsed++;
                 const remaining = TOTAL_SECONDS - elapsed;
                 const pct = (elapsed / TOTAL_SECONDS) * 100;
-                progressBar.style.width = pct + '%';
-                timerText.textContent = formatTime(remaining > 0 ? remaining : 0);
+                if (progressBar) progressBar.style.width = pct + '%';
+                if (timerText)   timerText.textContent = formatTime(remaining > 0 ? remaining : 0);
                 if (elapsed >= TOTAL_SECONDS) { clearInterval(timer); markAsDone(); }
             }, 1000);
         }
@@ -347,84 +389,90 @@
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
 
-        @if ($materi->file_materi)
-        // PDF Viewer
-        const PDF_URL = "{{ Storage::url($materi->file_materi) }}";
+        @if ($isPdf && $fileUrl)
+        // ===== PDF.js Viewer =====
+        // ✅ PERBAIKAN: gunakan $fileUrl (route file.serve) bukan Storage::url()
+        const PDF_URL = @json($fileUrl);
 
-        const canvas       = document.getElementById('pdf-canvas');
-        const ctx          = canvas.getContext('2d');
-        const loadingEl    = document.getElementById('pdf-loading');
-        const errorEl      = document.getElementById('pdf-error');
-        const prevBtn      = document.getElementById('pdf-prev');
-        const nextBtn      = document.getElementById('pdf-next');
-        const pageDisplay  = document.getElementById('pdf-page-display');
+        const canvas      = document.getElementById('pdf-canvas');
+        const ctx         = canvas?.getContext('2d');
+        const loadingEl   = document.getElementById('pdf-loading');
+        const errorEl     = document.getElementById('pdf-error');
+        const prevBtn     = document.getElementById('pdf-prev');
+        const nextBtn     = document.getElementById('pdf-next');
+        const pageDisplay = document.getElementById('pdf-page-display');
         const totalDisplay = document.getElementById('pdf-total-pages');
 
-        let pdfDoc    = null;
+        let pdfDoc      = null;
         let currentPage = 1;
-        let rendering = false;
+        let rendering   = false;
 
-        // Set PDF.js worker
-        if (typeof pdfjsLib !== 'undefined') {
+        // Tunggu pdf.js module load
+        const waitForPdfJs = () => new Promise((resolve, reject) => {
+            let tries = 0;
+            const check = () => {
+                if (typeof globalThis.pdfjsLib !== 'undefined') return resolve(globalThis.pdfjsLib);
+                if (++tries > 50) return reject(new Error('pdf.js timeout'));
+                setTimeout(check, 100);
+            };
+            check();
+        });
+
+        waitForPdfJs().then(pdfjsLib => {
             pdfjsLib.GlobalWorkerOptions.workerSrc =
                 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.mjs';
 
-            pdfjsLib.getDocument(PDF_URL).promise.then(doc => {
-                pdfDoc = doc;
-                totalDisplay.textContent = doc.numPages;
-                loadingEl.classList.add('hidden');
-                renderPage(1);
-            }).catch(err => {
-                console.error('PDF load error:', err);
-                loadingEl.classList.add('hidden');
-                errorEl.classList.remove('hidden');
-            });
-        } else {
-            // Fallback: try again after a tick (module might not be loaded)
-            loadingEl.classList.add('hidden');
-            errorEl.classList.remove('hidden');
-        }
+            return pdfjsLib.getDocument({
+                url: PDF_URL,
+                // ✅ withCredentials agar cookie auth dikirim (penting untuk route file.serve)
+                withCredentials: true,
+            }).promise;
+        }).then(doc => {
+            pdfDoc = doc;
+            if (totalDisplay) totalDisplay.textContent = doc.numPages;
+            if (loadingEl)    loadingEl.classList.add('hidden');
+            renderPage(1);
+        }).catch(err => {
+            console.error('PDF load error:', err);
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl)   errorEl.classList.remove('hidden');
+        });
 
         function renderPage(num) {
-            if (!pdfDoc || rendering) return;
+            if (!pdfDoc || rendering || !canvas || !ctx) return;
             rendering = true;
-            loadingEl.style.background = 'rgba(241,245,249,0.8)';
-            loadingEl.classList.remove('hidden');
+            if (loadingEl) { loadingEl.style.background = 'rgba(241,245,249,0.8)'; loadingEl.classList.remove('hidden'); }
 
             pdfDoc.getPage(num).then(page => {
-                const wrapper = document.getElementById('pdf-canvas-wrapper');
-                const maxWidth = wrapper.clientWidth - 24;
+                const wrapper  = document.getElementById('pdf-canvas-wrapper');
+                const maxWidth = (wrapper?.clientWidth ?? 600) - 24;
                 const viewport = page.getViewport({ scale: 1 });
-                const scale = Math.min(maxWidth / viewport.width, 2);
-                const scaled = page.getViewport({ scale });
+                const scale    = Math.min(maxWidth / viewport.width, 2);
+                const scaled   = page.getViewport({ scale });
 
                 canvas.width  = scaled.width;
                 canvas.height = scaled.height;
 
                 page.render({ canvasContext: ctx, viewport: scaled }).promise.then(() => {
                     rendering = false;
-                    loadingEl.classList.add('hidden');
-                    pageDisplay.textContent = num;
-                    prevBtn.disabled = num <= 1;
-                    nextBtn.disabled = num >= pdfDoc.numPages;
+                    if (loadingEl)    loadingEl.classList.add('hidden');
+                    if (pageDisplay)  pageDisplay.textContent = num;
+                    if (prevBtn)      prevBtn.disabled = num <= 1;
+                    if (nextBtn)      nextBtn.disabled = num >= pdfDoc.numPages;
                 });
             }).catch(() => {
                 rendering = false;
-                loadingEl.classList.add('hidden');
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (errorEl)   errorEl.classList.remove('hidden');
             });
         }
 
-        prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) { currentPage--; renderPage(currentPage); }
-        });
-        nextBtn.addEventListener('click', () => {
-            if (pdfDoc && currentPage < pdfDoc.numPages) { currentPage++; renderPage(currentPage); }
-        });
+        if (prevBtn) prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(currentPage); } });
+        if (nextBtn) nextBtn.addEventListener('click', () => { if (pdfDoc && currentPage < pdfDoc.numPages) { currentPage++; renderPage(currentPage); } });
 
-        // Keyboard navigation
         document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextBtn.click();
-            if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevBtn.click();
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextBtn?.click();
+            if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevBtn?.click();
         });
         @endif
     </script>

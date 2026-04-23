@@ -1234,7 +1234,7 @@ class ExamController extends Controller
      * GET /guru/exams/{examId}/questions/{questionId}
      * Ambil data soal untuk diedit (AJAX)
      */
-    public function editQuestion($examId, $questionId)
+    public function getQuestion($examId, $questionId)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ')
@@ -1464,7 +1464,7 @@ class ExamController extends Controller
      * DELETE /guru/exams/{examId}/questions/{questionId}
      * Hapus soal (AJAX)
      */
-    public function destroyQuestion($examId, $questionId)
+    public function deleteQuestion($examId, $questionId)
     {
         $exam = Exam::where('teacher_id', $this->teacherId())
             ->where('type', '!=', 'QUIZ')
@@ -1504,4 +1504,4 @@ class ExamController extends Controller
             ], 500);
         }
     }
-}
+}   

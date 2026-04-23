@@ -95,18 +95,17 @@
             <div class="space-y-3 sm:space-y-4">
                 @foreach ($tasks as $task)
                     @php
-                        $collection = $task->collections->first();
-                        $nilai = $collection && $collection->assessment ? $collection->assessment->mark_task : 'Belum Dinilai';
-                        $status = $task->collection_status ?? 'Belum mengumpulkan';
-                        $hasMateri = $task->materi !== null;
-                        $materiId = $hasMateri ? $task->materi->id : null;
-                        $materiUrl = $hasMateri ? route('materi.show', $materiId) : null;
-                        $materiJudul = $hasMateri ? $task->materi->title_materi : null;
-
+                        $collection   = $task->collections->first();
+                        $nilai        = $collection && $collection->assessment ? $collection->assessment->mark_task : 'Belum Dinilai';
+                        $status       = $task->collection_status ?? 'Belum mengumpulkan';
+                        $hasMateri    = $task->materi !== null;
+                        $materiId     = $hasMateri ? $task->materi->id : null;
+                        $materiUrl    = $hasMateri ? route('materi.show', $materiId) : null;
+                        $materiJudul  = $hasMateri ? $task->materi->title_materi : null;
                         $statusConfig = match($status) {
                             'Sudah mengumpulkan' => ['color' => 'emerald', 'icon' => 'fa-check-circle', 'label' => 'Sudah Mengumpulkan'],
-                            'Tidak mengumpulkan' => ['color' => 'red', 'icon' => 'fa-times-circle', 'label' => 'Tidak Mengumpulkan'],
-                            default => ['color' => 'amber', 'icon' => 'fa-clock', 'label' => 'Belum Mengumpulkan'],
+                            'Tidak mengumpulkan' => ['color' => 'red',     'icon' => 'fa-times-circle', 'label' => 'Tidak Mengumpulkan'],
+                            default              => ['color' => 'amber',   'icon' => 'fa-clock',        'label' => 'Belum Mengumpulkan'],
                         };
                     @endphp
 
@@ -211,7 +210,18 @@
 
     {{-- ===== MODALS ===== --}}
     @foreach ($tasks as $task)
-        @php $status = $task->collection_status ?? 'Belum mengumpulkan'; @endphp
+        @php
+            $status   = $task->collection_status ?? 'Belum mengumpulkan';
+            // ✅ PERBAIKAN: gunakan route file.serve agar bekerja di Railway
+            $filePath = $task->file_task ?? null;
+            $fileExt  = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
+            // Coba route file.serve dulu, fallback ke Storage::url()
+            $fileUrl  = $filePath
+                ? (Route::has('file.serve')
+                    ? route('file.serve', ['path' => $filePath])
+                    : Storage::url($filePath))
+                : null;
+        @endphp
 
         {{-- Modal Pengumpulan --}}
         @if ($status === 'Belum mengumpulkan')
@@ -294,20 +304,51 @@
                         <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">{{ $task->description_task }}</p>
                     </div>
                     @endif
-                    @php
-                        $filePath = $task->file_task ?? null;
-                        $fileExt = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
-                        $fileUrl = $filePath ? asset('storage/' . $filePath) : null;
-                    @endphp
+
+                    {{-- ✅ PERBAIKAN: File preview menggunakan route file.serve (aman di Railway) --}}
                     <div>
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Tugas</p>
                         @if ($filePath && in_array($fileExt, ['jpg','jpeg','png']))
-                            <img src="{{ $fileUrl }}" alt="File Tugas" class="w-full h-auto rounded-xl border border-slate-200">
+                            {{-- Preview gambar --}}
+                            <img src="{{ $fileUrl }}"
+                                 alt="File Tugas"
+                                 class="w-full h-auto rounded-xl border border-slate-200"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                            <div style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                                <i class="fas fa-image text-red-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-red-600 font-medium">Gambar tidak dapat dimuat</p>
+                                <a href="{{ $fileUrl }}" target="_blank" download
+                                    class="mt-2 inline-flex items-center gap-1 text-xs text-red-600 underline">
+                                    <i class="fas fa-download"></i> Download file
+                                </a>
+                            </div>
                         @elseif ($filePath && $fileExt === 'pdf')
-                            <a href="{{ $fileUrl }}" target="_blank"
-                                class="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-file-pdf"></i> Buka PDF
-                            </a>
+                            {{-- PDF: tampilkan embed + tombol buka --}}
+                            <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                                {{-- Embed PDF untuk preview (bekerja di browser yang support) --}}
+                                <div class="relative" style="height: 400px;">
+                                    <embed src="{{ $fileUrl }}"
+                                           type="application/pdf"
+                                           class="w-full h-full rounded-t-xl"
+                                           id="pdf-embed-{{ $task->id }}">
+                                    {{-- Fallback jika embed tidak didukung --}}
+                                    <div id="pdf-fallback-{{ $task->id }}"
+                                         class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-100 rounded-t-xl">
+                                        <i class="fas fa-file-pdf text-red-500 text-4xl mb-3"></i>
+                                        <p class="text-slate-600 font-medium text-sm">Preview tidak tersedia di perangkat ini</p>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
+                                    <a href="{{ $fileUrl }}" target="_blank"
+                                        class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-external-link-alt text-xs"></i> Buka PDF
+                                    </a>
+                                    <a href="{{ $fileUrl }}" download
+                                        class="flex-1 inline-flex items-center justify-center gap-2 bg-slate-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                        <i class="fas fa-download text-xs"></i> Download
+                                    </a>
+                                </div>
+                            </div>
                         @elseif ($filePath)
                             <a href="{{ $fileUrl }}" target="_blank"
                                 class="inline-flex items-center gap-2 bg-slate-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors">
@@ -352,9 +393,9 @@
 
         const ALLOWED_EXTENSIONS = ['pdf','jpg','jpeg','png'];
         function handleFileSelect(input, taskId) {
-            const file = input.files[0];
-            const nameSpan = document.getElementById('file-name-' + taskId);
-            const errorEl = document.getElementById('file-error-' + taskId);
+            const file      = input.files[0];
+            const nameSpan  = document.getElementById('file-name-' + taskId);
+            const errorEl   = document.getElementById('file-error-' + taskId);
             const submitBtn = document.getElementById('submit-btn-' + taskId);
             if (!file) { nameSpan.textContent = 'Belum ada file dipilih'; errorEl.classList.remove('show'); return; }
             const ext = file.name.split('.').pop().toLowerCase();
@@ -381,13 +422,13 @@
 
         function isMateriRead(materiId) { return localStorage.getItem(`materi_read_${materiId}`) === 'done'; }
         function unlockTaskButton(taskId) {
-            const locked = document.getElementById(`btn-kumpul-locked-${taskId}`);
-            const unlocked = document.getElementById(`btn-kumpul-unlocked-${taskId}`);
-            const lockBadge = document.getElementById(`materi-lock-badge-${taskId}`);
+            const locked       = document.getElementById(`btn-kumpul-locked-${taskId}`);
+            const unlocked     = document.getElementById(`btn-kumpul-unlocked-${taskId}`);
+            const lockBadge    = document.getElementById(`materi-lock-badge-${taskId}`);
             const unlockedBadge = document.getElementById(`materi-unlocked-badge-${taskId}`);
-            if (locked) locked.classList.add('hidden');
-            if (unlocked) unlocked.classList.remove('hidden');
-            if (lockBadge) lockBadge.classList.add('hidden');
+            if (locked)        locked.classList.add('hidden');
+            if (unlocked)      unlocked.classList.remove('hidden');
+            if (lockBadge)     lockBadge.classList.add('hidden');
             if (unlockedBadge) unlockedBadge.classList.remove('hidden');
         }
         function checkAllLocks() {

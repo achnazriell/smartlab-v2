@@ -18,7 +18,7 @@
             <div class="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
                 {{-- Welcome Banner --}}
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden min-h-[160px] sm:min-h-[200px]">
-                    <img src="{{ asset('image/banner dashboard siswa.webp') }}" alt="dashboard1"
+                    <img src="{{ asset('image/banner_dashboard_siswa.webp') }}" alt="dashboard1"
                         class="absolute inset-0 w-full h-full object-cover">
                     <div class="relative z-10 p-5 sm:p-8 flex flex-col justify-center h-full min-h-[160px] sm:min-h-[200px]">
                         <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 mb-2">

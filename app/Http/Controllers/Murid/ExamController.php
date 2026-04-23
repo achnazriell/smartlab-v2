@@ -118,12 +118,12 @@ class ExamController extends Controller
             if (!$request->has('show_all') || $request->show_all != 'true') {
                 $query->where(function ($q) {
                     $q->whereNull('start_at')
-                      ->orWhere('start_at', '<=', now());
+                        ->orWhere('start_at', '<=', now());
                 })
-                ->where(function ($q) {
-                    $q->whereNull('end_at')
-                      ->orWhere('end_at', '>=', now());
-                });
+                    ->where(function ($q) {
+                        $q->whereNull('end_at')
+                            ->orWhere('end_at', '>=', now());
+                    });
             }
 
             // Filter pencarian
@@ -131,9 +131,9 @@ class ExamController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
-                      ->orWhereHas('subject', function ($q) use ($search) {
-                          $q->where('name_subject', 'like', "%{$search}%");
-                      });
+                        ->orWhereHas('subject', function ($q) use ($search) {
+                            $q->where('name_subject', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -160,11 +160,11 @@ class ExamController extends Controller
                 } elseif ($status === 'selesai') {
                     $query->where(function ($q) {
                         $q->where('status', 'inactive')
-                          ->orWhere(function ($subQ) {
-                              $subQ->where('status', 'active')
-                                   ->whereNotNull('end_at')
-                                   ->where('end_at', '<', now());
-                          });
+                            ->orWhere(function ($subQ) {
+                                $subQ->where('status', 'active')
+                                    ->whereNotNull('end_at')
+                                    ->where('end_at', '<', now());
+                            });
                     });
                 }
             }
@@ -192,7 +192,6 @@ class ExamController extends Controller
             }
 
             return view('Siswa.soal', compact('exams', 'hasClass'));
-
         } catch (\Exception $e) {
             Log::error('Error in MuridExamController@index', [
                 'error' => $e->getMessage(),
@@ -236,8 +235,8 @@ class ExamController extends Controller
 
             // Load exam — withoutGlobalScopes() agar tidak terkena scope yang memfilter berdasarkan user
             $exam = Exam::withoutGlobalScopes()->with([
-                'questions' => function($q) {
-                    $q->orderBy('order')->with(['choices' => function($q) {
+                'questions' => function ($q) {
+                    $q->orderBy('order')->with(['choices' => function ($q) {
                         $q->orderBy('order');
                     }]);
                 },
@@ -321,7 +320,6 @@ class ExamController extends Controller
                 'canStart',
                 'canStartMessage'
             ));
-
         } catch (\Exception $e) {
             Log::error('Error in MuridExamController@showDetail', [
                 'error' => $e->getMessage(),
@@ -355,33 +353,22 @@ class ExamController extends Controller
             }
 
             // ✅ PERBAIKAN: Ambil kelas aktif
+            // Di dalam method start()
             $classId = $this->getStudentClassId($student);
-
             if (!$classId) {
                 return redirect()->route('soal.index')
                     ->with('error', 'Anda belum memiliki kelas.');
             }
 
-            $exam = Exam::withoutGlobalScopes()->find($examId);
-
-            if (!$exam) {
-                DB::rollBack();
-                return redirect()->route('soal.index')
-                    ->with('error', 'Ujian tidak ditemukan.');
-            }
-
-            // ✅ PERBAIKAN: Validasi akses kelas
+            // Validasi kelas
             if ($exam->class_id != $classId) {
-                DB::rollBack();
                 Log::warning('Unauthorized exam start attempt', [
                     'student_id' => $student->id,
-                    'exam_id' => $exam->id,
-                    'student_class' => $classId,
-                    'exam_class' => $exam->class_id
+                    'exam_class' => $exam->class_id,
+                    'student_class' => $classId
                 ]);
-
-                return redirect()->route('soal.index')
-                    ->with('error', 'Anda tidak memiliki akses ke ujian ini.');
+                return redirect()->route('soal.detail', $examId)
+                    ->with('error', 'Ujian tidak tersedia untuk kelas Anda.');
             }
 
             // Validasi status ujian
@@ -472,7 +459,6 @@ class ExamController extends Controller
 
             return redirect()->route('soal.attempt', $examId)
                 ->with('success', 'Ujian dimulai. Selamat mengerjakan!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error starting exam', [
@@ -646,7 +632,6 @@ class ExamController extends Controller
                 'securitySettings',
                 'markedForReview'
             ))->with('questionsFormatted', $questionsFormatted);
-
         } catch (\Exception $e) {
             Log::error('Error accessing exam attempt', [
                 'error' => $e->getMessage(),
@@ -780,7 +765,6 @@ class ExamController extends Controller
                     'answered_at' => $answer->answered_at->format('Y-m-d H:i:s')
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error saving answer', [
                 'error' => $e->getMessage(),
@@ -850,7 +834,7 @@ class ExamController extends Controller
                     ->keyBy('id');
 
                 // Label mapping untuk PG (A=0, B=1, C=2, dst)
-                $labelMap = ['A'=>0,'B'=>1,'C'=>2,'D'=>3,'E'=>4,'F'=>5];
+                $labelMap = ['A' => 0, 'B' => 1, 'C' => 2, 'D' => 3, 'E' => 4, 'F' => 5];
 
                 foreach ($submittedAnswers as $questionId => $answerValue) {
                     $questionId = (int) $questionId;
@@ -887,7 +871,8 @@ class ExamController extends Controller
                             }
                         }
                         // Semua label harus cocok
-                        sort($selectedLabels); sort($correctLabels);
+                        sort($selectedLabels);
+                        sort($correctLabels);
                         $isCorrect = ($selectedLabels === $correctLabels);
                         $score = $isCorrect ? $question->score : 0;
                     } elseif (in_array($question->type, ['BS', 'IS', 'ES', 'SK', 'MJ'])) {
@@ -908,7 +893,10 @@ class ExamController extends Controller
                             foreach ($acceptedAnswers as $acc) {
                                 $given = $caseSensitive ? trim($answerText) : strtolower(trim($answerText));
                                 $expected = $caseSensitive ? trim($acc) : strtolower(trim($acc));
-                                if ($given === $expected) { $isCorrect = true; break; }
+                                if ($given === $expected) {
+                                    $isCorrect = true;
+                                    break;
+                                }
                             }
                             $score = $isCorrect ? $question->score : 0;
                         } elseif ($question->type === 'SK') {
@@ -970,7 +958,6 @@ class ExamController extends Controller
 
             return redirect()->route('soal.result', $attempt->id)
                 ->with('success', 'Ujian berhasil dikumpulkan!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error submitting exam', [
@@ -1012,9 +999,9 @@ class ExamController extends Controller
                 'answers.question.choices',
                 'answers.choice',
             ])
-            ->where('id', $attemptId)
-            ->where('student_id', $student->id)
-            ->first();
+                ->where('id', $attemptId)
+                ->where('student_id', $student->id)
+                ->first();
 
             if (!$attempt) {
                 return redirect()->route('soal.index')
@@ -1036,7 +1023,8 @@ class ExamController extends Controller
             if (($exam->show_result_after ?? '') === 'never') {
                 $canViewResult = false;
             } elseif (($exam->show_result_after ?? '') === 'after_exam_end'
-                && $exam->end_at && now() < $exam->end_at) {
+                && $exam->end_at && now() < $exam->end_at
+            ) {
                 $canViewResult = false;
             }
 
@@ -1058,7 +1046,6 @@ class ExamController extends Controller
                 'wrongAnswers',
                 'unansweredQuestions'
             ));
-
         } catch (\Exception $e) {
             Log::error('Error viewing exam result', [
                 'error'      => $e->getMessage(),
@@ -1188,8 +1175,8 @@ class ExamController extends Controller
                 $query->where('status', 'inactive')
                     ->orWhere(function ($q) {
                         $q->where('status', 'active')
-                          ->whereNotNull('end_at')
-                          ->where('end_at', '<', now());
+                            ->whereNotNull('end_at')
+                            ->where('end_at', '<', now());
                     });
             })
             ->with(['subject', 'class'])
@@ -1355,7 +1342,6 @@ class ExamController extends Controller
                 'violation_count' => $attempt->violation_count,
                 'is_cheating_detected' => $attempt->is_cheating_detected
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error logging violation', [
                 'error' => $e->getMessage(),
@@ -1418,7 +1404,6 @@ class ExamController extends Controller
                 'remaining' => $remaining,
                 'formatted' => gmdate('H:i:s', $remaining)
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error getting time remaining', [
                 'error' => $e->getMessage(),

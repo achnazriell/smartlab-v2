@@ -119,7 +119,7 @@
 
         {{-- ── Banner ── --}}
         <div class="banner-wrap mb-6">
-            <img src="{{ asset('image/banner mapel.webp') }}" alt="banner quiz">
+            <img src="{{ asset('image/banner_mapel.webp') }}" alt="banner quiz">
             <div class="banner-overlay">
                 <p class="banner-title">Hai, {{ Auth::user()->name }}</p>
                 <p class="banner-desc max-w-xl">

@@ -24,6 +24,7 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\FileServeController; // ✅ TAMBAHAN
 
 // Guru Controllers
 use App\Http\Controllers\Guru\ExamController as GuruExamController;
@@ -53,9 +54,11 @@ Route::post('/logout', function (Request $request) {
     $request->session()->regenerateToken();
     return redirect('/Beranda');
 })->name('logout');
+
 Route::get('/debug', function () {
     dd(config('app.env'), config('app.debug'));
 });
+
 // Health check
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
@@ -75,6 +78,14 @@ Route::controller(BerandaController::class)->group(function () {
 
 // ==================== SHARED AUTHENTICATED ROUTES ====================
 Route::middleware(['auth'])->group(function () {
+
+    // ✅ FILE SERVE ROUTE — Solusi Railway (tidak butuh symlink storage)
+    // Melayani file_materi/ dan file_task/ langsung via controller stream
+    // HARUS di dalam middleware auth agar file tidak bisa diakses publik
+    Route::get('/serve-file/{path}', [FileServeController::class, 'serve'])
+        ->where('path', '.*')
+        ->name('file.serve');
+
     // Profile Routes
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'index'])->name('index');
@@ -185,6 +196,10 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
                 ->unique('id')
                 ->values();
         });
+
+        // ✅ AJAX untuk get kelas berdasarkan mapel (MateriController)
+        Route::get('/materi/kelas-by-subject/{subjectId}', [MateriController::class, 'getClassesBySubject'])
+            ->name('guru.materi.classes-by-subject');
     });
 
     // Kelas Routes
@@ -313,7 +328,6 @@ Route::middleware(['auth', 'role:Guru'])->group(function () {
             Route::post('/room/participant/{participant}/disqualify', [GuruQuizController::class, 'disqualifyParticipant'])->name('room.participant.disqualify');
 
             // === WARNING SYSTEM ===
-            // Alias: guru.quiz.room.warn (dipakai room.blade) → sama dengan room.participant.warn
             Route::post('/room/warn/{participant}', [GuruQuizController::class, 'warnParticipant'])->name('room.warn');
             Route::post('/room/participant/{participant}/warn', [GuruQuizController::class, 'warnParticipant'])->name('room.participant.warn');
 
@@ -386,7 +400,7 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
         // === QUIZ-SPECIFIC ROUTES (With {quiz} Parameter) ===
         Route::prefix('{quiz}')->group(function () {
 
-            // === DETAIL PAGE (Mandiri: langsung mulai; Live: lihat status ruangan) ===
+            // === DETAIL PAGE ===
             Route::get('/detail', [MuridQuizController::class, 'quizDetail'])->name('detail');
 
             // === ROOM FEATURES ===
@@ -394,14 +408,12 @@ Route::middleware(['auth', 'role:Murid'])->group(function () {
             Route::post('/room/join', [MuridQuizController::class, 'joinQuizRoom'])->name('join-room');
             Route::get('/room/status', [MuridQuizController::class, 'getQuizRoomStatus'])->name('room.status');
             Route::post('/room/mark-ready', [MuridQuizController::class, 'markAsReady'])->name('room.mark-ready');
-
-            // === WARNING — Siswa cek peringatan baru dari guru ===
             Route::get('/room/check-warning', [MuridQuizController::class, 'checkWarning'])->name('room.check-warning');
 
-            // === START QUIZ (Live mode: dari halaman detail) ===
+            // === START QUIZ ===
             Route::post('/start', [MuridQuizController::class, 'playQuiz'])->name('start');
 
-            // === GUIDED CURRENT QUESTION (diakses murid saat mode terpadu) ===
+            // === GUIDED CURRENT QUESTION ===
             Route::get('/room/guided/current', [MuridQuizController::class, 'guidedCurrentQuestion'])->name('room.guided.current');
 
             // === PLAY QUIZ ===
