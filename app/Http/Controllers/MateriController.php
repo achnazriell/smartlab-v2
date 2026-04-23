@@ -47,17 +47,17 @@ class MateriController extends Controller
                 } elseif ($tipe === 'video') {
                     $q->where(function ($sq) {
                         $sq->where('file_materi', 'like', '%.mp4')
-                           ->orWhere('file_materi', 'like', '%.webm')
-                           ->orWhere('file_materi', 'like', '%.mov');
+                            ->orWhere('file_materi', 'like', '%.webm')
+                            ->orWhere('file_materi', 'like', '%.mov');
                     });
                 } elseif ($tipe === 'link') {
                     $q->whereNotNull('link_materi')->where('link_materi', '!=', '');
                 } elseif ($tipe === 'doc') {
                     $q->where(function ($sq) {
                         $sq->where('file_materi', 'like', '%.doc')
-                           ->orWhere('file_materi', 'like', '%.docx')
-                           ->orWhere('file_materi', 'like', '%.ppt')
-                           ->orWhere('file_materi', 'like', '%.pptx');
+                            ->orWhere('file_materi', 'like', '%.docx')
+                            ->orWhere('file_materi', 'like', '%.ppt')
+                            ->orWhere('file_materi', 'like', '%.pptx');
                     });
                 }
             });
@@ -78,7 +78,7 @@ class MateriController extends Controller
         $materis = $materisQuery->paginate(5)->withQueryString();
 
         // ✅ kelasList — dibutuhkan blade untuk dropdown filter (id + name_class)
-        $kelasList = $user->classes()->select('id', 'name_class')->get();
+        $kelasList = $user->classes()->select('classes.id as id', 'name_class')->get();
 
         // ✅ mapelList — dibutuhkan blade untuk dropdown filter (id + name)
         $mapelList = Subject::whereHas('materis', fn($q) => $q->where('user_id', $user->id))
