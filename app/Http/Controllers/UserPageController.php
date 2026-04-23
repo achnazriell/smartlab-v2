@@ -255,20 +255,22 @@ class UserPageController extends Controller
                 ->where(fn($q) => $q->whereNull('end_at')->orWhere('end_at', '>=', now()));
 
             if ($search) {
-                $query->where(fn($q) => $q
-                    ->where('title', 'like', "%$search%")
-                    ->orWhere('type', 'like', "%$search%")
-                    ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
-                    ->orWhereHas('teacher.user', fn($tq) => $tq->where('name', 'like', "%$search%"))
+                $query->where(
+                    fn($q) => $q
+                        ->where('title', 'like', "%$search%")
+                        ->orWhere('type', 'like', "%$search%")
+                        ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+                        ->orWhereHas('teacher.user', fn($tq) => $tq->where('name', 'like', "%$search%"))
                 );
             }
 
             if ($status) {
                 switch ($status) {
                     case 'available':
-                        $query->where(fn($q) => $q
-                            ->whereDoesntHave('attempts', fn($sub) => $sub->where('student_id', $user->id)->whereIn('status', ['submitted', 'timeout']))
-                            ->orWhereHas('attempts', fn($sub) => $sub->where('student_id', $user->id)->where('status', 'in_progress'))
+                        $query->where(
+                            fn($q) => $q
+                                ->whereDoesntHave('attempts', fn($sub) => $sub->where('student_id', $user->id)->whereIn('status', ['submitted', 'timeout']))
+                                ->orWhereHas('attempts', fn($sub) => $sub->where('student_id', $user->id)->where('status', 'in_progress'))
                         );
                         break;
                     case 'completed':
@@ -432,13 +434,13 @@ class UserPageController extends Controller
                     },
                     'tasks as unfinished_task_count' => function ($q) use ($user, $kelasId) {
                         $q->whereHas('classes', fn($sq) => $sq->where('classes.id', $kelasId))
-                          ->whereHas('collections', fn($sq) => $sq->where('user_id', $user->id)->where('status', 'Belum mengumpulkan'));
+                            ->whereHas('collections', fn($sq) => $sq->where('user_id', $user->id)->where('status', 'Belum mengumpulkan'));
                     },
                 ])
                 ->with(['teacherAssignments' => function ($q) use ($kelasId, $academicYearId) {
                     $q->where('class_id', $kelasId)
-                      ->when($academicYearId, fn($sq) => $sq->where('academic_year_id', $academicYearId))
-                      ->with('teacher.user');
+                        ->when($academicYearId, fn($sq) => $sq->where('academic_year_id', $academicYearId))
+                        ->with('teacher.user');
                 }]);
 
             // Search
@@ -500,7 +502,7 @@ class UserPageController extends Controller
         $tasksQuery = Task::with(['collections' => fn($q) => $q->where('user_id', $user->id)])
             ->leftJoin('collections', function ($join) use ($user) {
                 $join->on('tasks.id', '=', 'collections.task_id')
-                     ->where('collections.user_id', $user->id);
+                    ->where('collections.user_id', $user->id);
             })
             ->select('tasks.*', 'collections.status as collection_status')
             ->where('subject_id', $subjectId)
@@ -521,10 +523,12 @@ class UserPageController extends Controller
         $subjectName = Subject::find($subjectId)?->name_subject ?? 'Mata Pelajaran';
 
         $countSiswa = $kelasId
-            ? Student::whereHas('classAssignments', fn($q) => $q
-                ->where('class_id', $kelasId)
-                ->whereHas('academicYear', fn($ay) => $ay->where('is_active', true))
-              )->count()
+            ? Student::whereHas(
+                'classAssignments',
+                fn($q) => $q
+                    ->where('class_id', $kelasId)
+                    ->whereHas('academicYear', fn($ay) => $ay->where('is_active', true))
+            )->count()
             : 0;
 
         $teacherName  = 'Guru';
@@ -539,8 +543,13 @@ class UserPageController extends Controller
         }
 
         return view('Siswa.materi', compact(
-            'materis', 'tasks', 'subjectName', 'subjectId',
-            'activeTab', 'countSiswa', 'teacherName'
+            'materis',
+            'tasks',
+            'subjectName',
+            'subjectId',
+            'activeTab',
+            'countSiswa',
+            'teacherName'
         ));
     }
 
@@ -566,14 +575,16 @@ class UserPageController extends Controller
 
         $tasksQuery = Task::leftJoin('collections', function ($join) use ($user) {
             $join->on('tasks.id', '=', 'collections.task_id')
-                 ->where('collections.user_id', $user->id);
+                ->where('collections.user_id', $user->id);
         })
             ->select('tasks.*', DB::raw("COALESCE(collections.status,'Belum mengumpulkan') as collection_status"))
             ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
             ->with(['subject', 'materi', 'collections' => fn($q) => $q->where('user_id', $user->id)])
-            ->when($search, fn($q) => $q
-                ->where('tasks.title_task', 'like', "%$search%")
-                ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+            ->when(
+                $search,
+                fn($q) => $q
+                    ->where('tasks.title_task', 'like', "%$search%")
+                    ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
             )
             ->orderByRaw("CASE WHEN collections.status='Belum mengumpulkan' THEN 1 WHEN collections.status='Sudah mengumpulkan' THEN 2 WHEN collections.status='Tidak mengumpulkan' THEN 3 ELSE 4 END ASC")
             ->orderBy('tasks.created_at', 'desc');
@@ -633,9 +644,11 @@ class UserPageController extends Controller
 
         $materis = Materi::with(['subject', 'classes'])
             ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
-            ->when($search, fn($q) => $q
-                ->where('title_materi', 'like', "%$search%")
-                ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
+            ->when(
+                $search,
+                fn($q) => $q
+                    ->where('title_materi', 'like', "%$search%")
+                    ->orWhereHas('subject', fn($sq) => $sq->where('name_subject', 'like', "%$search%"))
             )
             ->orderBy('created_at', 'desc')
             ->paginate(6);
@@ -665,6 +678,12 @@ class UserPageController extends Controller
             ->whereHas('classes', fn($q) => $q->where('classes.id', $kelasId))
             ->where('id', $id)
             ->firstOrFail();
+
+        // ✅ TAMBAHAN: Tandai materi ini sebagai "sudah dibaca" di server-side session.
+        // Key: 'materi_read_{id}' — dicek di tugas.blade.php untuk unlock tombol kumpulkan.
+        // Session Laravel disimpan di server (database/file/redis), bukan di browser,
+        // sehingga bekerja dengan benar di Railway dan semua environment.
+        session()->put('materi_read_' . $materi->id, true);
 
         return view('Siswa.materi-detail', compact('materi'));
     }

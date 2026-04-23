@@ -206,7 +206,7 @@
         {{-- ── Banner mapel ── --}}
         @if($materis->isNotEmpty() || $tasks->isNotEmpty())
         <div class="banner-wrap mb-5">
-            <img src="{{ asset('image/siswa/banner_materi.svg') }}" alt="banner">
+            <img src="{{ asset('image/siswa/banner_materi.webp') }}" alt="banner">
             <div class="banner-overlay">
                 <p class="banner-subject">{{ $subjectName ?? 'Mapel tidak ditemukan' }}</p>
                 <div class="banner-meta">

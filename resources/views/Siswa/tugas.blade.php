@@ -42,7 +42,9 @@
                         <i class="fas fa-filter text-sm"></i>
                     </button>
                     <div x-show="filterOpen" @click.outside="filterOpen = false"
-                        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter-end="opacity-100 scale-100"
                         class="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                         <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
                             <p class="text-sm font-bold text-slate-700">Filter Status Tugas</p>
@@ -96,16 +98,23 @@
                 @foreach ($tasks as $task)
                     @php
                         $collection   = $task->collections->first();
-                        $nilai        = $collection && $collection->assessment ? $collection->assessment->mark_task : 'Belum Dinilai';
+                        $nilai        = $collection && $collection->assessment
+                            ? $collection->assessment->mark_task
+                            : 'Belum Dinilai';
                         $status       = $task->collection_status ?? 'Belum mengumpulkan';
                         $hasMateri    = $task->materi !== null;
                         $materiId     = $hasMateri ? $task->materi->id : null;
                         $materiUrl    = $hasMateri ? route('materi.show', $materiId) : null;
                         $materiJudul  = $hasMateri ? $task->materi->title_materi : null;
+
+                        // ✅ CEK SERVER-SIDE via Laravel Session (bukan localStorage)
+                        // Session ini di-set oleh UserPageController::showMateri() saat siswa membuka halaman materi
+                        $materiSudahDibaca = !$hasMateri || session()->has('materi_read_' . $materiId);
+
                         $statusConfig = match($status) {
-                            'Sudah mengumpulkan' => ['color' => 'emerald', 'icon' => 'fa-check-circle', 'label' => 'Sudah Mengumpulkan'],
-                            'Tidak mengumpulkan' => ['color' => 'red',     'icon' => 'fa-times-circle', 'label' => 'Tidak Mengumpulkan'],
-                            default              => ['color' => 'amber',   'icon' => 'fa-clock',        'label' => 'Belum Mengumpulkan'],
+                            'Sudah mengumpulkan' => ['icon' => 'fa-check-circle', 'label' => 'Sudah Mengumpulkan'],
+                            'Tidak mengumpulkan' => ['icon' => 'fa-times-circle', 'label' => 'Tidak Mengumpulkan'],
+                            default              => ['icon' => 'fa-clock',        'label' => 'Belum Mengumpulkan'],
                         };
                     @endphp
 
@@ -142,51 +151,62 @@
                                 </h2>
                                 <p class="text-sm text-slate-500 mb-3">{{ $task->subject->name_subject ?? '-' }}</p>
 
-                                <!-- Materi lock badges -->
+                                <!-- Materi lock badge -->
                                 @if ($hasMateri && $status === 'Belum mengumpulkan')
-                                    <div id="materi-lock-badge-{{ $task->id }}"
-                                        class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                        <i class="fas fa-lock text-amber-500"></i>
-                                        <span>Baca materi dulu: <strong>{{ $materiJudul }}</strong></span>
-                                    </div>
-                                    <div id="materi-unlocked-badge-{{ $task->id }}"
-                                        class="hidden inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <i class="fas fa-lock-open text-emerald-500"></i>
-                                        <span>Materi sudah dibaca — tugas terbuka</span>
-                                    </div>
+                                    @if (!$materiSudahDibaca)
+                                        <div class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <i class="fas fa-lock text-amber-500"></i>
+                                            <span>Baca materi dulu: <strong>{{ $materiJudul }}</strong></span>
+                                        </div>
+                                    @else
+                                        <div class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <i class="fas fa-lock-open text-emerald-500"></i>
+                                            <span>Materi sudah dibaca — tugas terbuka</span>
+                                        </div>
+                                    @endif
                                 @endif
 
                                 <!-- Action Buttons -->
                                 <div class="flex flex-wrap items-center gap-2 mt-2">
-                                    <button class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all active:scale-95"
-                                        onclick="openModal('showTaskModal_{{ $task->id }}')">
-                                        <i class="fas fa-eye text-xs"></i>
-                                        Lihat Detail
-                                    </button>
 
+                                    {{-- TOMBOL LIHAT DETAIL: dikunci jika materi belum dibaca --}}
+                                    @if ($hasMateri && $status === 'Belum mengumpulkan' && !$materiSudahDibaca)
+                                        <button
+                                            class="btn-locked inline-flex items-center gap-2 bg-slate-300 text-slate-500 font-semibold py-2 px-4 rounded-xl text-sm"
+                                            onclick="showMateriLockAlert('{{ addslashes($materiUrl) }}', '{{ addslashes($materiJudul) }}')"
+                                            title="Baca materi terlebih dahulu sebelum melihat detail">
+                                            <i class="fas fa-lock text-xs"></i>
+                                            Lihat Detail
+                                        </button>
+                                    @else
+                                        <button
+                                            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all active:scale-95"
+                                            onclick="openModal('showTaskModal_{{ $task->id }}')">
+                                            <i class="fas fa-eye text-xs"></i>
+                                            Lihat Detail
+                                        </button>
+                                    @endif
+
+                                    {{-- TOMBOL KUMPULKAN: hanya 1 tombol, server-side --}}
                                     @if ($status === 'Belum mengumpulkan')
-                                        @if ($hasMateri)
-                                            <button id="btn-kumpul-locked-{{ $task->id }}"
+                                        @if (!$materiSudahDibaca)
+                                            <button
                                                 class="btn-locked inline-flex items-center gap-2 bg-slate-300 text-slate-500 font-semibold py-2 px-4 rounded-xl text-sm"
-                                                onclick="showMateriLockAlert({{ $materiId }}, '{{ addslashes($materiUrl) }}', '{{ addslashes($materiJudul) }}')"
+                                                onclick="showMateriLockAlert('{{ addslashes($materiUrl) }}', '{{ addslashes($materiJudul) }}')"
                                                 title="Baca materi terlebih dahulu">
                                                 <i class="fas fa-lock text-xs"></i>
                                                 Kumpulkan
                                             </button>
-                                            <button id="btn-kumpul-unlocked-{{ $task->id }}"
-                                                class="hidden inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all active:scale-95"
-                                                onclick="openModal('tugasModal-{{ $task->id }}')">
-                                                <i class="fas fa-upload text-xs"></i>
-                                                Kumpulkan
-                                            </button>
                                         @else
-                                            <button class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all active:scale-95"
+                                            <button
+                                                class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all active:scale-95"
                                                 onclick="openModal('tugasModal-{{ $task->id }}')">
                                                 <i class="fas fa-upload text-xs"></i>
                                                 Kumpulkan
                                             </button>
                                         @endif
                                     @endif
+
                                 </div>
                             </div>
                         </div>
@@ -197,7 +217,8 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 py-16 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mb-4">
                     <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
                 </div>
                 <p class="text-slate-700 font-semibold">Tidak Ada Tugas</p>
@@ -212,15 +233,16 @@
     @foreach ($tasks as $task)
         @php
             $status   = $task->collection_status ?? 'Belum mengumpulkan';
-            // ✅ PERBAIKAN: gunakan route file.serve agar bekerja di Railway
             $filePath = $task->file_task ?? null;
             $fileExt  = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
-            // Coba route file.serve dulu, fallback ke Storage::url()
-            $fileUrl  = $filePath
-                ? (Route::has('file.serve')
-                    ? route('file.serve', ['path' => $filePath])
-                    : Storage::url($filePath))
-                : null;
+
+            // ✅ PERBAIKAN RAILWAY: gunakan helper file_url() dari app/Helpers/FileHelper.php
+            // Helper ini selalu pakai route('file.serve') jika tersedia, jadi bekerja di Railway
+            $fileUrl = file_url($filePath);
+
+            $hasMateri         = $task->materi !== null;
+            $materiId          = $hasMateri ? $task->materi->id : null;
+            $materiSudahDibaca = !$hasMateri || session()->has('materi_read_' . $materiId);
         @endphp
 
         {{-- Modal Pengumpulan --}}
@@ -255,7 +277,8 @@
                         <p id="file-error-{{ $task->id }}" class="file-type-error">⚠ Hanya file PDF, JPG, atau PNG yang diizinkan.</p>
                     </div>
                     <div class="flex gap-2 justify-end">
-                        <button type="button" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
+                        <button type="button"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
                             onclick="closeModal('tugasModal-{{ $task->id }}')">Batal</button>
                         <button type="submit" id="submit-btn-{{ $task->id }}"
                             class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors">
@@ -267,7 +290,7 @@
         </div>
         @endif
 
-        {{-- Modal Detail --}}
+        {{-- Modal Detail Tugas --}}
         <div id="showTaskModal_{{ $task->id }}"
             class="app-modal fixed inset-0 items-center justify-center bg-slate-900/60 backdrop-blur-sm z-50 p-4">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -286,35 +309,43 @@
                         </div>
                         <div class="bg-slate-50 rounded-xl p-3">
                             <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Deadline</p>
-                            <p class="text-sm font-semibold text-slate-800">{{ \Carbon\Carbon::parse($task->date_collection)->translatedFormat('H:i, d F Y') }}</p>
+                            <p class="text-sm font-semibold text-slate-800">
+                                {{ \Carbon\Carbon::parse($task->date_collection)->translatedFormat('H:i, d F Y') }}
+                            </p>
                         </div>
                     </div>
+
                     @if ($task->materi)
                     <div class="bg-blue-50 rounded-xl p-3">
                         <p class="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Materi Terkait</p>
-                        <a href="{{ route('materi.show', $task->materi->id) }}" class="text-sm font-semibold text-blue-700 hover:underline flex items-center gap-1">
+                        <a href="{{ route('materi.show', $task->materi->id) }}"
+                            class="text-sm font-semibold text-blue-700 hover:underline flex items-center gap-1">
                             {{ $task->materi->title_materi }}
                             <i class="fas fa-external-link-alt text-xs"></i>
                         </a>
                     </div>
                     @endif
+
                     @if($task->description_task)
                     <div>
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Deskripsi</p>
-                        <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">{{ $task->description_task }}</p>
+                        <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">
+                            {{ $task->description_task }}
+                        </p>
                     </div>
                     @endif
 
-                    {{-- ✅ PERBAIKAN: File preview menggunakan route file.serve (aman di Railway) --}}
+                    {{-- FILE SOAL/TUGAS dari Guru --}}
                     <div>
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Tugas</p>
+
                         @if ($filePath && in_array($fileExt, ['jpg','jpeg','png']))
-                            {{-- Preview gambar --}}
                             <img src="{{ $fileUrl }}"
                                  alt="File Tugas"
                                  class="w-full h-auto rounded-xl border border-slate-200"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                            <div style="display:none" class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <div style="display:none"
+                                class="flex-col items-center justify-center bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                                 <i class="fas fa-image text-red-400 text-2xl mb-2"></i>
                                 <p class="text-sm text-red-600 font-medium">Gambar tidak dapat dimuat</p>
                                 <a href="{{ $fileUrl }}" target="_blank" download
@@ -322,16 +353,14 @@
                                     <i class="fas fa-download"></i> Download file
                                 </a>
                             </div>
+
                         @elseif ($filePath && $fileExt === 'pdf')
-                            {{-- PDF: tampilkan embed + tombol buka --}}
                             <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                                {{-- Embed PDF untuk preview (bekerja di browser yang support) --}}
                                 <div class="relative" style="height: 400px;">
                                     <embed src="{{ $fileUrl }}"
                                            type="application/pdf"
                                            class="w-full h-full rounded-t-xl"
                                            id="pdf-embed-{{ $task->id }}">
-                                    {{-- Fallback jika embed tidak didukung --}}
                                     <div id="pdf-fallback-{{ $task->id }}"
                                          class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-100 rounded-t-xl">
                                         <i class="fas fa-file-pdf text-red-500 text-4xl mb-3"></i>
@@ -349,15 +378,51 @@
                                     </a>
                                 </div>
                             </div>
+
                         @elseif ($filePath)
                             <a href="{{ $fileUrl }}" target="_blank"
                                 class="inline-flex items-center gap-2 bg-slate-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors">
                                 <i class="fas fa-paperclip"></i> Download File
                             </a>
+
                         @else
-                            <p class="text-slate-400 text-sm bg-slate-50 rounded-xl p-3 border border-slate-100">Tidak ada file dilampirkan.</p>
+                            <p class="text-slate-400 text-sm bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                Tidak ada file dilampirkan.
+                            </p>
                         @endif
                     </div>
+
+                    {{-- FILE JAWABAN SISWA (hanya tampil setelah mengumpulkan) --}}
+                    @if ($status === 'Sudah mengumpulkan')
+                        @php
+                            $collection  = $task->collections->first();
+                            $jawabanPath = $collection?->file_collection ?? null;
+                            $jawabanExt  = $jawabanPath ? strtolower(pathinfo($jawabanPath, PATHINFO_EXTENSION)) : null;
+                            $jawabanUrl  = file_url($jawabanPath);
+                        @endphp
+                        @if ($jawabanPath)
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Jawaban Kamu</p>
+                            @if (in_array($jawabanExt, ['jpg','jpeg','png']))
+                                <img src="{{ $jawabanUrl }}"
+                                     alt="Jawaban"
+                                     class="w-full h-auto rounded-xl border border-slate-200 max-h-64 object-contain"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <div style="display:none"
+                                    class="flex-col items-center justify-center bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                                    <p class="text-sm text-red-600">Gambar tidak dapat dimuat</p>
+                                    <a href="{{ $jawabanUrl }}" download class="mt-1 text-xs text-red-600 underline">Download</a>
+                                </div>
+                            @else
+                                <a href="{{ $jawabanUrl }}" target="_blank"
+                                    class="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors">
+                                    <i class="fas fa-file-alt"></i> Lihat File Jawaban
+                                </a>
+                            @endif
+                        </div>
+                        @endif
+                    @endif
+
                 </div>
                 <div class="p-4 border-t border-slate-100 flex justify-end flex-shrink-0">
                     <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
@@ -367,7 +432,7 @@
         </div>
     @endforeach
 
-    {{-- Toast --}}
+    {{-- Toast: materi belum dibaca --}}
     <div id="materi-lock-toast"
         class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-amber-700 text-white px-5 py-4 rounded-2xl shadow-2xl max-w-sm w-[90%] text-center">
         <p class="font-semibold text-sm" id="materi-lock-toast-msg"></p>
@@ -392,6 +457,7 @@
         }
 
         const ALLOWED_EXTENSIONS = ['pdf','jpg','jpeg','png'];
+
         function handleFileSelect(input, taskId) {
             const file      = input.files[0];
             const nameSpan  = document.getElementById('file-name-' + taskId);
@@ -407,6 +473,7 @@
                 if (submitBtn) submitBtn.disabled = false;
             }
         }
+
         function validateFileBeforeSubmit(form) {
             const fileInput = form.querySelector('input[type="file"]');
             if (!fileInput || !fileInput.files.length) { alert('Pilih file terlebih dahulu.'); return false; }
@@ -415,30 +482,10 @@
             return true;
         }
 
-        const taskMateriMap = {!! json_encode(
-            $tasks->filter(fn($t) => $t->materi !== null && ($t->collection_status ?? 'Belum mengumpulkan') === 'Belum mengumpulkan')
-                  ->mapWithKeys(fn($t) => [(string)$t->id => $t->materi->id])
-        ) !!};
-
-        function isMateriRead(materiId) { return localStorage.getItem(`materi_read_${materiId}`) === 'done'; }
-        function unlockTaskButton(taskId) {
-            const locked       = document.getElementById(`btn-kumpul-locked-${taskId}`);
-            const unlocked     = document.getElementById(`btn-kumpul-unlocked-${taskId}`);
-            const lockBadge    = document.getElementById(`materi-lock-badge-${taskId}`);
-            const unlockedBadge = document.getElementById(`materi-unlocked-badge-${taskId}`);
-            if (locked)        locked.classList.add('hidden');
-            if (unlocked)      unlocked.classList.remove('hidden');
-            if (lockBadge)     lockBadge.classList.add('hidden');
-            if (unlockedBadge) unlockedBadge.classList.remove('hidden');
-        }
-        function checkAllLocks() {
-            Object.entries(taskMateriMap).forEach(([taskId, materiId]) => {
-                if (isMateriRead(materiId)) unlockTaskButton(taskId);
-            });
-        }
-        function showMateriLockAlert(materiId, materiUrl, materiJudul) {
+        function showMateriLockAlert(materiUrl, materiJudul) {
             const toast = document.getElementById('materi-lock-toast');
-            document.getElementById('materi-lock-toast-msg').textContent = `Kamu harus membaca materi "${materiJudul}" minimal 5 menit sebelum mengumpulkan tugas ini.`;
+            document.getElementById('materi-lock-toast-msg').textContent =
+                `Kamu harus membaca materi "${materiJudul}" terlebih dahulu.`;
             document.getElementById('materi-lock-toast-link').href = materiUrl;
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 5000);
@@ -447,9 +494,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.app-modal').forEach(modal => {
                 modal.style.display = 'none';
-                modal.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); });
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) closeModal(this.id);
+                });
             });
-            checkAllLocks();
         });
     </script>
 @endsection
