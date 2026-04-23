@@ -2,11 +2,29 @@
 
 @section('content')
     <style>
-        .btn-locked { cursor: not-allowed; opacity: 0.65; }
-        .file-type-error { display: none; color: #dc2626; font-size: 0.75rem; margin-top: 4px; }
-        .file-type-error.show { display: block; }
-        .app-modal { display: none; }
-        .app-modal.flex { display: flex; }
+        .btn-locked {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .file-type-error {
+            display: none;
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .file-type-error.show {
+            display: block;
+        }
+
+        .app-modal {
+            display: none;
+        }
+
+        .app-modal.flex {
+            display: flex;
+        }
     </style>
 
     <div class="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
@@ -26,11 +44,14 @@
                     <div class="relative flex-1 sm:w-60">
                         <input type="text" name="search" placeholder="Cari tugas..." value="{{ request('search') }}"
                             class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+                            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl transition-all flex-shrink-0">
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl transition-all flex-shrink-0">
                         <i class="fas fa-search text-sm"></i>
                     </button>
                 </form>
@@ -42,8 +63,7 @@
                         <i class="fas fa-filter text-sm"></i>
                     </button>
                     <div x-show="filterOpen" @click.outside="filterOpen = false"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 scale-95"
+                        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
                         x-transition:enter-end="opacity-100 scale-100"
                         class="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden">
                         <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
@@ -53,14 +73,16 @@
                             <input type="hidden" name="search" value="{{ request('search') }}">
                             <button type="submit" name="status" value="Sudah mengumpulkan"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-emerald-50 transition-colors {{ request('status') === 'Sudah mengumpulkan' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700' }}">
-                                <div class="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <div
+                                    class="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
                                     <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
                                 </div>
                                 <span class="font-medium">Sudah Mengumpulkan</span>
                             </button>
                             <button type="submit" name="status" value="Belum mengumpulkan"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl hover:bg-amber-50 transition-colors {{ request('status') === 'Belum mengumpulkan' ? 'bg-amber-50 text-amber-700' : 'text-slate-700' }}">
-                                <div class="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <div
+                                    class="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                                     <div class="w-2 h-2 bg-amber-400 rounded-full"></div>
                                 </div>
                                 <span class="font-medium">Belum Mengumpulkan</span>
@@ -80,7 +102,8 @@
 
         <!-- Flash Messages -->
         @if (session('success'))
-            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-4 flex items-center gap-3">
+            <div
+                class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-4 flex items-center gap-3">
                 <i class="fas fa-check-circle text-emerald-500"></i>
                 <span class="text-sm font-medium">{{ session('success') }}</span>
             </div>
@@ -88,40 +111,45 @@
         @if ($errors->any())
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
                 <p class="text-sm font-bold mb-1">Kesalahan:</p>
-                @foreach ($errors->all() as $error)<p class="text-sm">• {{ $error }}</p>@endforeach
+                @foreach ($errors->all() as $error)
+                    <p class="text-sm">• {{ $error }}</p>
+                @endforeach
             </div>
         @endif
 
         <!-- Task List -->
-        @if($tasks->isNotEmpty())
+        @if ($tasks->isNotEmpty())
             <div class="space-y-3 sm:space-y-4">
                 @foreach ($tasks as $task)
                     @php
-                        $collection   = $task->collections->first();
-                        $nilai        = $collection && $collection->assessment
-                            ? $collection->assessment->mark_task
-                            : 'Belum Dinilai';
-                        $status       = $task->collection_status ?? 'Belum mengumpulkan';
-                        $hasMateri    = $task->materi !== null;
-                        $materiId     = $hasMateri ? $task->materi->id : null;
-                        $materiUrl    = $hasMateri ? route('materi.show', $materiId) : null;
-                        $materiJudul  = $hasMateri ? $task->materi->title_materi : null;
+                        $collection = $task->collections->first();
+                        $nilai =
+                            $collection && $collection->assessment
+                                ? $collection->assessment->mark_task
+                                : 'Belum Dinilai';
+                        $status = $task->collection_status ?? 'Belum mengumpulkan';
+                        $hasMateri = $task->materi !== null;
+                        $materiId = $hasMateri ? $task->materi->id : null;
+                        $materiUrl = $hasMateri ? route('materi.show', $materiId) : null;
+                        $materiJudul = $hasMateri ? $task->materi->title_materi : null;
 
                         // ✅ CEK SERVER-SIDE via Laravel Session (bukan localStorage)
                         // Session ini di-set oleh UserPageController::showMateri() saat siswa membuka halaman materi
                         $materiSudahDibaca = !$hasMateri || session()->has('materi_read_' . $materiId);
 
-                        $statusConfig = match($status) {
+                        $statusConfig = match ($status) {
                             'Sudah mengumpulkan' => ['icon' => 'fa-check-circle', 'label' => 'Sudah Mengumpulkan'],
                             'Tidak mengumpulkan' => ['icon' => 'fa-times-circle', 'label' => 'Tidak Mengumpulkan'],
-                            default              => ['icon' => 'fa-clock',        'label' => 'Belum Mengumpulkan'],
+                            default => ['icon' => 'fa-clock', 'label' => 'Belum Mengumpulkan'],
                         };
                     @endphp
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-slate-200 transition-all overflow-hidden">
+                    <div
+                        class="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-slate-200 transition-all overflow-hidden">
                         <div class="flex items-start gap-0">
                             <!-- Status bar -->
-                            <div class="w-1 self-stretch flex-shrink-0 rounded-l-2xl
+                            <div
+                                class="w-1 self-stretch flex-shrink-0 rounded-l-2xl
                                 {{ $status === 'Sudah mengumpulkan' ? 'bg-emerald-400' : ($status === 'Tidak mengumpulkan' ? 'bg-red-400' : 'bg-amber-400') }}">
                             </div>
 
@@ -133,7 +161,8 @@
                                         <span class="text-red-500 font-semibold">Deadline:</span>
                                         {{ \Carbon\Carbon::parse($task->date_collection)->translatedFormat('d F Y, H:i') }}
                                     </div>
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full
+                                    <span
+                                        class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full
                                         {{ $status === 'Sudah mengumpulkan' ? 'bg-emerald-50 text-emerald-700' : ($status === 'Tidak mengumpulkan' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') }}">
                                         <i class="fas {{ $statusConfig['icon'] }} text-xs"></i>
                                         {{ $statusConfig['label'] }}
@@ -154,12 +183,14 @@
                                 <!-- Materi lock badge -->
                                 @if ($hasMateri && $status === 'Belum mengumpulkan')
                                     @if (!$materiSudahDibaca)
-                                        <div class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                             <i class="fas fa-lock text-amber-500"></i>
                                             <span>Baca materi dulu: <strong>{{ $materiJudul }}</strong></span>
                                         </div>
                                     @else
-                                        <div class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                             <i class="fas fa-lock-open text-emerald-500"></i>
                                             <span>Materi sudah dibaca — tugas terbuka</span>
                                         </div>
@@ -218,7 +249,7 @@
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mb-4">
                     <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                 </div>
                 <p class="text-slate-700 font-semibold">Tidak Ada Tugas</p>
@@ -232,62 +263,71 @@
     {{-- ===== MODALS ===== --}}
     @foreach ($tasks as $task)
         @php
-            $status   = $task->collection_status ?? 'Belum mengumpulkan';
+            if (!function_exists('file_url')) {
+                dd('Fungsi file_url tidak ditemukan, cek autoload composer');
+            }
+
+            $status = $task->collection_status ?? 'Belum mengumpulkan';
             $filePath = $task->file_task ?? null;
-            $fileExt  = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
+            $fileExt = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
 
             // ✅ PERBAIKAN RAILWAY: gunakan helper file_url() dari app/Helpers/FileHelper.php
             // Helper ini selalu pakai route('file.serve') jika tersedia, jadi bekerja di Railway
             $fileUrl = file_url($filePath);
 
-            $hasMateri         = $task->materi !== null;
-            $materiId          = $hasMateri ? $task->materi->id : null;
+            $hasMateri = $task->materi !== null;
+            $materiId = $hasMateri ? $task->materi->id : null;
             $materiSudahDibaca = !$hasMateri || session()->has('materi_read_' . $materiId);
         @endphp
 
         {{-- Modal Pengumpulan --}}
         @if ($status === 'Belum mengumpulkan')
-        <div id="tugasModal-{{ $task->id }}"
-            class="app-modal fixed inset-0 items-center justify-center bg-slate-900/60 backdrop-blur-sm z-50 p-4">
-            <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-                <div class="flex justify-between items-center p-5 border-b border-slate-100">
-                    <h5 class="text-lg font-bold text-slate-900">Pengumpulan Tugas</h5>
-                    <button class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
-                        onclick="closeModal('tugasModal-{{ $task->id }}')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form action="{{ route('updateCollection', ['task_id' => $task->id]) }}" method="POST"
-                    enctype="multipart/form-data" onsubmit="return validateFileBeforeSubmit(this)" class="p-5">
-                    @csrf @method('PUT')
-                    <div class="mb-5">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            Upload File <span class="text-slate-400 font-normal">(PDF, JPG, atau PNG)</span>
-                        </label>
-                        <div class="border-2 border-dashed border-slate-200 rounded-xl p-4 bg-slate-50 hover:border-blue-300 transition-colors">
-                            <input type="file" id="file_collection-{{ $task->id }}" name="file_collection" class="hidden"
-                                accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, '{{ $task->id }}')">
-                            <label for="file_collection-{{ $task->id }}"
-                                class="flex flex-col items-center gap-2 cursor-pointer">
-                                <i class="fas fa-cloud-upload-alt text-blue-400 text-2xl"></i>
-                                <span class="text-sm text-slate-600">Klik untuk pilih file</span>
-                                <span id="file-name-{{ $task->id }}" class="text-xs text-slate-400">Belum ada file dipilih</span>
-                            </label>
-                        </div>
-                        <p id="file-error-{{ $task->id }}" class="file-type-error">⚠ Hanya file PDF, JPG, atau PNG yang diizinkan.</p>
-                    </div>
-                    <div class="flex gap-2 justify-end">
-                        <button type="button"
-                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
-                            onclick="closeModal('tugasModal-{{ $task->id }}')">Batal</button>
-                        <button type="submit" id="submit-btn-{{ $task->id }}"
-                            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors">
-                            <i class="fas fa-upload mr-1.5 text-xs"></i>Unggah Tugas
+            <div id="tugasModal-{{ $task->id }}"
+                class="app-modal fixed inset-0 items-center justify-center bg-slate-900/60 backdrop-blur-sm z-50 p-4">
+                <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                    <div class="flex justify-between items-center p-5 border-b border-slate-100">
+                        <h5 class="text-lg font-bold text-slate-900">Pengumpulan Tugas</h5>
+                        <button
+                            class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
+                            onclick="closeModal('tugasModal-{{ $task->id }}')">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
-                </form>
+                    <form action="{{ route('updateCollection', ['task_id' => $task->id]) }}" method="POST"
+                        enctype="multipart/form-data" onsubmit="return validateFileBeforeSubmit(this)" class="p-5">
+                        @csrf @method('PUT')
+                        <div class="mb-5">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                Upload File <span class="text-slate-400 font-normal">(PDF, JPG, atau PNG)</span>
+                            </label>
+                            <div
+                                class="border-2 border-dashed border-slate-200 rounded-xl p-4 bg-slate-50 hover:border-blue-300 transition-colors">
+                                <input type="file" id="file_collection-{{ $task->id }}" name="file_collection"
+                                    class="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                                    onchange="handleFileSelect(this, '{{ $task->id }}')">
+                                <label for="file_collection-{{ $task->id }}"
+                                    class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-cloud-upload-alt text-blue-400 text-2xl"></i>
+                                    <span class="text-sm text-slate-600">Klik untuk pilih file</span>
+                                    <span id="file-name-{{ $task->id }}" class="text-xs text-slate-400">Belum ada
+                                        file dipilih</span>
+                                </label>
+                            </div>
+                            <p id="file-error-{{ $task->id }}" class="file-type-error">⚠ Hanya file PDF, JPG, atau
+                                PNG yang diizinkan.</p>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button type="button"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
+                                onclick="closeModal('tugasModal-{{ $task->id }}')">Batal</button>
+                            <button type="submit" id="submit-btn-{{ $task->id }}"
+                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                                <i class="fas fa-upload mr-1.5 text-xs"></i>Unggah Tugas
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
         @endif
 
         {{-- Modal Detail Tugas --}}
@@ -296,7 +336,8 @@
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                 <div class="flex justify-between items-center p-5 border-b border-slate-100 flex-shrink-0">
                     <h5 class="text-lg font-bold text-slate-900">Detail Tugas</h5>
-                    <button class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
+                    <button
+                        class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 transition-colors"
                         onclick="closeModal('showTaskModal_{{ $task->id }}')">
                         <i class="fas fa-times"></i>
                     </button>
@@ -316,34 +357,33 @@
                     </div>
 
                     @if ($task->materi)
-                    <div class="bg-blue-50 rounded-xl p-3">
-                        <p class="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Materi Terkait</p>
-                        <a href="{{ route('materi.show', $task->materi->id) }}"
-                            class="text-sm font-semibold text-blue-700 hover:underline flex items-center gap-1">
-                            {{ $task->materi->title_materi }}
-                            <i class="fas fa-external-link-alt text-xs"></i>
-                        </a>
-                    </div>
+                        <div class="bg-blue-50 rounded-xl p-3">
+                            <p class="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Materi Terkait</p>
+                            <a href="{{ route('materi.show', $task->materi->id) }}"
+                                class="text-sm font-semibold text-blue-700 hover:underline flex items-center gap-1">
+                                {{ $task->materi->title_materi }}
+                                <i class="fas fa-external-link-alt text-xs"></i>
+                            </a>
+                        </div>
                     @endif
 
-                    @if($task->description_task)
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Deskripsi</p>
-                        <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">
-                            {{ $task->description_task }}
-                        </p>
-                    </div>
+                    @if ($task->description_task)
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Deskripsi</p>
+                            <p class="text-sm text-slate-700 bg-slate-50 rounded-xl p-3 leading-relaxed">
+                                {{ $task->description_task }}
+                            </p>
+                        </div>
                     @endif
 
                     {{-- FILE SOAL/TUGAS dari Guru --}}
                     <div>
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Tugas</p>
 
-                        @if ($filePath && in_array($fileExt, ['jpg','jpeg','png']))
-                            <img src="{{ $fileUrl }}"
-                                 alt="File Tugas"
-                                 class="w-full h-auto rounded-xl border border-slate-200"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        @if ($filePath && in_array($fileExt, ['jpg', 'jpeg', 'png']))
+                            <img src="{{ $fileUrl }}" alt="File Tugas"
+                                class="w-full h-auto rounded-xl border border-slate-200"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                             <div style="display:none"
                                 class="flex-col items-center justify-center bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                                 <i class="fas fa-image text-red-400 text-2xl mb-2"></i>
@@ -353,18 +393,16 @@
                                     <i class="fas fa-download"></i> Download file
                                 </a>
                             </div>
-
                         @elseif ($filePath && $fileExt === 'pdf')
                             <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
                                 <div class="relative" style="height: 400px;">
-                                    <embed src="{{ $fileUrl }}"
-                                           type="application/pdf"
-                                           class="w-full h-full rounded-t-xl"
-                                           id="pdf-embed-{{ $task->id }}">
+                                    <embed src="{{ $fileUrl }}" type="application/pdf"
+                                        class="w-full h-full rounded-t-xl" id="pdf-embed-{{ $task->id }}">
                                     <div id="pdf-fallback-{{ $task->id }}"
-                                         class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-100 rounded-t-xl">
+                                        class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-100 rounded-t-xl">
                                         <i class="fas fa-file-pdf text-red-500 text-4xl mb-3"></i>
-                                        <p class="text-slate-600 font-medium text-sm">Preview tidak tersedia di perangkat ini</p>
+                                        <p class="text-slate-600 font-medium text-sm">Preview tidak tersedia di perangkat
+                                            ini</p>
                                     </div>
                                 </div>
                                 <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
@@ -378,13 +416,11 @@
                                     </a>
                                 </div>
                             </div>
-
                         @elseif ($filePath)
                             <a href="{{ $fileUrl }}" target="_blank"
                                 class="inline-flex items-center gap-2 bg-slate-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors">
                                 <i class="fas fa-paperclip"></i> Download File
                             </a>
-
                         @else
                             <p class="text-slate-400 text-sm bg-slate-50 rounded-xl p-3 border border-slate-100">
                                 Tidak ada file dilampirkan.
@@ -395,37 +431,39 @@
                     {{-- FILE JAWABAN SISWA (hanya tampil setelah mengumpulkan) --}}
                     @if ($status === 'Sudah mengumpulkan')
                         @php
-                            $collection  = $task->collections->first();
+                            $collection = $task->collections->first();
                             $jawabanPath = $collection?->file_collection ?? null;
-                            $jawabanExt  = $jawabanPath ? strtolower(pathinfo($jawabanPath, PATHINFO_EXTENSION)) : null;
-                            $jawabanUrl  = file_url($jawabanPath);
+                            $jawabanExt = $jawabanPath ? strtolower(pathinfo($jawabanPath, PATHINFO_EXTENSION)) : null;
+                            $jawabanUrl = file_url($jawabanPath);
                         @endphp
                         @if ($jawabanPath)
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Jawaban Kamu</p>
-                            @if (in_array($jawabanExt, ['jpg','jpeg','png']))
-                                <img src="{{ $jawabanUrl }}"
-                                     alt="Jawaban"
-                                     class="w-full h-auto rounded-xl border border-slate-200 max-h-64 object-contain"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                                <div style="display:none"
-                                    class="flex-col items-center justify-center bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                                    <p class="text-sm text-red-600">Gambar tidak dapat dimuat</p>
-                                    <a href="{{ $jawabanUrl }}" download class="mt-1 text-xs text-red-600 underline">Download</a>
-                                </div>
-                            @else
-                                <a href="{{ $jawabanUrl }}" target="_blank"
-                                    class="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors">
-                                    <i class="fas fa-file-alt"></i> Lihat File Jawaban
-                                </a>
-                            @endif
-                        </div>
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">File Jawaban
+                                    Kamu</p>
+                                @if (in_array($jawabanExt, ['jpg', 'jpeg', 'png']))
+                                    <img src="{{ $jawabanUrl }}" alt="Jawaban"
+                                        class="w-full h-auto rounded-xl border border-slate-200 max-h-64 object-contain"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                    <div style="display:none"
+                                        class="flex-col items-center justify-center bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                                        <p class="text-sm text-red-600">Gambar tidak dapat dimuat</p>
+                                        <a href="{{ $jawabanUrl }}" download
+                                            class="mt-1 text-xs text-red-600 underline">Download</a>
+                                    </div>
+                                @else
+                                    <a href="{{ $jawabanUrl }}" target="_blank"
+                                        class="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-colors">
+                                        <i class="fas fa-file-alt"></i> Lihat File Jawaban
+                                    </a>
+                                @endif
+                            </div>
                         @endif
                     @endif
 
                 </div>
                 <div class="p-4 border-t border-slate-100 flex justify-end flex-shrink-0">
-                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
+                    <button
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
                         onclick="closeModal('showTaskModal_{{ $task->id }}')">Tutup</button>
                 </div>
             </div>
@@ -449,36 +487,56 @@
         function openModal(modalId) {
             document.querySelectorAll('.app-modal').forEach(m => m.style.display = 'none');
             const modal = document.getElementById(modalId);
-            if (modal) { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
         }
+
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
-            if (modal) { modal.style.display = 'none'; document.body.style.overflow = 'auto'; }
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         }
 
-        const ALLOWED_EXTENSIONS = ['pdf','jpg','jpeg','png'];
+        const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png'];
 
         function handleFileSelect(input, taskId) {
-            const file      = input.files[0];
-            const nameSpan  = document.getElementById('file-name-' + taskId);
-            const errorEl   = document.getElementById('file-error-' + taskId);
+            const file = input.files[0];
+            const nameSpan = document.getElementById('file-name-' + taskId);
+            const errorEl = document.getElementById('file-error-' + taskId);
             const submitBtn = document.getElementById('submit-btn-' + taskId);
-            if (!file) { nameSpan.textContent = 'Belum ada file dipilih'; errorEl.classList.remove('show'); return; }
+            if (!file) {
+                nameSpan.textContent = 'Belum ada file dipilih';
+                errorEl.classList.remove('show');
+                return;
+            }
             const ext = file.name.split('.').pop().toLowerCase();
             if (!ALLOWED_EXTENSIONS.includes(ext)) {
-                input.value = ''; nameSpan.textContent = 'Belum ada file dipilih';
-                errorEl.classList.add('show'); if (submitBtn) submitBtn.disabled = true;
+                input.value = '';
+                nameSpan.textContent = 'Belum ada file dipilih';
+                errorEl.classList.add('show');
+                if (submitBtn) submitBtn.disabled = true;
             } else {
-                nameSpan.textContent = file.name; errorEl.classList.remove('show');
+                nameSpan.textContent = file.name;
+                errorEl.classList.remove('show');
                 if (submitBtn) submitBtn.disabled = false;
             }
         }
 
         function validateFileBeforeSubmit(form) {
             const fileInput = form.querySelector('input[type="file"]');
-            if (!fileInput || !fileInput.files.length) { alert('Pilih file terlebih dahulu.'); return false; }
+            if (!fileInput || !fileInput.files.length) {
+                alert('Pilih file terlebih dahulu.');
+                return false;
+            }
             const ext = fileInput.files[0].name.split('.').pop().toLowerCase();
-            if (!ALLOWED_EXTENSIONS.includes(ext)) { alert('Hanya PDF, JPG, dan PNG yang diizinkan.'); return false; }
+            if (!ALLOWED_EXTENSIONS.includes(ext)) {
+                alert('Hanya PDF, JPG, dan PNG yang diizinkan.');
+                return false;
+            }
             return true;
         }
 
