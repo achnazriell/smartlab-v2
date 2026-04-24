@@ -165,7 +165,7 @@
 
         {{-- ── Banner ── --}}
         <div class="banner-wrap mb-6">
-            <img src="{{ asset('image/banner_ mapel.webp') }}" alt="banner soal">
+            <img src="{{ asset('image/banner_mapel.webp') }}" alt="banner soal">
             <div class="banner-overlay">
                 <p class="banner-title">Hai, {{ Auth::user()->name }}</p>
                 <p class="banner-desc max-w-xl">
