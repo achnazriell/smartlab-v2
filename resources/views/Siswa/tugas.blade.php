@@ -263,23 +263,14 @@
     {{-- ===== MODALS ===== --}}
     @foreach ($tasks as $task)
         @php
-            // Helper untuk menghasilkan URL file menggunakan route file.serve
-            // (tanpa bergantung pada fungsi file_url yang bermasalah)
-            $getFileUrl = function ($path) {
-                if (!$path) return null;
-                // Jika path sudah berupa URL penuh, kembalikan langsung
-                if (filter_var($path, FILTER_VALIDATE_URL)) return $path;
-                // Gunakan route file.serve yang sudah ada di web.php
-                return route('file.serve', ['path' => $path]);
-            };
-
-            $status = $task->collection_status ?? 'Belum mengumpulkan';
+            // ✅ Gunakan FileHelper::url() — tidak lagi butuh closure inline
+            $status   = $task->collection_status ?? 'Belum mengumpulkan';
             $filePath = $task->file_task ?? null;
-            $fileExt = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
-            $fileUrl = $getFileUrl($filePath);
+            $fileExt  = \App\Helpers\FileHelper::extension($filePath);
+            $fileUrl  = \App\Helpers\FileHelper::url($filePath);
 
-            $hasMateri = $task->materi !== null;
-            $materiId = $hasMateri ? $task->materi->id : null;
+            $hasMateri         = $task->materi !== null;
+            $materiId          = $hasMateri ? $task->materi->id : null;
             $materiSudahDibaca = !$hasMateri || session()->has('materi_read_' . $materiId);
         @endphp
 
@@ -434,10 +425,10 @@
                     {{-- FILE JAWABAN SISWA (hanya tampil setelah mengumpulkan) --}}
                     @if ($status === 'Sudah mengumpulkan')
                         @php
-                            $collection = $task->collections->first();
+                            $collection  = $task->collections->first();
                             $jawabanPath = $collection?->file_collection ?? null;
-                            $jawabanExt = $jawabanPath ? strtolower(pathinfo($jawabanPath, PATHINFO_EXTENSION)) : null;
-                            $jawabanUrl = $getFileUrl($jawabanPath);
+                            $jawabanExt  = \App\Helpers\FileHelper::extension($jawabanPath);
+                            $jawabanUrl  = \App\Helpers\FileHelper::url($jawabanPath);
                         @endphp
                         @if ($jawabanPath)
                             <div>

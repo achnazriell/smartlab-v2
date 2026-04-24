@@ -18,6 +18,16 @@ use Illuminate\Support\Facades\Storage;
  */
 class FileServeController extends Controller
 {
+    /**
+     * Folder yang diizinkan diakses.
+     * Sesuaikan dengan $allowedFolders di FileHelper.
+     */
+    protected array $allowedPrefixes = [
+        'file_materi/',
+        'file_task/',
+        'file_collection/',  // ✅ tambahan untuk file jawaban siswa
+    ];
+
     public function serve(Request $request, string $path)
     {
         // ✅ Cegah path traversal attack
@@ -26,9 +36,10 @@ class FileServeController extends Controller
             abort(403, 'Path tidak valid');
         }
 
-        // ✅ Hanya izinkan folder file_materi dan file_task
-        $allowedPrefixes = ['file_materi/', 'file_task/'];
-        $isAllowed = collect($allowedPrefixes)->contains(fn($prefix) => str_starts_with($path, $prefix));
+        // ✅ Hanya izinkan folder yang terdaftar
+        $isAllowed = collect($this->allowedPrefixes)
+            ->contains(fn($prefix) => str_starts_with($path, $prefix));
+
         if (!$isAllowed) {
             abort(403, 'Akses ditolak');
         }

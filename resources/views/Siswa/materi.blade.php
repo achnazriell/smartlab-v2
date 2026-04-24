@@ -305,9 +305,10 @@
                             <div>
                                 <p class="font-semibold text-gray-700 mb-2">File Materi:</p>
                                 @if($materi->file_materi)
-                                    <a href="{{ Storage::url($materi->file_materi) }}" target="_blank"
+                                    @php $mUrl = \App\Helpers\FileHelper::url($materi->file_materi); @endphp
+                                    <a href="{{ $mUrl }}" target="_blank"
                                        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                                        <i class="fas fa-file-pdf"></i> Buka PDF
+                                        <i class="fas fa-file-pdf"></i> Buka File
                                     </a>
                                 @else
                                     <p class="text-gray-400 text-sm">Tidak ada file</p>
@@ -434,14 +435,19 @@
                         <p class="font-semibold text-gray-700 mb-2">File Tugas:</p>
                         @php
                             $filePath = $task->file_task ?? null;
-                            $fileExt  = $filePath ? strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) : null;
-                            $fileUrl  = $filePath ? asset('storage/'.$filePath) : null;
+                            $fileExt  = \App\Helpers\FileHelper::extension($filePath);
+                            $fileUrl  = \App\Helpers\FileHelper::url($filePath);
                         @endphp
-                        @if($filePath && in_array($fileExt, ['jpg','jpeg','png']))
-                            <img src="{{ $fileUrl }}" alt="File" class="w-full h-auto border-2 rounded-lg">
-                        @elseif($filePath && $fileExt === 'pdf')
+                        @if($fileUrl && in_array($fileExt, ['jpg','jpeg','png']))
+                            <img src="{{ $fileUrl }}" alt="File" class="w-full h-auto border-2 rounded-lg"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                            <div style="display:none" class="p-3 bg-red-50 rounded-lg text-center">
+                                <p class="text-sm text-red-600">Gambar tidak dapat dimuat.</p>
+                                <a href="{{ $fileUrl }}" download class="text-xs text-red-600 underline">Download</a>
+                            </div>
+                        @elseif($fileUrl && $fileExt === 'pdf')
                             <a href="{{ $fileUrl }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700"><i class="fas fa-file-pdf"></i> Buka Tugas</a>
-                        @elseif($filePath)
+                        @elseif($fileUrl)
                             <a href="{{ $fileUrl }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-xl text-sm font-semibold hover:bg-gray-700">📎 Download</a>
                         @else
                             <p class="text-gray-400 text-sm py-2 px-3 bg-gray-50 rounded-lg border">Tidak ada file dilampirkan.</p>

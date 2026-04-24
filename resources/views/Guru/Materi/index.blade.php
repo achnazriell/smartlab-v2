@@ -259,7 +259,9 @@
     {{-- ===== DETAIL MODALS ===== --}}
     @foreach ($materis as $materi)
     @php
-        $ext2 = strtolower(pathinfo($materi->file_materi ?? '', PATHINFO_EXTENSION));
+        // ✅ Gunakan FileHelper::url() agar bekerja di Railway (tanpa symlink)
+        $ext2    = \App\Helpers\FileHelper::extension($materi->file_materi);
+        $fileUrl2 = \App\Helpers\FileHelper::url($materi->file_materi);
     @endphp
     <div id="detailModal_{{ $materi->id }}"
          class="fixed inset-0 flex items-center justify-center bg-black/50 hidden z-50 p-4">
@@ -319,16 +321,18 @@
                             </svg>
                             Buka Link Materi
                         </a>
-                    @elseif (!empty($materi->file_materi))
+                    @elseif ($fileUrl2)
+                        {{-- ✅ Semua src/href pakai $fileUrl2 dari FileHelper::url() --}}
                         @if ($ext2 === 'pdf')
-                            <embed src="{{ asset('storage/' . $materi->file_materi) }}" type="application/pdf"
+                            <embed src="{{ $fileUrl2 }}" type="application/pdf"
                                    class="w-full h-80 border border-slate-200 rounded-xl">
                         @elseif (in_array($ext2, ['jpg','png','jpeg','webp']))
-                            <img src="{{ asset('storage/' . $materi->file_materi) }}" alt="Materi"
-                                 class="w-full max-h-72 object-contain border border-slate-200 rounded-xl bg-slate-50">
+                            <img src="{{ $fileUrl2 }}" alt="Materi"
+                                 class="w-full max-h-72 object-contain border border-slate-200 rounded-xl bg-slate-50"
+                                 onerror="this.outerHTML='<p class=\'text-sm text-red-500 p-3\'>Gambar tidak dapat dimuat. <a href=\'{{ $fileUrl2 }}\' class=\'underline\'>Download</a></p>'">
                         @elseif (in_array($ext2, ['mp4','webm']))
                             <video controls class="w-full rounded-xl border border-slate-200 max-h-72">
-                                <source src="{{ asset('storage/' . $materi->file_materi) }}" type="video/{{ $ext2 }}">
+                                <source src="{{ $fileUrl2 }}" type="video/{{ $ext2 }}">
                             </video>
                         @else
                             <div class="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
@@ -337,7 +341,7 @@
                                 </svg>
                                 <div>
                                     <p class="text-sm font-semibold text-slate-700">{{ basename($materi->file_materi) }}</p>
-                                    <a href="{{ asset('storage/' . $materi->file_materi) }}" target="_blank"
+                                    <a href="{{ $fileUrl2 }}" target="_blank"
                                        class="text-xs text-blue-600 hover:text-blue-700 font-medium">Unduh File</a>
                                 </div>
                             </div>
@@ -349,8 +353,9 @@
             </div>
 
             <div class="px-7 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                @if (!empty($materi->file_materi))
-                <a href="{{ asset('storage/' . $materi->file_materi) }}" download
+                @if ($fileUrl2)
+                {{-- ✅ Tombol download pakai $fileUrl2 --}}
+                <a href="{{ $fileUrl2 }}" download
                    class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl text-sm hover:bg-blue-700 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
