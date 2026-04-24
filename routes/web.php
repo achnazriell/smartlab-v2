@@ -78,13 +78,6 @@ Route::controller(BerandaController::class)->group(function () {
 
 // ==================== SHARED AUTHENTICATED ROUTES ====================
 Route::middleware(['auth'])->group(function () {
-    Route::get('/debug-file/{path}', function (string $path) {
-        return response()->json(
-            \App\Helpers\FileHelper::debug($path),
-            200,
-            ['Content-Type' => 'application/json']
-        );
-    })->where('path', '.*')->middleware('auth');
 
     // ✅ FILE SERVE ROUTE — Solusi Railway (tidak butuh symlink storage)
     // Melayani file_materi/ dan file_task/ langsung via controller stream

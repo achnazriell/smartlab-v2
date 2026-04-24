@@ -41,17 +41,15 @@ class FileHelper
 
         // ✅ FIX: Normalisasi path — hapus prefix 'public/' jika ada
         // (kadang path disimpan sebagai "public/file_materi/abc.pdf" di DB)
-        $cleanPath = ltrim($path, '/');
+        // FileHelper.php - method url()
+        $cleanPath = str_replace('\\', '/', ltrim($path, '/'));
         if (str_starts_with($cleanPath, 'public/')) {
-            $cleanPath = substr($cleanPath, 7); // hapus "public/"
+            $cleanPath = substr($cleanPath, 7);
         }
-
-        // Gunakan route file.serve jika tersedia dan path diizinkan
+        // Gunakan route jika ada, jika tidak fallback ke Storage::url
         if (static::isRouteAvailable() && static::isAllowedPath($cleanPath)) {
             return route('file.serve', ['path' => $cleanPath]);
         }
-
-        // Fallback: Storage::url() (butuh symlink)
         return Storage::url($cleanPath);
     }
 
