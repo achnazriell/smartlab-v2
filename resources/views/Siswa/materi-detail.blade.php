@@ -1,13 +1,14 @@
 @extends('layouts.appSiswa')
 
 @section('content')
-    {{-- ✅ Gunakan FileHelper::url() — terpusat, bekerja di Railway tanpa symlink --}}
     @php
         $fileMateri = $materi->file_materi ?? null;
         $fileExt    = \App\Helpers\FileHelper::extension($fileMateri);
         $fileUrl    = \App\Helpers\FileHelper::url($fileMateri);
         $isPdf      = \App\Helpers\FileHelper::isPdf($fileMateri);
         $isImage    = \App\Helpers\FileHelper::isImage($fileMateri);
+        // FIX: cek apakah materi sudah dibaca dari session server-side
+        $alreadyRead = session()->has('materi_read_' . $materi->id);
     @endphp
 
     <div class="min-h-screen bg-slate-50">
@@ -68,8 +69,9 @@
 
             <!-- Reading Timer Banner -->
             <div id="reading-banner" class="mb-6">
+                {{-- FIX: banner sudah dibaca langsung tampil green jika session server-side ada --}}
                 <div id="reading-in-progress"
-                    class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    class="{{ $alreadyRead ? 'hidden' : '' }} bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <div class="flex-shrink-0 bg-amber-100 rounded-xl p-2.5 hidden sm:flex items-center justify-center">
                         <i class="fas fa-clock text-amber-600 text-xl"></i>
                     </div>
@@ -91,7 +93,7 @@
                 </div>
 
                 <div id="reading-done"
-                    class="hidden bg-green-50 border-2 border-green-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    class="{{ $alreadyRead ? '' : 'hidden' }} bg-green-50 border-2 border-green-300 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <div class="flex-shrink-0 bg-green-100 rounded-xl p-2.5 flex items-center justify-center">
                         <i class="fas fa-circle-check text-green-600 text-xl"></i>
                     </div>
@@ -143,7 +145,6 @@
 
                         @if ($fileUrl)
                             <div class="bg-slate-100 p-3 sm:p-4">
-
                                 @if ($isPdf)
                                     {{-- ===== PDF VIEWER ===== --}}
                                     <!-- Page Controls -->
@@ -190,7 +191,6 @@
                                                 <i class="fas fa-exclamation-triangle text-amber-500 text-3xl mb-3"></i>
                                                 <p class="text-slate-700 font-semibold mb-1">Gagal memuat PDF</p>
                                                 <p class="text-slate-500 text-sm mb-4">Coba buka langsung atau download file.</p>
-                                                {{-- ✅ Tombol fallback sudah pakai $fileUrl yang benar --}}
                                                 <a href="{{ $fileUrl }}" target="_blank"
                                                     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
                                                     <i class="fas fa-external-link-alt text-xs"></i>
@@ -217,10 +217,20 @@
                                 @elseif ($isImage)
                                     {{-- ===== IMAGE VIEWER ===== --}}
                                     <div class="rounded-xl overflow-hidden bg-white">
+                                        {{-- FIX: onerror fallback yang lebih robust, tidak pakai innerHTML inline --}}
                                         <img src="{{ $fileUrl }}"
                                              alt="File Materi"
                                              class="w-full h-auto block"
-                                             onerror="this.parentElement.innerHTML='<div class=\'p-8 text-center\'><i class=\'fas fa-image text-slate-400 text-4xl mb-3\'></i><p class=\'text-slate-500\'>Gambar tidak dapat dimuat</p></div>'">
+                                             id="materi-img"
+                                             onerror="document.getElementById('materi-img-error').classList.remove('hidden'); this.classList.add('hidden')">
+                                        <div id="materi-img-error" class="hidden p-8 text-center">
+                                            <i class="fas fa-image text-slate-400 text-4xl mb-3 block"></i>
+                                            <p class="text-slate-500 mb-3">Gambar tidak dapat dimuat</p>
+                                            <a href="{{ $fileUrl }}" download
+                                                class="inline-flex items-center gap-2 bg-slate-700 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
+                                                <i class="fas fa-download text-xs"></i> Download Gambar
+                                            </a>
+                                        </div>
                                     </div>
                                     <div class="mt-3">
                                         <a href="{{ $fileUrl }}" download
@@ -285,15 +295,16 @@
                                 </div>
                             </div>
 
+                            {{-- FIX: sidebar status langsung sesuai kondisi server-side, bukan hanya JS --}}
                             <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
-                                <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0" id="sidebar-status-icon-wrap">
-                                    <i class="fas fa-clock text-amber-600 text-xs" id="sidebar-status-icon"></i>
+                                <div class="w-8 h-8 {{ $alreadyRead ? 'bg-green-100' : 'bg-amber-100' }} rounded-lg flex items-center justify-center flex-shrink-0" id="sidebar-status-icon-wrap">
+                                    <i class="fas {{ $alreadyRead ? 'fa-circle-check text-green-600' : 'fa-clock text-amber-600' }} text-xs" id="sidebar-status-icon"></i>
                                 </div>
                                 <div>
                                     <p class="text-xs text-slate-500 font-medium">Status Membaca</p>
                                     <div id="sidebar-reading-status"
-                                        class="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                                        <span id="sidebar-reading-label">Belum selesai</span>
+                                        class="inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold {{ $alreadyRead ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' }}">
+                                        <span id="sidebar-reading-label">{{ $alreadyRead ? 'Sudah selesai' : 'Belum selesai' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -311,7 +322,6 @@
                             @endif
 
                             @if ($fileUrl)
-                            {{-- ✅ Semua href sudah pakai $fileUrl --}}
                             <a href="{{ $fileUrl }}" download
                                 class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors text-sm">
                                 <i class="fas fa-download text-xs"></i>
@@ -331,16 +341,17 @@
         </div>
     </div>
 
-    {{-- PDF.js dari CDN --}}
-    @if ($isPdf)
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs" type="module"></script>
-    @endif
-
+    {{-- FIX: PDF.js ESM import langsung — tidak lagi pakai globalThis.pdfjsLib polling --}}
     <script type="module">
+        // ===== Loading Screen =====
+        // FIX: sembunyikan loading screen segera, jangan tunggu PDF
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+
         // ===== Reading Timer =====
-        const MATERI_ID     = {{ $materi->id }};
-        const TOTAL_SECONDS = 300;
-        const STORAGE_KEY   = `materi_read_${MATERI_ID}`;
+        const MATERI_ID      = {{ $materi->id }};
+        const ALREADY_READ   = {{ $alreadyRead ? 'true' : 'false' }};
+        const TOTAL_SECONDS  = 300;
 
         const progressBar     = document.getElementById('reading-progress-bar');
         const timerText       = document.getElementById('reading-timer-text');
@@ -352,23 +363,27 @@
         const sidebarIcon     = document.getElementById('sidebar-status-icon');
 
         function markAsDone() {
-            localStorage.setItem(STORAGE_KEY, 'done');
-            inProgressEl.classList.add('hidden');
-            doneEl.classList.remove('hidden');
-            sidebarStatus.className = 'inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700';
-            sidebarLabel.textContent = 'Sudah selesai';
-            sidebarIconWrap.className = 'w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0';
-            sidebarIcon.className = 'fas fa-circle-check text-green-600 text-xs';
+            if (inProgressEl) inProgressEl.classList.add('hidden');
+            if (doneEl)       doneEl.classList.remove('hidden');
+            if (sidebarStatus) {
+                sidebarStatus.className = 'inline-flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700';
+            }
+            if (sidebarLabel)    sidebarLabel.textContent = 'Sudah selesai';
+            if (sidebarIconWrap) sidebarIconWrap.className = 'w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0';
+            if (sidebarIcon)     sidebarIcon.className = 'fas fa-circle-check text-green-600 text-xs';
         }
+
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60);
             const s = seconds % 60;
             return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
 
-        if (localStorage.getItem(STORAGE_KEY) === 'done') {
+        if (ALREADY_READ) {
+            // Server-side session sudah ada → langsung done
             markAsDone();
         } else {
+            // Mulai timer countdown
             let elapsed = 0;
             const timer = setInterval(() => {
                 elapsed++;
@@ -376,19 +391,25 @@
                 const pct = (elapsed / TOTAL_SECONDS) * 100;
                 if (progressBar) progressBar.style.width = pct + '%';
                 if (timerText)   timerText.textContent = formatTime(remaining > 0 ? remaining : 0);
-                if (elapsed >= TOTAL_SECONDS) { clearInterval(timer); markAsDone(); }
+                if (elapsed >= TOTAL_SECONDS) {
+                    clearInterval(timer);
+                    markAsDone();
+                }
             }, 1000);
         }
 
-        // Hide loading screen
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
-
         @if ($isPdf && $fileUrl)
         // ===== PDF.js Viewer =====
-        // ✅ PERBAIKAN: gunakan $fileUrl (route file.serve) bukan Storage::url()
-        const PDF_URL = @json($fileUrl);
+        // FIX: import ESM langsung dari CDN — tidak bergantung pada globalThis.pdfjsLib
+        // yang tidak reliable karena timing masalah saat module belum selesai load
+        const { getDocument, GlobalWorkerOptions } = await import(
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs'
+        );
 
+        GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.mjs';
+
+        const PDF_URL     = @json($fileUrl);
         const canvas      = document.getElementById('pdf-canvas');
         const ctx         = canvas?.getContext('2d');
         const loadingEl   = document.getElementById('pdf-loading');
@@ -402,41 +423,13 @@
         let currentPage = 1;
         let rendering   = false;
 
-        // Tunggu pdf.js module load
-        const waitForPdfJs = () => new Promise((resolve, reject) => {
-            let tries = 0;
-            const check = () => {
-                if (typeof globalThis.pdfjsLib !== 'undefined') return resolve(globalThis.pdfjsLib);
-                if (++tries > 50) return reject(new Error('pdf.js timeout'));
-                setTimeout(check, 100);
-            };
-            check();
-        });
-
-        waitForPdfJs().then(pdfjsLib => {
-            pdfjsLib.GlobalWorkerOptions.workerSrc =
-                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.worker.min.mjs';
-
-            return pdfjsLib.getDocument({
-                url: PDF_URL,
-                // ✅ withCredentials agar cookie auth dikirim (penting untuk route file.serve)
-                withCredentials: true,
-            }).promise;
-        }).then(doc => {
-            pdfDoc = doc;
-            if (totalDisplay) totalDisplay.textContent = doc.numPages;
-            if (loadingEl)    loadingEl.classList.add('hidden');
-            renderPage(1);
-        }).catch(err => {
-            console.error('PDF load error:', err);
-            if (loadingEl) loadingEl.classList.add('hidden');
-            if (errorEl)   errorEl.classList.remove('hidden');
-        });
-
         function renderPage(num) {
             if (!pdfDoc || rendering || !canvas || !ctx) return;
             rendering = true;
-            if (loadingEl) { loadingEl.style.background = 'rgba(241,245,249,0.8)'; loadingEl.classList.remove('hidden'); }
+            if (loadingEl) {
+                loadingEl.style.background = 'rgba(241,245,249,0.8)';
+                loadingEl.classList.remove('hidden');
+            }
 
             pdfDoc.getPage(num).then(page => {
                 const wrapper  = document.getElementById('pdf-canvas-wrapper');
@@ -455,15 +448,33 @@
                     if (prevBtn)      prevBtn.disabled = num <= 1;
                     if (nextBtn)      nextBtn.disabled = num >= pdfDoc.numPages;
                 });
-            }).catch(() => {
+            }).catch(err => {
+                console.error('renderPage error:', err);
                 rendering = false;
                 if (loadingEl) loadingEl.classList.add('hidden');
                 if (errorEl)   errorEl.classList.remove('hidden');
             });
         }
 
-        if (prevBtn) prevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(currentPage); } });
-        if (nextBtn) nextBtn.addEventListener('click', () => { if (pdfDoc && currentPage < pdfDoc.numPages) { currentPage++; renderPage(currentPage); } });
+        try {
+            // FIX: hapus withCredentials — FileServeController sudah CORS '*'
+            // withCredentials + CORS '*' tidak kompatibel (browser akan blokir)
+            pdfDoc = await getDocument({ url: PDF_URL }).promise;
+            if (totalDisplay) totalDisplay.textContent = pdfDoc.numPages;
+            if (loadingEl)    loadingEl.classList.add('hidden');
+            renderPage(1);
+        } catch (err) {
+            console.error('PDF load error:', err);
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl)   errorEl.classList.remove('hidden');
+        }
+
+        if (prevBtn) prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderPage(currentPage); }
+        });
+        if (nextBtn) nextBtn.addEventListener('click', () => {
+            if (pdfDoc && currentPage < pdfDoc.numPages) { currentPage++; renderPage(currentPage); }
+        });
 
         document.addEventListener('keydown', e => {
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextBtn?.click();
