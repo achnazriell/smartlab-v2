@@ -1,18 +1,13 @@
 @extends('layouts.appSiswa')
 
 @section('content')
-    {{-- ✅ PERBAIKAN: Hitung file URL sekali di awal, gunakan route file.serve jika tersedia --}}
+    {{-- ✅ Gunakan FileHelper::url() — terpusat, bekerja di Railway tanpa symlink --}}
     @php
-        $fileMateri  = $materi->file_materi ?? null;
-        $fileExt     = $fileMateri ? strtolower(pathinfo($fileMateri, PATHINFO_EXTENSION)) : null;
-        // Gunakan route file.serve (bekerja di Railway), fallback ke Storage::url() jika tidak ada
-        $fileUrl     = $fileMateri
-            ? (Route::has('file.serve')
-                ? route('file.serve', ['path' => $fileMateri])
-                : Storage::url($fileMateri))
-            : null;
-        $isPdf       = $fileExt === 'pdf';
-        $isImage     = in_array($fileExt, ['jpg','jpeg','png','webp']);
+        $fileMateri = $materi->file_materi ?? null;
+        $fileExt    = \App\Helpers\FileHelper::extension($fileMateri);
+        $fileUrl    = \App\Helpers\FileHelper::url($fileMateri);
+        $isPdf      = \App\Helpers\FileHelper::isPdf($fileMateri);
+        $isImage    = \App\Helpers\FileHelper::isImage($fileMateri);
     @endphp
 
     <div class="min-h-screen bg-slate-50">
