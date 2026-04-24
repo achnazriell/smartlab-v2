@@ -352,8 +352,15 @@ class ExamController extends Controller
                     ->with('error', 'Data siswa tidak ditemukan.');
             }
 
+            // ✅ PERBAIKAN: Ambil data ujian terlebih dahulu
+            $exam = Exam::withoutGlobalScopes()->find($examId);
+
+            if (!$exam) {
+                return redirect()->route('soal.index')
+                    ->with('error', 'Ujian tidak ditemukan.');
+            }
+
             // ✅ PERBAIKAN: Ambil kelas aktif
-            // Di dalam method start()
             $classId = $this->getStudentClassId($student);
             if (!$classId) {
                 return redirect()->route('soal.index')
@@ -472,6 +479,7 @@ class ExamController extends Controller
                 ->with('error', 'Terjadi kesalahan saat memulai ujian: ' . $e->getMessage());
         }
     }
+
 
     /**
      * ==========================================
