@@ -5,28 +5,17 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * FileHelper
+ * FileHelper — VERSI DIPERBAIKI
  *
- * Helper terpusat untuk menghasilkan URL file yang benar di semua environment,
- * termasuk Railway dan hosting tanpa symlink /public/storage.
- *
- * Cara pakai di Blade:
- *   {!! file_url($materi->file_materi) !!}
- *   {!! file_url($task->file_task) !!}
- *   {!! file_url($collection->file_collection) !!}
- *
- * Daftarkan di config/app.php → aliases:
- *   'FileHelper' => App\Helpers\FileHelper::class,
- *
- * ATAU daftarkan helper function global via composer.json autoload.files
- * dengan membuat file app/helpers.php dan require di sana.
+ * PERBAIKAN UTAMA:
+ * 1. Normalisasi path sebelum cek exists dan buat URL
+ *    → path yang disimpan di DB kadang: "file_materi/abc.pdf" atau "/file_materi/abc.pdf"
+ *      atau bahkan "public/file_materi/abc.pdf" — semua ditangani
+ * 2. Tambah method debug() untuk membantu diagnosis di Railway
+ * 3. Tambah $routeAvailable = null reset agar tidak stuck saat testing
  */
 class FileHelper
 {
-    /**
-     * Folder yang diizinkan diakses via route file.serve.
-     * Harus sesuai dengan $allowedPrefixes di FileServeController.
-     */
     protected static array $allowedFolders = [
         'file_materi',
         'file_task',
@@ -34,14 +23,7 @@ class FileHelper
     ];
 
     /**
-     * Menghasilkan URL yang benar untuk file di storage.
-     *
-     * Prioritas:
-     *  1. Jika kosong / null → return null
-     *  2. Jika sudah URL penuh (http/https) → kembalikan langsung (link eksternal)
-     *  3. Jika route 'file.serve' terdaftar DAN path ada di folder yang diizinkan
-     *     → gunakan route file.serve (bekerja di Railway tanpa symlink)
-     *  4. Fallback → Storage::url() (bekerja jika symlink ada)
+     * Hasilkan URL yang benar untuk file di storage.
      *
      * @param  string|null $path  Path relatif seperti 'file_materi/abc.pdf'
      * @return string|null
@@ -52,13 +34,17 @@ class FileHelper
             return null;
         }
 
-        // Sudah URL penuh (link materi eksternal, dsb.)
+        // Sudah URL penuh (link materi eksternal)
         if (filter_var($path, FILTER_VALIDATE_URL)) {
             return $path;
         }
 
-        // Bersihkan path dari slash di awal
+        // ✅ FIX: Normalisasi path — hapus prefix 'public/' jika ada
+        // (kadang path disimpan sebagai "public/file_materi/abc.pdf" di DB)
         $cleanPath = ltrim($path, '/');
+        if (str_starts_with($cleanPath, 'public/')) {
+            $cleanPath = substr($cleanPath, 7); // hapus "public/"
+        }
 
         // Gunakan route file.serve jika tersedia dan path diizinkan
         if (static::isRouteAvailable() && static::isAllowedPath($cleanPath)) {
@@ -71,22 +57,71 @@ class FileHelper
 
     /**
      * Cek apakah file benar-benar ada di disk storage.
-     *
-     * @param  string|null $path
-     * @return bool
+     * ✅ FIX: Normalisasi path sama seperti url()
      */
     public static function exists(?string $path): bool
     {
         if (blank($path)) return false;
-        if (filter_var($path, FILTER_VALIDATE_URL)) return true; // asumsikan URL eksternal valid
-        return Storage::disk('public')->exists(ltrim($path, '/'));
+        if (filter_var($path, FILTER_VALIDATE_URL)) return true;
+
+        $cleanPath = ltrim($path, '/');
+        if (str_starts_with($cleanPath, 'public/')) {
+            $cleanPath = substr($cleanPath, 7);
+        }
+
+        return Storage::disk('public')->exists($cleanPath);
+    }
+
+    /**
+     * ✅ BARU: Debug info — gunakan di tinker atau route debug untuk diagnosis
+     *
+     * Contoh di routes/web.php (sementara, hapus setelah debug):
+     *   Route::get('/debug-file/{path}', function($path) {
+     *       return response()->json(\App\Helpers\FileHelper::debug($path));
+     *   })->where('path','.*')->middleware('auth');
+     *
+     * @param  string|null $path
+     * @return array
+     */
+    public static function debug(?string $path): array
+    {
+        $cleanPath = ltrim($path ?? '', '/');
+        if (str_starts_with($cleanPath, 'public/')) {
+            $cleanPath = substr($cleanPath, 7);
+        }
+
+        $diskRoot = config('filesystems.disks.public.root');
+
+        return [
+            'original_path'    => $path,
+            'clean_path'       => $cleanPath,
+            'disk_root'        => $diskRoot,
+            'full_fs_path'     => $diskRoot . '/' . $cleanPath,
+            'file_exists'      => Storage::disk('public')->exists($cleanPath),
+            'is_url'           => filter_var($path, FILTER_VALIDATE_URL) !== false,
+            'route_available'  => static::isRouteAvailable(),
+            'is_allowed_path'  => static::isAllowedPath($cleanPath),
+            'generated_url'    => static::url($path),
+            'storage_url'      => Storage::url($cleanPath),
+            'all_files_in_dir' => static::listDir($cleanPath),
+        ];
+    }
+
+    /**
+     * List semua file di direktori yang sama dengan path, untuk diagnosis
+     */
+    private static function listDir(string $path): array
+    {
+        $dir = dirname($path);
+        try {
+            return Storage::disk('public')->files($dir);
+        } catch (\Throwable $e) {
+            return ['error' => $e->getMessage()];
+        }
     }
 
     /**
      * Ambil ekstensi file (lowercase) dari path.
-     *
-     * @param  string|null $path
-     * @return string|null
      */
     public static function extension(?string $path): ?string
     {
@@ -95,39 +130,29 @@ class FileHelper
         return $ext ?: null;
     }
 
-    /**
-     * Apakah file berformat PDF?
-     */
     public static function isPdf(?string $path): bool
     {
         return static::extension($path) === 'pdf';
     }
 
-    /**
-     * Apakah file berformat gambar?
-     */
     public static function isImage(?string $path): bool
     {
         return in_array(static::extension($path), ['jpg', 'jpeg', 'png', 'webp', 'gif']);
     }
 
-    /**
-     * Apakah file berformat video?
-     */
     public static function isVideo(?string $path): bool
     {
         return in_array(static::extension($path), ['mp4', 'webm', 'mov', 'avi']);
     }
 
-    // ──────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────
     // PRIVATE HELPERS
-    // ──────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────
 
     private static ?bool $routeAvailable = null;
 
     protected static function isRouteAvailable(): bool
     {
-        // Cache hasil cek agar tidak memanggil app('router') berkali-kali
         if (static::$routeAvailable === null) {
             static::$routeAvailable = \Illuminate\Support\Facades\Route::has('file.serve');
         }
