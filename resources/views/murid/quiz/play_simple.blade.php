@@ -72,6 +72,33 @@
 
         #security-overlay .resume-btn:hover { transform: translateY(-2px); }
 
+        /* ===== AUTO-SUBMIT OVERLAY ===== */
+        #autosubmit-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.97);
+            z-index: 999999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+        #autosubmit-overlay.active { display: flex; }
+        #autosubmit-overlay .as-icon { font-size: 4rem; color: #EF4444; animation: shake 0.6s ease; }
+        #autosubmit-overlay h2 { color: white; font-size: 1.6rem; font-weight: 900; margin: 0; }
+        #autosubmit-overlay p  { color: #94A3B8; font-size: 0.95rem; max-width: 400px; margin: 0; }
+        #autosubmit-overlay .as-spinner {
+            width: 48px; height: 48px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: #3B82F6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        #autosubmit-overlay .as-label { color: #60A5FA; font-size: 0.9rem; font-weight: 600; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         #violation-toast {
             display: none;
             position: fixed;
@@ -652,6 +679,16 @@
 
 <div id="violation-toast"></div>
 
+{{-- ===== AUTO-SUBMIT OVERLAY ===== --}}
+<div id="autosubmit-overlay">
+    <div class="as-icon"><i class="fas fa-ban"></i></div>
+    <h2>Batas Pelanggaran Tercapai</h2>
+    <p>Quiz dikumpulkan otomatis karena terlalu banyak pelanggaran.</p>
+    <div class="as-spinner"></div>
+    <div class="as-label">Mengumpulkan jawaban...</div>
+</div>
+
+
 {{-- ===== PERINGATAN GURU ===== --}}
 <div id="teacher-warning-overlay"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99996;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;text-align:center;padding:2rem;animation:fadeIn 0.3s ease">
@@ -1132,6 +1169,7 @@
             settingsPanelOpen: false,
             violationCount: 0,
             _securityBlocked: false,
+            _isAutoSubmit: false,
             nextQuestionMultiplier: 1,
             activeMultiplier: 1,
             multiplierExpiresAt: null,
@@ -1438,6 +1476,22 @@
                 if (window.quizData.fullscreenMode) this.enterFullscreen();
             },
 
+            showAutoSubmitOverlay(msg = null) {
+                // Tampilkan overlay auto-submit dan kunci semua interaksi
+                this._isAutoSubmit = true;
+                document.getElementById('security-overlay')?.classList.remove('active');
+                const overlay = document.getElementById('autosubmit-overlay');
+                if (overlay) overlay.classList.add('active');
+                if (msg) {
+                    const lbl = overlay?.querySelector('.as-label');
+                    if (lbl) lbl.textContent = msg;
+                }
+                // Keluar dari fullscreen agar redirect tidak tertahan browser
+                if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            },
+
             async handleViolation(type, details = null) {
                 if (this.quizFinished) return;
 
@@ -1474,22 +1528,22 @@
                 const headers = { 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' };
                 const beaconPayload = new Blob([payload], { type: 'application/json' });
 
+                // Tampilkan overlay autosubmit langsung jika sudah di batas
+                if (clientLimit) this.showAutoSubmitOverlay();
+
                 try {
                     const r = await fetch(url, { method: 'POST', headers, body: payload });
                     const data = await r.json().catch(() => ({}));
                     if (data.violation_count) this.violationCount = data.violation_count;
                     if (data.max_violations)  window.quizData.maxViolations = data.max_violations;
                     if (data.auto_submit || clientLimit) {
-                        this._securityBlocked = true;
-                        setTimeout(() => this.submitQuiz(), 2000);
+                        this.showAutoSubmitOverlay();
+                        this.submitQuiz();
                     }
                 } catch(e) {
                     // fetch gagal - coba sendBeacon, dan tetap auto-submit jika limit tercapai
                     try { navigator.sendBeacon(url + '?_token=' + window.quizData.csrfToken, beaconPayload); } catch(_) {}
-                    if (clientLimit) {
-                        this._securityBlocked = true;
-                        setTimeout(() => this.submitQuiz(), 2000);
-                    }
+                    if (clientLimit) this.submitQuiz();
                 }
             },
 
@@ -1826,39 +1880,64 @@
 
             async submitQuiz() {
                 if (this.quizFinished) return;
-                this.quizFinished = true;
+                this.quizFinished = true;         // kunci permanen - tidak pernah di-reset
                 clearInterval(this.perQuestionTimer);
+                clearInterval(this._durationTimer);
 
-                try {
-                    const answers = this.questions.map(q => ({
-                        question_id: q.id,
-                        choice_id: q.choices?.[q.selectedAnswer]?.id || null,
-                        text_answer: q.textAnswer || null,
-                    }));
+                // Tampilkan overlay "mengumpulkan" jika belum tampil
+                this.showAutoSubmitOverlay();
 
-                    const r = await fetch(window.quizData.submitUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Accept': 'application/json' },
-                        body: JSON.stringify({ answers, total_score: this.totalScore, time_spent: window.quizData.quizDuration - this.timeRemaining })
-                    });
+                const answers = this.questions.map(q => ({
+                    question_id: q.id,
+                    choice_id: q.choices?.[q.selectedAnswer]?.id || null,
+                    text_answer: q.textAnswer || null,
+                }));
 
-                    const data = await r.json();
-                    if (data.success) {
-                        this.playSound('victory');
-                        if (window.quizData.showLeaderboard) {
-                            await this.loadLeaderboard().catch(() => {});
-                            if (this.leaderboard.length > 0) {
-                                this.showLeaderboardModal = true;
-                                setTimeout(() => { window.location.href = data.redirect; }, 4000);
-                                return;
-                            }
+                // Retry helper: coba submit sampai 3x jika gagal
+                let data = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        const r = await fetch(window.quizData.submitUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Accept': 'application/json' },
+                            body: JSON.stringify({ answers, total_score: this.totalScore, time_spent: window.quizData.quizDuration - this.timeRemaining })
+                        });
+                        data = await r.json();
+                        if (data.success) break;
+                    } catch(e) {
+                        if (attempt === 2) {
+                            // Semua retry gagal - update label overlay
+                            const lbl = document.querySelector('#autosubmit-overlay .as-label');
+                            if (lbl) lbl.textContent = 'Koneksi bermasalah, mencoba lagi...';
+                            await new Promise(r => setTimeout(r, 1500));
                         }
-                        setTimeout(() => { window.location.href = data.redirect; }, 2000);
-                    } else {
-                        this.quizFinished = false;
                     }
-                } catch(e) {
-                    this.quizFinished = false;
+                }
+
+                if (data && data.success) {
+                    // Auto-submit: jangan play victory sound, langsung redirect
+                    if (!this._isAutoSubmit) this.playSound('victory');
+                    const lbl = document.querySelector('#autosubmit-overlay .as-label');
+                    if (lbl) lbl.textContent = 'Berhasil! Mengalihkan ke halaman hasil...';
+
+                    // Leaderboard hanya untuk submit manual, bukan auto-submit
+                    if (!this._isAutoSubmit && window.quizData.showLeaderboard) {
+                        await this.loadLeaderboard().catch(() => {});
+                        if (this.leaderboard.length > 0) {
+                            this.showLeaderboardModal = true;
+                            setTimeout(() => { window.location.href = data.redirect; }, 3000);
+                            return;
+                        }
+                    }
+                    // Langsung redirect tanpa delay ekstra
+                    window.location.href = data.redirect;
+                } else if (data && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    // Gagal total - redirect ke halaman quiz
+                    const lbl = document.querySelector('#autosubmit-overlay .as-label');
+                    if (lbl) lbl.textContent = 'Gagal mengumpulkan, mengarahkan ulang...';
+                    setTimeout(() => { window.location.href = window.quizData.quizUrl || '/'; }, 2000);
                 }
             },
 
