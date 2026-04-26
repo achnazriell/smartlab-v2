@@ -1196,7 +1196,10 @@
                 }
 
                 if (window.quizData.fullscreenMode && !document.fullscreenElement) {
-                    document.getElementById('fullscreen-prompt')?.classList.add('active');
+                    // Tunda sedikit agar DOM selesai render sebelum prompt muncul
+                    setTimeout(() => {
+                        document.getElementById('fullscreen-prompt')?.classList.add('active');
+                    }, 300);
                 }
 
                 if (window.quizData.enableMusic) this.initBgMusic();
@@ -1301,6 +1304,8 @@
                 // Jeda timer per soal selama overlay tampil (jika ada)
                 clearInterval(this.perQuestionTimer);
             },
+
+            enterFullscreen() {
                 const el = document.documentElement;
                 const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
                 if (fn) fn.call(el).then(() => {
