@@ -1102,6 +1102,56 @@ class QuizController extends Controller
         // Frontend mengirim 'details' (plural), support keduanya
         $detailText = $request->input('details') ?? $request->input('detail') ?? '';
 
+        $maxViolations = (int) ($quiz->violation_limit ?? 3);
+        $autoSubmit    = false;
+
+        // ── MODE MANDIRI (homework) — tidak ada QuizParticipant ──────────────
+        // Simpan pelanggaran langsung ke ExamAttempt
+        if ($quiz->quiz_mode === 'homework') {
+            $attempt = ExamAttempt::where('exam_id', $quiz->id)
+                ->where('student_id', Auth::id())
+                ->whereNull('submitted_at')
+                ->latest()
+                ->first();
+
+            if (!$attempt) {
+                return response()->json(['success' => false, 'message' => 'Attempt tidak ditemukan'], 404);
+            }
+
+            // Simpan log pelanggaran di kolom exam_settings (JSON)
+            $settings = is_array($attempt->exam_settings) ? $attempt->exam_settings : [];
+            $vLogs    = $settings['violation_log'] ?? [];
+            $vLogs[]  = [
+                'type'      => $request->input('type'),
+                'details'   => $detailText,
+                'timestamp' => now()->toISOString(),
+            ];
+            $count = count($vLogs);
+
+            $settings['violation_log']   = $vLogs;
+            $settings['violation_count'] = $count;
+            $attempt->update(['exam_settings' => $settings]);
+
+            // Auto-submit jika pelanggaran diaktifkan dan batas terlampaui
+            $autoSubmit = !$quiz->disable_violations && $maxViolations > 0 && ($count >= $maxViolations);
+
+            if ($autoSubmit) {
+                // Tandai attempt sebagai disqualified (akan diproses submitQuiz dari frontend)
+                $attempt->update(['status' => 'disqualified']);
+            }
+
+            return response()->json([
+                'success'         => true,
+                'violation_count' => $count,
+                'max_violations'  => $maxViolations,
+                'auto_submit'     => $autoSubmit,
+                'message'         => $autoSubmit
+                    ? 'Terlalu banyak pelanggaran, quiz otomatis dikumpulkan.'
+                    : 'Pelanggaran dicatat (' . $count . '/' . $maxViolations . ')',
+            ]);
+        }
+
+        // ── MODE LIVE / GUIDED — pakai QuizParticipant ───────────────────────
         $session = $quiz->activeSession;
         if ($session) {
             $participant = QuizParticipant::where('quiz_session_id', $session->id)
@@ -1121,11 +1171,10 @@ class QuizController extends Controller
 
                 $participant->update([
                     'violation_count' => $count,
-                    'violation_log'   => $logs,   // disimpan sebagai JSON (auto-cast)
+                    'violation_log'   => $logs,
                 ]);
 
-                $maxViolations = $quiz->violation_limit ?? 3;
-                $autoSubmit    = !$quiz->disable_violations && ($count >= $maxViolations);
+                $autoSubmit = !$quiz->disable_violations && $maxViolations > 0 && ($count >= $maxViolations);
 
                 if ($autoSubmit) {
                     $participant->update(['status' => 'disqualified']);
@@ -1134,6 +1183,7 @@ class QuizController extends Controller
                 return response()->json([
                     'success'         => true,
                     'violation_count' => $count,
+                    'max_violations'  => $maxViolations,
                     'auto_submit'     => $autoSubmit,
                     'message'         => $autoSubmit
                         ? 'Terlalu banyak pelanggaran, quiz otomatis dikumpulkan.'

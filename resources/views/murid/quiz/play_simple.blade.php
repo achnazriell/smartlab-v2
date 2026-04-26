@@ -1105,6 +1105,8 @@
         powerupUrl: '{{ route('quiz.powerups', $quiz->id) }}',
         quizStatusUrl: '{{ route('quiz.status', $quiz->id) }}',
         checkWarningUrl: '{{ route('quiz.room.check-warning', $quiz->id) }}',
+        maxViolations: {{ (int) ($quiz->violation_limit ?? 3) }},
+        disableViolations: {{ $quiz->disable_violations ? 'true' : 'false' }},
         quizMode: '{{ $quiz->quiz_mode }}',
         questions: {!! json_encode($questionsJson) !!}
     };
@@ -1446,26 +1448,48 @@
                 this[lastKey] = now;
 
                 this.violationCount++;
-                this.showViolationToast(`⚠️ Pelanggaran #${this.violationCount}: ${details || type}`);
+
+                // Jika pelanggaran dinonaktifkan, hanya tampilkan toast tanpa auto-submit
+                if (window.quizData.disableViolations) {
+                    this.showViolationToast('Pelanggaran: ' + (details || type));
+                    return;
+                }
+
+                const max    = window.quizData.maxViolations || 3;
+                const remain = max - this.violationCount;
+
+                // Tampilkan toast dengan sisa peluang
+                if (remain > 0) {
+                    this.showViolationToast('Pelanggaran #' + this.violationCount + '/' + max + ': ' + (details || type) + ' -- Sisa ' + remain + ' peluang!');
+                } else {
+                    this.showViolationToast('Batas pelanggaran tercapai! Quiz dikumpulkan otomatis.');
+                }
+
+                // Client-side auto-submit untuk mode mandiri (fallback jika server tidak merespons)
+                const isHomework  = window.quizData.quizMode === 'homework';
+                const clientLimit = isHomework && this.violationCount >= max;
 
                 const payload = JSON.stringify({ type, details });
                 const url     = window.quizData.violationUrl;
                 const headers = { 'X-CSRF-TOKEN': window.quizData.csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' };
-
-                // Gunakan sendBeacon sebagai fallback saat tab ditutup / pindah paksa
-                // sendBeacon tidak butuh response, tapi tetap sampai ke server
                 const beaconPayload = new Blob([payload], { type: 'application/json' });
 
                 try {
                     const r = await fetch(url, { method: 'POST', headers, body: payload });
                     const data = await r.json().catch(() => ({}));
                     if (data.violation_count) this.violationCount = data.violation_count;
-                    if (data.auto_submit) {
-                        setTimeout(() => this.submitQuiz(), 1500);
+                    if (data.max_violations)  window.quizData.maxViolations = data.max_violations;
+                    if (data.auto_submit || clientLimit) {
+                        this._securityBlocked = true;
+                        setTimeout(() => this.submitQuiz(), 2000);
                     }
                 } catch(e) {
-                    // fetch gagal (mis. tab pindah cepat) — coba sendBeacon
+                    // fetch gagal - coba sendBeacon, dan tetap auto-submit jika limit tercapai
                     try { navigator.sendBeacon(url + '?_token=' + window.quizData.csrfToken, beaconPayload); } catch(_) {}
+                    if (clientLimit) {
+                        this._securityBlocked = true;
+                        setTimeout(() => this.submitQuiz(), 2000);
+                    }
                 }
             },
 
