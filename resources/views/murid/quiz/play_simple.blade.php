@@ -1104,7 +1104,7 @@
         violationUrl: '{{ route('quiz.report-violation', $quiz->id) }}',
         powerupUrl: '{{ route('quiz.powerups', $quiz->id) }}',
         quizStatusUrl: '{{ route('quiz.status', $quiz->id) }}',
-        checkWarningUrl: '{{ route('quiz.check-warning', $quiz->id) }}',
+        checkWarningUrl: '{{ route('quiz.room.check-warning', $quiz->id) }}',
         quizMode: '{{ $quiz->quiz_mode }}',
         questions: {!! json_encode($questionsJson) !!}
     };
