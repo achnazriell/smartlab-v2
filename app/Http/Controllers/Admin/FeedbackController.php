@@ -66,7 +66,7 @@ class FeedbackController extends Controller
         // Rata-rata rating
         $avgRating = Feedback::whereNotNull('rating')->avg('rating');
 
-        return view('admins.feedback.index', compact(
+        return view('Admins.Feedback.index', compact(
             'feedbacks',
             'stats',
             'typeStats',
@@ -83,7 +83,7 @@ class FeedbackController extends Controller
             $q->with('roles');
         }]);
 
-        return view('admins.feedback.show', compact('feedback'));
+        return view('Admins.Feedback.show', compact('feedback'));
     }
 
     /**
